@@ -1,2 +1,2 @@
 from physiotrack import Detector, Models
-from detect import Detection
+from .detect import Detection

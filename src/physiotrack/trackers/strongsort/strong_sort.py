@@ -5,11 +5,11 @@ import cv2
 import gdown
 from os.path import exists as file_exists, join
 import torchvision.transforms as transforms
-from trackers.strongsort.sort.nn_matching import NearestNeighborDistanceMetric
-from trackers.strongsort.sort.detection import Detection
-from trackers.strongsort.sort.tracker import Tracker
+from .sort.nn_matching import NearestNeighborDistanceMetric
+from .sort.detection import Detection
+from .sort.tracker import Tracker
 
-from trackers.strongsort.reid_multibackend import ReIDDetectMultiBackend
+from .reid_multibackend import ReIDDetectMultiBackend
 
 # from yolov8.ultralytics.yolo.utils.ops import xyxy2xywh
 

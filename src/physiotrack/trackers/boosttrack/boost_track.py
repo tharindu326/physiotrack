@@ -9,9 +9,9 @@ from typing import Optional, List
 import numpy as np
 
 # from trackers.boosttrack.embedding import EmbeddingComputer
-from trackers.boosttrack.assoc import associate, iou_batch
+from .assoc import associate, iou_batch
 # from trackers.boosttrack.ecc import ECC
-from trackers.boosttrack.kalmanfilter import KalmanFilter
+from .kalmanfilter import KalmanFilter
 
 
 def convert_bbox_to_z(bbox):
