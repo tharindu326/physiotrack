@@ -7,12 +7,11 @@ class PoseBase:
 
     def __init__(self, model=None, device='cpu', OBJECTNESS_CONFIDENCE=0.24, NMS_THRESHOLD=0.4,
                  classes=None, overlay_keypoints=True, render_labels=True, render_box_detections=True, verbose=True, **kwargs):
-        
         if model is None:
             if self.default_model is None:
                 raise ValueError("Model must be provided either as parameter or class attribute")
             model = self.default_model
-                 
+        print(model)
         Models.validate_pose_model(model)
         
         self.pose_framework = model.__class__.__name__
