@@ -15,5 +15,5 @@ from .trackers import BoostTrack
 from .models import Models, get_model_category
 
 from .detect import Detection
-
+from .pose import Pose
 
