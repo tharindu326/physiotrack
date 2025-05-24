@@ -1,0 +1,25 @@
+# folders
+__pycache__/
+.idea
+model_data/
+
+# model files
+*.pt
+*.engine
+*.onnx
+
+# scripts
+test.py
+main.py
+
+# media 
+*.avi
+*.mp4
+*.wav
+*.jpg
+*.png
+
+# other
+*.ovpn
+
+

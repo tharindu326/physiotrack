@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "physiotrack"
+version = "0.1.0"
+description = "Python library for detection and pose estimation using a variety of state-of-the-art models like YOLO, RT-DETR, Sapiens, and ViTPose. The framework supports modular detection and pose pipelines with validated models for specialized tasks like VR student monitoring, face detection, and whole-body pose estimation"
+readme = "README.md"
+license = { "text" = "GPL-3.0 license" }
+authors = [
+  { name = "Tharindu Ekanayake", email = "physiotrack@gmail.com" }
+]
+dependencies = [
+  "ultralytics",
+  "easydict",
+  "cython_bbox",
+  "openpyxl",
+  "lap",
+]
+[project.urls]
+"Homepage" = "https://github.com/physiotrack/physiotrack"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
