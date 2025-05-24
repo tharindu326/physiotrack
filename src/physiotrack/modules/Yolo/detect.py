@@ -39,7 +39,6 @@ class Detector:
             **self.extra_args,
             **kwargs,
         }
-
         start = time.perf_counter()
         results = self.model.predict(source=frame, **all_kwargs)
         
@@ -47,9 +46,9 @@ class Detector:
         boxes = detections[:, :-2].astype(int)
         # print(f"Detection inference took: {time.perf_counter() - start:.4f} seconds")
         
-        labels = [detector.model.names[int(cls)] for cls in results[0].boxes.cls]
+        labels = [self.model.names[int(cls)] for cls in results[0].boxes.cls]
         confidences = results[0].boxes.conf.cpu().numpy()
-        output_img = self.draw_boxes(img, boxes, labels, confidences)
+        output_img = self.draw_boxes(frame, boxes, labels, confidences)
         
         return results, output_img
     

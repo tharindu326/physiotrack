@@ -3,6 +3,7 @@ from . import Detector, Models
 class ValidatedDetector(Detector):
     expected_subclass = None
     model = None
+    classes = None
 
     def __init__(self, model=None, device='cpu', OBJECTNESS_CONFIDENCE=0.24, NMS_THRESHOLD=0.4,
                  classes=None, render_labels=True, render_box_detections=True, verbose=True, **kwargs):
@@ -11,6 +12,8 @@ class ValidatedDetector(Detector):
 
         if model is None:
             model = self.model
+        if self.classes:
+            classes = self.classes
             
         if model is None:
             raise ValueError("Model must be provided either as parameter or class attribute")
@@ -57,6 +60,7 @@ class Detection:
 
     class Person(ValidatedDetector):
         expected_subclass = "Person"
+        classes=[0]
         model = Models.Detection.YOLO.PERSON.m_person
 
     class VR(ValidatedDetector):

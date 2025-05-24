@@ -71,23 +71,29 @@ class Models:
     @staticmethod
     def validate_det_model(model, expected_subclass: str):
         """
-        Validates whether the given model belongs to the specified expected_subclass
-        (e.g., "VRStudent", "Face", "Person").
-
-        :param model: Enum member like Models.Detection.YOLO.VRStudent.m_VRstudent
-        :param expected_subclass: String name like "VRStudent"
-        :raises ValueError if the model is invalid
+        Verifies that `model` is a member of the Enum named `expected_subclass`
+        under either Detection.YOLO or Detection.RLDETR.
         """
-        # Walk the Models.Detection tree and find all Enum classes named `expected_subclass`
-        for backend in dir(Models.Detection):
-            backend_cls = getattr(Models.Detection, backend)
-            if hasattr(backend_cls, expected_subclass):
-                enum_class = getattr(backend_cls, expected_subclass)
-                if isinstance(model, enum_class):
-                    return  # Valid model for expected_subclass
-
+        if not isinstance(model, Enum):
+            raise ValueError(f"Expected an Enum member for `model`, got {type(model).__name__}")
+        target = expected_subclass.strip().upper()
+        enum_classes = []
+        for backend in (Models.Detection.YOLO, Models.Detection.RLDETR):
+            if hasattr(backend, target):
+                enum_classes.append(getattr(backend, target))
+        if not enum_classes:
+            raise ValueError(f"No detection subclass named '{expected_subclass}' in YOLO or RLDETR.")
+        for enum_cls in enum_classes:
+            if isinstance(model, enum_cls):
+                return  # ✅ valid
+        all_valid = []
+        for enum_cls in enum_classes:
+            names = ", ".join(e.name for e in enum_cls)
+            all_valid.append(f"{enum_cls.__module__.split('.')[-1]}.{enum_cls.__name__}: [{names}]")
+        valid_str = "\n  ".join(all_valid)
         raise ValueError(
-            f"Invalid model '{model}'. Expected a model from Models.Detection.<YOLO|RLDETR>.{expected_subclass}."
+            f"Model '{model.name}' is not valid for subclass '{expected_subclass}'.\n"
+            f"Valid members are:\n  {valid_str}"
         )
         
     def is_valid_detection_model(model):
