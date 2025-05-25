@@ -1,4 +1,6 @@
 from . import Detector, Models
+import os 
+
 
 class ValidatedDetector(Detector):
     expected_subclass = None
@@ -19,6 +21,9 @@ class ValidatedDetector(Detector):
             raise ValueError("Model must be provided either as parameter or class attribute")
             
         Models.validate_det_model(model, expected_subclass=self.expected_subclass)
+        model_path = os.path.join(os.path.dirname(__file__), '..', 'modules', 'model_data', model.value)
+        if not os.path.isfile(model_path):
+            Models.download_model(model)
         super().__init__(
             model=model,
             device=device,

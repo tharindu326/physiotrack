@@ -41,7 +41,7 @@ class VitInference:
 
         model_name = model_obj.name.split("_")[0]
         model_path = os.path.join(os.path.dirname(__file__), '..', 'model_data')
-        model = os.path.join(model_path, model.value)
+        model = os.path.join(model_path, model_obj.value)
         if not os.path.isfile(model):
             raise ValueError(f'The model file {model} does not exist. Download it to model_data/')
         # assert os.path.isfile(yolo), f'The YOLOv model {yolo} does not exist'
@@ -108,8 +108,6 @@ class VitInference:
 
         # Override _inference abstract with selected engine
         self._inference = inf_fn  # type: ignore
-        self.gflops = self.calculate_gflops()
-        print(f"ViTPose GFLOPS (pre-calculated): {self.gflops:.2f} GFLOPS")
 
     @classmethod
     def postprocess(cls, heatmaps, org_w, org_h):
@@ -177,20 +175,6 @@ class VitInference:
             output_frame = self.draw()
         print(f"ViTPose inference took: {time.perf_counter() - start:.4f} seconds")
         return output_frame, frame_data
-    
-    def calculate_gflops(self) -> float:
-        """
-        Calculate the GFLOPS for ViTPose model once during initialization.
-        """
-        # Create a dummy input tensor (similar to the size expected by the ViTPose model)
-        dummy_input = torch.randn(1, 3, *self.target_size).to(self.device)  # Assuming input size is 224x224 or whatever your model expects
-        
-        # Use thop to calculate FLOPs (MACs) for ViTPose model
-        macs, params = profile(self._vit_pose, inputs=(dummy_input,))
-        
-        # Convert from MACs to GFLOPS
-        gflops = macs / 1e9
-        return gflops
 
     def draw(self, confidence_threshold=0.5):
         """

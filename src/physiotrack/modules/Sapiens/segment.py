@@ -3,7 +3,7 @@ import cv2
 import numpy as np
 import torch
 import os
-from .common import download_model, create_preprocessor
+from .common import create_preprocessor
 import torch.nn.functional as F
 from .classes_and_palettes import SEGMENTATION_CLASSES
 
@@ -22,9 +22,6 @@ class SapiensSegmentation():
         self.dtype = dtype
         model_folder = os.path.join(os.path.dirname(__file__), '..', 'model_data')
         model_path = os.path.join(model_folder, model.value)
-        if not os.path.isfile(model_path):
-            print(f"Model is not found in {model_path}. \n Attempting to download it to {model_path}")
-            download_model(model, model_path)
         self.model = torch.jit.load(model_path).eval().to(self.device).to(dtype)
         self.preprocessor = create_preprocessor(input_size=(1024, 768))  
         
@@ -63,7 +60,7 @@ def draw_segmentation_map(segmentation_map: np.ndarray) -> np.ndarray:
 
     return segmentation_img
 
-def postprocess_segmentation(results: torch.Tensor, img_shape: tuple[int, int]) -> np.ndarray:
+def postprocess_segmentation(results: torch.Tensor, img_shape) -> np.ndarray:
     result = results[0].cpu()
     # Upsample the result to the original image size
     logits = F.interpolate(result.unsqueeze(0), size=img_shape, mode="bilinear").squeeze(0)
