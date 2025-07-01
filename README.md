@@ -20,7 +20,7 @@
 ## Installation
 
 ```bash
-pip install physiotrack
+pip install -e .
 ```
 
 > Note: Ensure PyTorch is installed for your system with CUDA if using GPU.
