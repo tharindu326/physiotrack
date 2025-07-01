@@ -68,7 +68,7 @@ class SapiensPoseEstimation:
                 "keypoints": keypoints_list
             }
             frame_data["detections"].append(detection)
-        print(f"Sapiens Pose inference took: {time.perf_counter() - start:.4f} seconds")
+        # print(f"Sapiens Pose inference took: {time.perf_counter() - start:.4f} seconds")
         return result_img, frame_data
 
     def crop_image(self, img: np.ndarray, bbox: List[float]) -> np.ndarray:

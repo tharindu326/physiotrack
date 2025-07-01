@@ -1,7 +1,9 @@
 # folders
-__pycache__/
+__pycache__
 .idea
-model_data/
+model_data
+src/physiotrack.egg-info
+examples/output
 
 # model files
 *.pt

@@ -37,7 +37,7 @@ class SapiensSegmentation():
             results = self.model(tensor)
         segmentation_map = postprocess_segmentation(results, img.shape[:2])
 
-        print(f"Segmentation inference took: {time.perf_counter() - start:.4f} seconds")
+        # print(f"Segmentation inference took: {time.perf_counter() - start:.4f} seconds")
         return segmentation_map
     
     def inference(self, img):

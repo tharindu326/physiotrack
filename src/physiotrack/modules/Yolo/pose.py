@@ -23,7 +23,6 @@ class YoloPose:
         self.overlay_keypoints = overlay_keypoints
         self.extra_args = kwargs 
         
-    
     def compute_iou(self, boxA, boxB):
         xA = max(boxA[0], boxB[0])
         yA = max(boxA[1], boxB[1])
@@ -36,105 +35,6 @@ class YoloPose:
         
         iou = interArea / float(boxAArea + boxBArea - interArea)
         return iou
-    
-    # def inference(self, frame, boxes=None, **kwargs):
-    #     """
-    #     YOLO-pose inference with flexibility for extra prediction parameters.
-    #     """
-    #     processed_boxes = []
-    #     processed_confidence = []
-    #     processed_class_id = []
-    #     names = []
-    #     keypoints = []
-    #     start = time.perf_counter()
-    #     frame_data = {"detections": []}
-
-    #     all_kwargs = {
-    #         "conf": self.conf,
-    #         "iou": self.iou,
-    #         "classes": self.classes,
-    #         "device": self.device,
-    #         "verbose": self.verbose,
-    #         **self.extra_args,
-    #         **kwargs,
-    #     }
-
-    #     results = self.model.predict(source=frame, **all_kwargs)
-        
-    #     student_box = boxes
-    #     most_overlapping_bbox = None
-    #     most_overlapping_bbox_index = 0
-    #     max_iou = -1
-
-    #     for result in results:
-    #         pose = result.keypoints
-    #         detected_boxes = np.array(result.boxes.xywh.tolist())
-    #         class_ids = result.boxes.cls.tolist()
-    #         confidences = result.boxes.conf.tolist()
-            
-    #         # Convert detected boxes to (x1, y1, x2, y2) format
-    #         if detected_boxes.size > 0:
-    #             detected_boxes[:, 0] = detected_boxes[:, 0] - detected_boxes[:, 2] / 2
-    #             detected_boxes[:, 1] = detected_boxes[:, 1] - detected_boxes[:, 3] / 2
-    #             detected_boxes[:, 2] = detected_boxes[:, 0] + detected_boxes[:, 2]
-    #             detected_boxes[:, 3] = detected_boxes[:, 1] + detected_boxes[:, 3]
-    #         else:
-    #             continue
-            
-    #         # Compute IoU for each detected box with the student_box
-    #         for i, box in enumerate(detected_boxes):
-    #             iou = self.compute_iou(box, student_box[0])
-    #             if iou > max_iou:
-    #                 max_iou = iou
-    #                 most_overlapping_bbox = box
-    #                 most_overlapping_bbox_index = i
-
-    #         for i, box in enumerate([most_overlapping_bbox]):
-    #             class_id = int(class_ids[i])
-    #             names.append(self.model.names[class_id])
-    #             confidence = confidences[i]
-    #             p1, p2 = (int(box[0]), int(box[1])), (int(box[2]), int(box[3]))
-    #             line_width = max(round(sum(frame.shape) / 2 * 0.003), 2)  # line width
-    #             color = self.COLORS[list(self.COLORS)[int(class_id) % len(self.COLORS)]]
-
-    #             # Draw bounding boxes and labels
-    #             if self.render_box_detections:
-    #                 cv2.rectangle(frame, p1, p2, color, thickness=line_width, lineType=cv2.LINE_AA)
-    #             if self.render_labels:
-    #                 label = "{}: {:.4f}".format(self.model.names[class_id], confidence)
-    #                 cv2.putText(frame, label, (int(box[0]), int(box[1]) - 10), cv2.FONT_HERSHEY_SIMPLEX, 2, color, line_width)
-
-    #             processed_boxes.append([box[0], box[1], box[2] - box[0], box[3] - box[1]])
-    #             processed_confidence.append(confidence)
-    #             processed_class_id.append(class_id)
-                
-    #             keypoints_list = []
-    #             if pose is not None:
-    #                 kpts = pose.xy.tolist()[i]
-    #                 conf = pose.conf.tolist()[i]
-    #                 keypoints_list = [
-    #                         {"id": kp_idx, "x": float(kpt[0]), "y": float(kpt[1]), "confidence": float(conf[kp_idx])}
-    #                         for kp_idx, (kpt, confidence) in enumerate(zip(kpts, conf))
-    #                         if kpt[0] != 0 and kpt[1] != 0
-    #                     ]
-                
-    #             detection = {
-    #                         "id": i,
-    #                         "bbox": [box[0], box[1], box[2] - box[0], box[3] - box[1]],
-    #                         "keypoints": keypoints_list
-    #                         }
-                
-    #             frame_data["detections"].append(detection)
-
-    #         if pose is not None:
-    #             keypoints = pose.xy.tolist()           
-    #             if self.overlay_keypoints and len(keypoints[0]) != 0:
-    #                 frame = self.plot_skeleton_kpts(frame, [keypoints[most_overlapping_bbox_index]])   
-        
-    #     print(f"YOLO Pose inference took: {time.perf_counter() - start:.4f} seconds")
-        
-    #     return frame, frame_data
-    
     
     def inference(self, frame, boxes=None, **kwargs):
         """

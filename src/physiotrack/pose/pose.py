@@ -1,5 +1,6 @@
 from . import YoloPose, VitInference, SapiensPoseEstimation, Models, Detection
 import os 
+from .utils import PoseObjectsFrame
 
 class PoseBase:
     detector = None
@@ -20,8 +21,8 @@ class PoseBase:
         if not os.path.isfile(model_path):
             Models.download_model(model)
         
-        minfo = Models._get_model_info(model)
-        self.pose_framework = minfo['backend']
+        self.minfo = Models._get_model_info(model)
+        self.pose_framework = self.minfo['backend']
         print(f'Initiating {self.pose_framework} {model.name} for the Pose estimation')
         
         if self.pose_framework == 'ViTPose':
@@ -46,6 +47,15 @@ class PoseBase:
                             verbose=verbose,
                             **kwargs
                     )
+            
+        self.model=model_DETECTION
+        self.device=device
+        self.OBJECTNESS_CONFIDENCE=OBJECTNESS_CONFIDENCE_DETECTION
+        self.NMS_THRESHOLD=NMS_THRESHOLD_DETECTION
+        self.classes=classes
+        self.render_labels=render_labels
+        self.render_box_detections=render_box_detections
+        self.verbose=verbose
  
     def estimate(self, frame, boxes=None):
         if boxes is None and self.pose_framework in ["ViTPose", "Sapiens"]:
@@ -53,14 +63,23 @@ class PoseBase:
                 if self.detector_class is not None:
                     self.detector = self.detector_class()
                 else:
-                    self.detector = Detection.Person()
+                    self.detector = Detection.Person(
+                                                        device=self.device,
+                                                        OBJECTNESS_CONFIDENCE=self.OBJECTNESS_CONFIDENCE,
+                                                        NMS_THRESHOLD=self.NMS_THRESHOLD,
+                                                        classes=self.classes,
+                                                        render_labels=self.render_labels,
+                                                        render_box_detections=self.render_box_detections,
+                                                        verbose=self.verbose,
+                                                )
             
             results, frame = self.detector.detect(frame)
             detections = results[0].boxes.data.cpu().numpy()  # (x1, y1, x2, y2, conf, cls)
             boxes = detections[:, :-2].astype(int)
         
         frame_with_pose, frame_data = self.pose_estimator.inference(frame, boxes)
-        return frame_with_pose, frame_data
+        poses = PoseObjectsFrame(frame_data, self.minfo['enum_class'].upper())
+        return frame_with_pose, poses
     
 class Pose:
     class Custom(PoseBase):

@@ -173,7 +173,7 @@ class VitInference:
             
         if self.overlay_keypoints:
             output_frame = self.draw()
-        print(f"ViTPose inference took: {time.perf_counter() - start:.4f} seconds")
+        # print(f"ViTPose inference took: {time.perf_counter() - start:.4f} seconds")
         return output_frame, frame_data
 
     def draw(self, confidence_threshold=0.5):

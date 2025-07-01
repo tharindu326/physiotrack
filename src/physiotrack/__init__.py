@@ -17,3 +17,7 @@ from .models import Models
 from .detect import Detection
 from .pose import Pose
 
+from .capture.video import Video
+
+from .trackers import Tracker
+
