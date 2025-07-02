@@ -22,6 +22,7 @@ class Config:
         self.show_tracking_tail = True     # Blue trail for student movement
         self.show_all_trails = False       # Show trails for all tracks (not just student)
         self.tail_opacity = 0.7           # Opacity of tracking tail
+        self.debug_mode = False
         
         # Tracker settings
         self.tracker_type = 'ocsort'  # Options: 'bytetrack', 'strongsort', 'ocsort', 'boosttrack'

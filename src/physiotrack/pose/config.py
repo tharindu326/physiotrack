@@ -159,3 +159,7 @@ COCO_WHOLEBODY = {
 
 
 COCO = dict(islice(COCO_WHOLEBODY.items(), 17))
+
+
+COCO_WHOLEBODY_NAMES = {v: k for k, v in COCO_WHOLEBODY.items()}
+COCO_NAMES = {v: k for k, v in COCO.items()}

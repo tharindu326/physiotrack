@@ -181,8 +181,8 @@ class Video:
                 }
                 
                 # Add tracking box if tracker is available
-                if self.tracker is not None and hasattr(self.tracker, 'last_known_bbox'):
-                    frame_data['track_box'] = self.tracker.last_known_bbox
+                if self.tracker is not None and hasattr(self.tracker, 'last_known_bbox') and self.tracker.last_known_bbox is not None:
+                    frame_data['track_box'] = self.tracker.last_known_bbox.tolist()
                 
                 # Add pose results if available
                 if self.pose_estimator is not None:

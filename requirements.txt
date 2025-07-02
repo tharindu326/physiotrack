@@ -4,3 +4,4 @@ cython_bbox
 openpyxl
 lap
 filterpy
+fastdtw
