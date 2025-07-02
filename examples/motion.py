@@ -1,5 +1,7 @@
 from physiotrack import Pose, Video, Models, Detection, Tracker
 from physiotrack.trackers import Config
+from physiotrack.pose.config import COCO_WHOLEBODY_NAMES
+from physiotrack.signals.motion import extract_key_point_sequence
 from pathlib import Path
 
 
@@ -38,3 +40,6 @@ json_output_path = Path(output_directory) / f"{video_name}_result.json"
 
 detection_data = video_processor.run(video_output_path, json_output_path)
 print(f"Successfully processed video with {len(detection_data)} total detections")
+
+keypoint_id = COCO_WHOLEBODY_NAMES['left_hand_wrist']
+keypoint_df = extract_key_point_sequence(detection_data, keypoint_id, original_fps=video_processor.video_fps)
