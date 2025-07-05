@@ -22,6 +22,7 @@ class PoseBase:
             Models.download_model(model)
         
         self.minfo = Models._get_model_info(model)
+        self.archetecture = self.minfo['enum_class'].upper()
         self.pose_framework = self.minfo['backend']
         print(f'Initiating {self.pose_framework} {model.name} for the Pose estimation')
         
@@ -78,7 +79,7 @@ class PoseBase:
             boxes = detections[:, :-2].astype(int)
         
         frame_with_pose, frame_data = self.pose_estimator.inference(frame, boxes)
-        poses = PoseObjectsFrame(frame_data, self.minfo['enum_class'].upper())
+        poses = PoseObjectsFrame(frame_data, self.archetecture)
         return frame_with_pose, poses
     
 class Pose:

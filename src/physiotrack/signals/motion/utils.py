@@ -49,54 +49,70 @@ def extract_key_point_sequence(data, keypoint_id, original_fps):
                         "x": kp.get("x"),
                         "confidence": kp.get("confidence")
                     })
-    df = pd.DataFrame(sequence_data, columns=["time", "frame", "detection_id", "keypoint_name", "x", "y", "confidence"])
+    df = pd.DataFrame(sequence_data, columns=["time", "frame", "detection_id", "x", "y", "confidence"])
     # df["time"] = df["frame_id"] / original_fps
     return df
 
 
-def add_head_centroid(data):
-    for frame_info in data.get("frame_data", []):
+def add_head_centroid(data, pose_archetecture):
+    for frame_info in data:
         for detection in frame_info.get("detections", []):
             x_coords = []
             y_coords = []
             confidences = []
             for kp in detection.get("keypoints", []):
-                if 23 <= kp.get("id") <= 90:  # Use face keypoints
-                    x_coords.append(kp.get("y"))
-                    y_coords.append(kp.get("x"))
-                    confidences.append(kp.get("confidence"))
+                if pose_archetecture == 'WHOLEBODY':
+                    if 23 <= kp.get("id") <= 90:  # Use face keypoints
+                        x_coords.append(kp.get("x"))
+                        y_coords.append(kp.get("y"))
+                        confidences.append(kp.get("confidence"))
+                elif pose_archetecture == 'COCO':
+                    if 0 <= kp.get("id") <= 4:  # Use face keypoints
+                        x_coords.append(kp.get("x"))
+                        y_coords.append(kp.get("y"))
+                        confidences.append(kp.get("confidence"))
+                else:
+                    raise ValueError("[ERROR] pose_archetecture: {pose_archetecture} is unknown. it shoud be either WHOLEBODY or COCO")
             if x_coords and y_coords:
                 centroid_x = np.mean(x_coords)
                 centroid_y = np.mean(y_coords)
                 centroid_confidence = np.mean(confidences)
                 detection["keypoints"].append({
                     "id": 133,
-                    "x": centroid_y,
-                    "y": centroid_x,
+                    "y": centroid_y,
+                    "x": centroid_x,
                     "confidence": centroid_confidence
                 })
     return data
 
 
-def add_body_centroid(data):
-    for frame_info in data.get("frame_data", []):
+def add_body_centroid(data, pose_archetecture):
+    for frame_info in data:
         for detection in frame_info.get("detections", []):
             x_coords = []
             y_coords = []
             confidences = []
             for kp in detection.get("keypoints", []):
-                if 0 <= kp.get("id") <= 132:  # Use face keypoints
-                    x_coords.append(kp.get("y"))
-                    y_coords.append(kp.get("x"))
-                    confidences.append(kp.get("confidence"))
+                if pose_archetecture == 'WHOLEBODY':
+                    if 0 <= kp.get("id") <= 132:  # Use face keypoints
+                        x_coords.append(kp.get("x"))
+                        y_coords.append(kp.get("y"))
+                        confidences.append(kp.get("confidence"))
+                elif pose_archetecture == 'COCO':
+                    if 0 <= kp.get("id") <= 16:  # Use face keypoints
+                        x_coords.append(kp.get("x"))
+                        y_coords.append(kp.get("y"))
+                        confidences.append(kp.get("confidence"))
+                else:
+                    raise ValueError("[ERROR] pose_archetecture: {pose_archetecture} is unknown. it shoud be either WHOLEBODY or COCO")
             if x_coords and y_coords:
                 centroid_x = np.mean(x_coords)
                 centroid_y = np.mean(y_coords)
                 centroid_confidence = np.mean(confidences)
                 detection["keypoints"].append({
                     "id": 134,
-                    "x": centroid_y,
-                    "y": centroid_x,
+                    "y": centroid_y,
+                    "x": centroid_x,
                     "confidence": centroid_confidence
                 })
     return data
@@ -150,3 +166,34 @@ def resample_by_interpolation(signal, input_fs, output_fs):
     )
     # print(len(resampled_signal))
     return resampled_signal
+
+
+def resample_dataframe_by_interpolation(df, input_fs, output_fs, columns_to_resample=None):
+    """
+    Resample DataFrame columns using linear interpolation.
+    """
+    scale = output_fs / input_fs
+    n = round(len(df) * scale)
+    
+    if columns_to_resample is None:
+        columns_to_resample = df.select_dtypes(include=[np.number]).columns.tolist()
+    
+    resampled_data = {}
+    
+    for col in columns_to_resample:
+        if col in df.columns:
+            signal = df[col].values
+            resampled_signal = np.interp(
+                np.linspace(0.0, 1.0, n, endpoint=False),
+                np.linspace(0.0, 1.0, len(signal), endpoint=False),
+                signal
+            )
+            resampled_data[col] = resampled_signal
+    
+    resampled_df = pd.DataFrame(resampled_data)
+    
+    # Recalculate time based on new sampling rate
+    if 'time' in columns_to_resample or 'time' in df.columns:
+        resampled_df['time'] = np.linspace(0, len(df) / input_fs, n, endpoint=False)
+    
+    return resampled_df
