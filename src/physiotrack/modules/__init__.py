@@ -6,5 +6,3 @@ from .Yolo import Segmentor
 from .Yolo import YoloPose
 
 from .ViTPose import VitInference
-
-

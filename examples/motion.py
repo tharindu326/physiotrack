@@ -78,7 +78,7 @@ plt.minorticks_on()
 plt.grid(True, which='minor', color='#999999', linestyle='-', alpha=0.3)
 plt.ylabel('Normalized Amplitude', fontsize=14)
 plt.xlabel('time (s)', fontsize=14)
-plt.title("Estimated Motion Signals (left wrist) from Video Analysis. Bandpass filtered.", fontsize=22)
+plt.title("Estimated Motion Signals (left wrist) from Video Analysis.", fontsize=22)
 
 plt.tight_layout()
 plt.savefig(Path(output_directory) / f"{video_name}_motion_signals.png", dpi=300)

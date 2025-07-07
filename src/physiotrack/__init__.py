@@ -21,3 +21,6 @@ from .capture.video import Video
 
 from .trackers import Tracker
 
+from .modules.MotionBERT.inference import MotionBERTInference
+
+

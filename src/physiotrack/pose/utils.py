@@ -1,4 +1,7 @@
-from .config import COCO, COCO_WHOLEBODY
+from .config import COCO, COCO_WHOLEBODY, HALPE_TO_COCO_KEYPOINT_MAP
+import json
+import os
+from tqdm import tqdm
 
 
 class Keypoint:
@@ -75,67 +78,6 @@ class PoseObjectsFrame:
 
 
 def convert_to_alpha_pose_format(frame_data, image_filename):
-    HALPE_KEYPOINT_DICT = {
-        0: "nose",
-        1: "left_eye",
-        2: "right_eye",
-        3: "left_ear",
-        4: "right_ear",
-        5: "left_shoulder",
-        6: "right_shoulder",
-        7: "left_elbow",
-        8: "right_elbow",
-        9: "left_wrist",
-        10: "right_wrist",
-        11: "left_hip",
-        12: "right_hip",
-        13: "left_knee",
-        14: "right_knee",
-        15: "left_ankle",
-        16: "right_ankle",
-        
-        17: "head_top",  # Calculate as middle of left_eye and right_eye 
-        18: "neck",  # Calculate as center of nose, left_shoulder, right_shoulder
-        19: "pelvis_point", # Calculate as middle of left_hip and right_hip
-
-        20: "left_big_toe",    # 17
-        21: "right_big_toe",   # 20
-        22: "left_small_toe",  # 18
-        23: "right_small_toe", # 21
-        
-        24: "left_heel",       # 19
-        25: "right_heel"       # 22 (fixed typo: "heal" -> "heel")
-    }
-    
-    HALPE_TO_COCO_KEYPOINT_MAP = {
-        0: 0,   # nose -> nose
-        1: 1,   # left_eye -> left_eye
-        2: 2,   # right_eye -> right_eye
-        3: 3,   # left_ear -> left_ear
-        4: 4,   # right_ear -> right_ear
-        5: 5,   # left_shoulder -> left_shoulder
-        6: 6,   # right_shoulder -> right_shoulder
-        7: 7,   # left_elbow -> left_elbow
-        8: 8,   # right_elbow -> right_elbow
-        9: 9,   # left_wrist -> left_wrist
-        10: 10, # right_wrist -> right_wrist
-        11: 11, # left_hip -> left_hip
-        12: 12, # right_hip -> right_hip
-        13: 13, # left_knee -> left_knee
-        14: 14, # right_knee -> right_knee
-        15: 15, # left_ankle -> left_ankle
-        16: 16, # right_ankle -> right_ankle
-        17: None,  # head_top - calculated
-        18: None,  # neck - calculated
-        19: None,  # pelvis_point - calculated
-        20: 17,    # left_big_toe
-        21: 20,    # right_big_toe
-        22: 18,    # left_small_toe
-        23: 21,    # right_small_toe
-        24: 19,    # left_heel
-        25: 22,    # right_heel
-    }
-    
     alpha_pose_data = []
     
     if "detections" not in frame_data or not frame_data["detections"]:
@@ -209,7 +151,6 @@ def convert_to_alpha_pose_format(frame_data, image_filename):
             
             output_idx += 1
         
-        # Calculate overall confidence score
         confident_scores = [kp["confidence"] for kp in detection["keypoints"] if kp["confidence"] > 0.15]
         overall_score = sum(confident_scores) / len(confident_scores) if confident_scores else 0.0
         
@@ -226,3 +167,21 @@ def convert_to_alpha_pose_format(frame_data, image_filename):
     
     return alpha_pose_data
 
+def COCO2Alpha(input_json_path, output_json_path, video_name=None):
+    with open(input_json_path, 'r') as f:
+        frames_data = json.load(f)
+    
+    if video_name is None:
+        video_name = os.path.splitext(os.path.basename(input_json_path))[0]
+    
+    all_converted_data = []
+    
+    for frame_data in tqdm(frames_data, desc="Converting data to AlphaPose format", unit="frame"):
+        frame_id = frame_data.get('frame_id', 0)
+        image_filename = f"{video_name}_frame_{frame_id:06d}.jpg"
+        converted_frame_data = convert_to_alpha_pose_format(frame_data, image_filename)
+        all_converted_data.extend(converted_frame_data)
+    
+    with open(output_json_path, 'w') as f:
+        json.dump(all_converted_data, f, indent=2)
+    return output_json_path

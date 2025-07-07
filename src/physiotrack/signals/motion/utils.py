@@ -191,9 +191,6 @@ def resample_dataframe_by_interpolation(df, input_fs, output_fs, columns_to_resa
             resampled_data[col] = resampled_signal
     
     resampled_df = pd.DataFrame(resampled_data)
-    
-    # Recalculate time based on new sampling rate
-    if 'time' in columns_to_resample or 'time' in df.columns:
+    if 'time' in df.columns:
         resampled_df['time'] = np.linspace(0, len(df) / input_fs, n, endpoint=False)
-    
     return resampled_df

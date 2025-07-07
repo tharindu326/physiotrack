@@ -163,3 +163,65 @@ COCO = dict(islice(COCO_WHOLEBODY.items(), 17))
 
 COCO_WHOLEBODY_NAMES = {v: k for k, v in COCO_WHOLEBODY.items()}
 COCO_NAMES = {v: k for k, v in COCO.items()}
+
+
+HALPE_KEYPOINT_DICT = {
+        0: "nose",
+        1: "left_eye",
+        2: "right_eye",
+        3: "left_ear",
+        4: "right_ear",
+        5: "left_shoulder",
+        6: "right_shoulder",
+        7: "left_elbow",
+        8: "right_elbow",
+        9: "left_wrist",
+        10: "right_wrist",
+        11: "left_hip",
+        12: "right_hip",
+        13: "left_knee",
+        14: "right_knee",
+        15: "left_ankle",
+        16: "right_ankle",
+        
+        17: "head_top",  # Calculate as middle of left_eye and right_eye 
+        18: "neck",  # Calculate as center of nose, left_shoulder, right_shoulder
+        19: "pelvis_point", # Calculate as middle of left_hip and right_hip
+
+        20: "left_big_toe",    # 17
+        21: "right_big_toe",   # 20
+        22: "left_small_toe",  # 18
+        23: "right_small_toe", # 21
+        
+        24: "left_heel",       # 19
+        25: "right_heel"       # 22 (fixed typo: "heal" -> "heel")
+    }
+    
+HALPE_TO_COCO_KEYPOINT_MAP = {
+        0: 0,   # nose -> nose
+        1: 1,   # left_eye -> left_eye
+        2: 2,   # right_eye -> right_eye
+        3: 3,   # left_ear -> left_ear
+        4: 4,   # right_ear -> right_ear
+        5: 5,   # left_shoulder -> left_shoulder
+        6: 6,   # right_shoulder -> right_shoulder
+        7: 7,   # left_elbow -> left_elbow
+        8: 8,   # right_elbow -> right_elbow
+        9: 9,   # left_wrist -> left_wrist
+        10: 10, # right_wrist -> right_wrist
+        11: 11, # left_hip -> left_hip
+        12: 12, # right_hip -> right_hip
+        13: 13, # left_knee -> left_knee
+        14: 14, # right_knee -> right_knee
+        15: 15, # left_ankle -> left_ankle
+        16: 16, # right_ankle -> right_ankle
+        17: None,  # head_top - calculated
+        18: None,  # neck - calculated
+        19: None,  # pelvis_point - calculated
+        20: 17,    # left_big_toe
+        21: 20,    # right_big_toe
+        22: 18,    # left_small_toe
+        23: 21,    # right_small_toe
+        24: 19,    # left_heel
+        25: 22,    # right_heel
+    }
