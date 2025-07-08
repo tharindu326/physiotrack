@@ -2,7 +2,8 @@ from . import Models
 from .. import MotionBERTInference
 import os
 import numpy as np
-from .utils import COCO2Alpha
+from .utils import COCO2Halpe, add_3d_keypoints
+import json
 
 
 class Pose3D:
@@ -57,11 +58,15 @@ class Pose3D:
         """
         Estimate 3D poses from 2D pose detection JSON file
         """
+        with open(json_path, 'r') as f:
+            frames_data = json.load(f)
+
         if convert2alpha:
             dir_path = os.path.dirname(json_path)
             base_name = os.path.splitext(os.path.basename(json_path))[0]
             temp_output_json_path = os.path.join(dir_path, f"{base_name}_temp_alphapose.json")
-            json_path = COCO2Alpha(json_path, temp_output_json_path)
+            json_path = COCO2Halpe(json_path, temp_output_json_path) # converted temporary json file path
+
         results_3d = self.pose3d_estimator.infer(
             json_path=json_path,
             vid_path=vid_path,
@@ -77,9 +82,20 @@ class Pose3D:
             rootrel=rootrel,
             gt_2d=gt_2d
         )
-        os.remove(temp_output_json_path)
+        if convert2alpha:
+            os.remove(temp_output_json_path)
+        frames_data = add_3d_keypoints(frames_data, results_3d)
+
+        if out_path:
+            dir_path = os.path.dirname(out_path)
+            base_name = os.path.splitext(os.path.basename(json_path))[0]
+            output_json_path = os.path.join(dir_path, f"{base_name}_with_3d_keypoints.json")
+
+            # Save updated frame data
+            with open(output_json_path, 'w') as f:
+                json.dump(frames_data, f, indent=2)
         
-        return results_3d
+        return frames_data
     
     def process_batch(self, json_paths, vid_paths, out_paths=None, **kwargs):
         """Process multiple videos in batch"""

@@ -8,6 +8,7 @@ from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
 import json
+from physiotrack.pose.pose3D import Pose3D
 
 # pose estimator with no detector
 pose_estimator = Pose.Custom(model=Models.Pose.ViTPose.WholeBody.b_WHOLEBODY, render_box_detections=False, render_labels=True, overlay_keypoints=True, verbose=False, device=0)  
@@ -42,17 +43,26 @@ video_processor = Video(
 video_output_path = Path(output_directory) / f"{video_name}_poses.mp4"
 json_output_path = Path(output_directory) / f"{video_name}_result.json"
 
-# detection_data = video_processor.run(video_output_path, json_output_path)
-with open(json_output_path, 'r') as f:
-    detection_data = json.load(f)
-print(f"Successfully processed video with {len(detection_data)} total detections")
+detection_data = video_processor.run(video_output_path, json_output_path)
 
 sampling_freq = video_processor.video_fps
 
 detection_data = add_body_centroid(detection_data, pose_estimator.archetecture)
 detection_data = add_head_centroid(detection_data, pose_estimator.archetecture)
 
+# 3D pose generation
+pose3D = Pose3D(    model=Models.Pose3D.MotionBERT.MB_ft_h36m_global_lite, 
+                    config=None,
+                    device='cuda', 
+                    clip_len=243,
+                    pixel=False,
+                    render_video=True,
+                    save_npy=True,
+                    testloader_params=None)
 
+poseout = pose3D.estimate(json_path=json_output_path, vid_path=input_video, out_path='output/')
+
+# keypoint extraction
 keypoint_id = int(COCO_WHOLEBODY_NAMES['left_hand_wrist'])
 keypoint_df = extract_key_point_sequence(detection_data, keypoint_id, original_fps=video_processor.video_fps)
 keypoint_df = keypoint_df.dropna(subset=['x', 'y'])
@@ -83,5 +93,7 @@ plt.title("Estimated Motion Signals (left wrist) from Video Analysis.", fontsize
 plt.tight_layout()
 plt.savefig(Path(output_directory) / f"{video_name}_motion_signals.png", dpi=300)
 plt.show()
+
+
 
 

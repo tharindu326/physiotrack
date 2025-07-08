@@ -1,4 +1,4 @@
-from .config import COCO, COCO_WHOLEBODY, HALPE_TO_COCO_KEYPOINT_MAP
+from .config import COCO, COCO_WHOLEBODY, HALPE_TO_COCO_KEYPOINT_MAP, HUMAN26M
 import json
 import os
 from tqdm import tqdm
@@ -77,15 +77,15 @@ class PoseObjectsFrame:
         return self.pose_objects
 
 
-def convert_to_alpha_pose_format(frame_data, image_filename):
-    alpha_pose_data = []
+def convert_to_halpe_pose_format(frame_data, image_filename):
+    halpe_pose_data = []
     
     if "detections" not in frame_data or not frame_data["detections"]:
-        return alpha_pose_data
+        return halpe_pose_data
     
     for detection in frame_data["detections"]:
         x1, y1, x2, y2 = detection["bbox"]
-        bbox_alpha_format = [x1, y1, x2 - x1, y2 - y1]
+        bbox_halpe_format = [x1, y1, x2 - x1, y2 - y1]
         
         keypoints_flat = [0.0] * 78  # 26 keypoints × 3 values
         
@@ -154,20 +154,20 @@ def convert_to_alpha_pose_format(frame_data, image_filename):
         confident_scores = [kp["confidence"] for kp in detection["keypoints"] if kp["confidence"] > 0.15]
         overall_score = sum(confident_scores) / len(confident_scores) if confident_scores else 0.0
         
-        alpha_detection = {
+        halpe_detection = {
             "image_id": image_filename,
             "category_id": 1,
             "keypoints": keypoints_flat,
             "score": overall_score,
-            "box": bbox_alpha_format,
+            "box": bbox_halpe_format,
             "idx": [float(detection["id"])]
         }
         
-        alpha_pose_data.append(alpha_detection)
+        halpe_pose_data.append(halpe_detection)
     
-    return alpha_pose_data
+    return halpe_pose_data
 
-def COCO2Alpha(input_json_path, output_json_path, video_name=None):
+def COCO2Halpe(input_json_path, output_json_path, video_name=None):
     with open(input_json_path, 'r') as f:
         frames_data = json.load(f)
     
@@ -176,12 +176,34 @@ def COCO2Alpha(input_json_path, output_json_path, video_name=None):
     
     all_converted_data = []
     
-    for frame_data in tqdm(frames_data, desc="Converting data to AlphaPose format", unit="frame"):
+    for frame_data in tqdm(frames_data, desc="Converting data to Halpe Pose format", unit="frame"):
         frame_id = frame_data.get('frame_id', 0)
         image_filename = f"{video_name}_frame_{frame_id:06d}.jpg"
-        converted_frame_data = convert_to_alpha_pose_format(frame_data, image_filename)
+        converted_frame_data = convert_to_halpe_pose_format(frame_data, image_filename)
         all_converted_data.extend(converted_frame_data)
     
     with open(output_json_path, 'w') as f:
         json.dump(all_converted_data, f, indent=2)
     return output_json_path
+
+def add_3d_keypoints(frame_data, npy_data):
+    """
+    Add 3D keypoints to frame_data structure
+    """
+    for frame_idx, frame in enumerate(frame_data):
+        if frame_idx < npy_data.shape[0]:
+            keypoints_3d = npy_data[frame_idx]  # Shape: (17, 3)
+            for detection in frame["detections"]:
+                detection["keypoints3D"] = []
+                
+                # Add each 3D keypoint
+                for keypoint_idx in range(17):
+                    x, y, z = keypoints_3d[keypoint_idx]
+                    detection["keypoints3D"].append({
+                        "id": keypoint_idx,
+                        "x": float(x),
+                        "y": float(y),
+                        "z": float(z),
+                        "name": HUMAN26M[keypoint_idx]
+                    })
+    return frame_data

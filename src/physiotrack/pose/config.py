@@ -225,3 +225,24 @@ HALPE_TO_COCO_KEYPOINT_MAP = {
         24: 19,    # left_heel
         25: 22,    # right_heel
     }
+
+HUMAN26M = {
+                0: 'root', # pelvic
+                1: 'RHip',
+                2: 'RKnee', 
+                3: 'RAnkle',
+                4: 'LHip',
+                5: 'LKnee',
+                6: 'LAnkle',
+                7: 'torso',
+                8: 'neck',
+                9: 'nose',
+                10: 'head',
+                11: 'LShoulder',
+                12: 'LElbow',
+                13: 'LWrist',
+                14: 'RShoulder',
+                15: 'RElbow',
+                16: 'RWrist'
+            }
+

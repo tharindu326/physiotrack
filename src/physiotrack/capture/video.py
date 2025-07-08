@@ -90,8 +90,8 @@ class Video:
         """
         Select frame indices based on required FPS.
         """
-        if required_fps is None:
-            return list(range(camera_fps))
+        if required_fps == camera_fps or required_fps is None:
+            return [int(i) for i in np.arange(1, camera_fps+1, dtype=float)]
         
         delta = camera_fps - 1
         step = delta / required_fps
@@ -121,7 +121,6 @@ class Video:
             pbar = tqdm(total=self.total_frames, desc=f'Processing {self.source_identifier}')
         
         selected_frame_ids = self.select_frames(self.video_fps, self.required_fps)
-        
         out_writer = None
         if output_video_path:
             fourcc = cv2.VideoWriter_fourcc(*'mp4v')
