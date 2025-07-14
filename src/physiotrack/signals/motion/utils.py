@@ -1,7 +1,7 @@
 import pandas as pd
 import os
 import numpy as np
-from physiotrack.pose.config import COCO_WHOLEBODY
+from physiotrack.pose.config import COCO_WHOLEBODY, HUMAN26M
 import sys
 import json
 import cv2
@@ -27,9 +27,9 @@ def read_biosignals(input_file):
     return biosignals, readed
 
 
-def extract_key_point_sequence(data, keypoint_id, original_fps):
+def extract_key_point_sequence_2d(data, keypoint_id, original_fps):
     """
-    Extract the sequence of a given keypoint (by keypoint_id) across all frames
+    Extract the sequence of a given 2D keypoint (by keypoint_id) across all frames
     """
     sequence_data = []
     for frame_info in data:
@@ -49,10 +49,33 @@ def extract_key_point_sequence(data, keypoint_id, original_fps):
                         "x": kp.get("x"),
                         "confidence": kp.get("confidence")
                     })
-    df = pd.DataFrame(sequence_data, columns=["time", "frame", "detection_id", "x", "y", "confidence"])
-    # df["time"] = df["frame_id"] / original_fps
+    df = pd.DataFrame(sequence_data, columns=["time", "frame", "detection_id", "keypoint_id", "x", "y", "confidence"])
     return df
 
+def extract_key_point_sequence_3d(data, keypoint_id, original_fps):
+    """
+    Extract the sequence of a given 3D keypoint (by keypoint_id) across all frames
+    """
+    sequence_data = []
+    for frame_info in data:
+        frame_number = frame_info.get("frame_id")
+        timestamp = frame_info.get("timestamp")
+        for detection in frame_info.get("detections", []):
+            detection_id = detection.get("id", None)
+            for kp in detection.get("keypoints3D", []):
+                if kp.get("id") == keypoint_id:
+                    sequence_data.append({
+                        "time": timestamp,
+                        "frame": frame_number,
+                        "detection_id": detection_id,
+                        "keypoint_name": HUMAN26M[int(keypoint_id)],
+                        "keypoint_id": keypoint_id,
+                        "x": kp.get("x"),
+                        "y": kp.get("y"),
+                        "z": kp.get("z")
+                    })
+    df = pd.DataFrame(sequence_data, columns=["time", "frame", "detection_id", "keypoint_id", "x", "y", "z"])
+    return df
 
 def add_head_centroid(data, pose_archetecture):
     for frame_info in data:
