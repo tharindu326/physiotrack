@@ -9,6 +9,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import json
 from physiotrack.pose.pose3D import Pose3D
+from physiotrack.signals.evaluate import calculate_pearson_correlation, calculate_dtw_distance, normalized_cross_correlation, phase_synchrony, compute_rmse, compute_plv
+
 
 # pose estimator with no detector
 pose_estimator = Pose.Custom(model=Models.Pose.ViTPose.WholeBody.b_WHOLEBODY, render_box_detections=False, render_labels=True, overlay_keypoints=True, verbose=False, device=0)  
@@ -43,7 +45,7 @@ video_processor = Video(
 video_output_path = Path(output_directory) / f"{video_name}_poses.mp4"
 json_output_path = Path(output_directory) / f"{video_name}_result.json"
 
-detection_data_2D = video_processor.run(video_output_path, json_output_path)
+# detection_data_2D = video_processor.run(video_output_path, json_output_path)
 
 sampling_freq = video_processor.video_fps
 
@@ -57,10 +59,10 @@ pose3D = Pose3D(    model=Models.Pose3D.MotionBERT.MB_ft_h36m_global_lite,
                     save_npy=True,
                     testloader_params=None)
 
-detection_data_3D = pose3D.estimate(json_path=json_output_path, vid_path=input_video, out_path='output/')
-# file_path = 'output/BV_S17_cut1_result_temp_alphapose_with_3d_keypoints.json'
-# with open(file_path, 'r', encoding='utf-8') as file:
-#     detection_data_3D = json.load(file)
+# detection_data_3D = pose3D.estimate(json_path=json_output_path, vid_path=input_video, out_path='output/')
+file_path = 'output/BV_S17_cut1_result_temp_alphapose_with_3d_keypoints.json'
+with open(file_path, 'r', encoding='utf-8') as file:
+    detection_data_3D = json.load(file)
 
 detection_data = add_body_centroid(detection_data_3D, pose_estimator.archetecture)
 detection_data = add_head_centroid(detection_data, pose_estimator.archetecture)
@@ -171,4 +173,27 @@ plt.tight_layout()
 plt.savefig(Path(output_directory) / f"{video_name}_y_comparison_2d_vs_3d.png", dpi=300)
 plt.show()
 
+
+print(f"Length of estimated signals: {len(x)}")
+print(f"Length of gt signals: {len(x_3d)}")
+
+pearson_x = calculate_pearson_correlation(x_3d, x)
+dtw_x = calculate_dtw_distance(x_3d, x)
+ncc_x = normalized_cross_correlation(x_3d, x)
+rmse_x = compute_rmse(x_3d, x)  # Usage:
+phase_sync = phase_synchrony(x_3d, x)
+# esi_value = event_synchronization(x_3d, x)
+plv_value = compute_plv(x_3d, x)
+
+print("\n")
+
+print(f"Pearson Correlation (x-axis signals): {pearson_x}")
+print(f"DTW Distance (x-axis signals): {dtw_x}")
+print(f"NCC Distance (x-axis signals): {ncc_x}")
+print(f"RMSE x-axis: {rmse_x:.3f}")
+print(f"Phase Synchronization x-axis: {phase_sync:.3f}")
+# print(f"Event Synchronization Index x-axis: {esi_value:.3f}")
+print(f"Phase Locking Value (PLV) x-axis: {plv_value:.3f}")
+print("\n")
+print("\n")
 
