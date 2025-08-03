@@ -1,1 +1,1 @@
-from .utils import read_biosignals, extract_key_point_sequence_3d, extract_key_point_sequence_2d, add_head_centroid, add_body_centroid, resample_to_match_reference, resample_by_interpolation, resample_dataframe_by_interpolation
+from .utils import read_biosignals, extract_keypoint_sequence_3d, extract_keypoint_sequence_2d, add_head_centroid, add_body_centroid, resample_to_match_reference, resample_by_interpolation, resample_dataframe_by_interpolation

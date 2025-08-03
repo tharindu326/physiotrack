@@ -1,16 +1,16 @@
 from physiotrack import Pose, Video, Models, Detection, Tracker
 from physiotrack.trackers import Config
 from physiotrack.pose.config import COCO_WHOLEBODY_NAMES, HUMAN26M_NAMES
-from physiotrack.signals.motion import extract_key_point_sequence_3d, extract_key_point_sequence_2d, add_body_centroid, add_head_centroid, resample_dataframe_by_interpolation
+from physiotrack.signals.motion.utils import extract_keypoint_sequence_3d, extract_keypoint_sequence_2d, add_body_centroid, add_head_centroid, resample_dataframe_by_interpolation, add_pelvic_centroid, extract_keypoints_sequence
+from physiotrack.signals.motion.features import get_relative_coordinates, compute_all_motion_features, get_keypoint_features, select_feature_data
 from physiotrack.signals.normalize import min_max_normalize
 from physiotrack.signals.filters import band_pass_filter
-from pathlib import Path
-import numpy as np
-import matplotlib.pyplot as plt
-import json
 from physiotrack.pose.pose3D import Pose3D
 from physiotrack.signals.evaluate import calculate_pearson_correlation, calculate_dtw_distance, normalized_cross_correlation, phase_synchrony, compute_rmse, compute_plv
-
+from pathlib import Path
+import pandas as pd
+import matplotlib.pyplot as plt
+import json
 
 # pose estimator with no detector
 pose_estimator = Pose.Custom(model=Models.Pose.ViTPose.WholeBody.b_WHOLEBODY, render_box_detections=False, render_labels=True, overlay_keypoints=True, verbose=False, device=0)  
@@ -50,37 +50,47 @@ json_output_path = Path(output_directory) / f"{video_name}_result.json"
 sampling_freq = video_processor.video_fps
 
 # 3D pose generation
-pose3D = Pose3D(    model=Models.Pose3D.MotionBERT.MB_ft_h36m_global_lite, 
-                    config=None,
-                    device='cuda', 
-                    clip_len=243,
-                    pixel=False,
-                    render_video=True,
-                    save_npy=True,
-                    testloader_params=None)
+pose3D = Pose3D(model=Models.Pose3D.MotionBERT.MB_ft_h36m_global_lite, 
+                config=None,
+                device='cuda', 
+                clip_len=243,
+                pixel=False,
+                render_video=True,
+                save_npy=True,
+                testloader_params=None)
 
-# detection_data_3D = pose3D.estimate(json_path=json_output_path, vid_path=input_video, out_path='output/')
-file_path = 'output/BV_S17_cut1_result_temp_alphapose_with_3d_keypoints.json'
-with open(file_path, 'r', encoding='utf-8') as file:
-    detection_data_3D = json.load(file)
+detection_data_3D = pose3D.estimate(json_path=json_output_path, vid_path=input_video, out_path='output/')
+# file_path = 'output/BV_S17_cut1_result_temp_alphapose_with_3d_keypoints.json'
+# with open(file_path, 'r', encoding='utf-8') as file:
+#     detection_data_3D = json.load(file)
 
 detection_data = add_body_centroid(detection_data_3D, pose_estimator.archetecture)
 detection_data = add_head_centroid(detection_data, pose_estimator.archetecture)
+detection_data = add_pelvic_centroid(detection_data, pose_estimator.archetecture)
 
 # keypoint extraction
-keypoint_id = int(COCO_WHOLEBODY_NAMES['left_hand_wrist'])
-keypoint_df_2d = extract_key_point_sequence_2d(detection_data, keypoint_id, original_fps=video_processor.video_fps)
-keypoint_id = int(HUMAN26M_NAMES['left_wrist'])
-keypoint_df_3d = extract_key_point_sequence_3d(detection_data, keypoint_id, original_fps=video_processor.video_fps)
- 
+keypoint_id_2d = int(COCO_WHOLEBODY_NAMES['left_wrist'])
+keypoint_id_3d = int(HUMAN26M_NAMES['left_wrist'])
+feature_type = 'coordinates'  # 'coordinates', 'velocity', 'acceleration', or 'angles'
 
-keypoint_df_2d = keypoint_df_2d.dropna(subset=['x', 'y'])
+# keypoint_df_2d = extract_keypoint_sequence_2d(detection_data, keypoint_id, original_fps=video_processor.video_fps)
+# keypoint_df_3d = extract_keypoint_sequence_3d(detection_data, keypoint_id, original_fps=video_processor.video_fps)
+
+keypoints_df = extract_keypoints_sequence(detection_data, candidate_key_points=list(range(17)) + [135])
+# rel_coords = get_relative_coordinates(keypoints_df, reference_point_id=135) # pelvic
+motion_df = compute_all_motion_features(keypoints_df)
+keypoint_df_2d, keypoint_df_3d = get_keypoint_features(motion_df, keypoint_id_2d, keypoint_id_3d)
+selected_features = select_feature_data(keypoint_id_2d, keypoint_id_3d, feature_type)
+
+
+# 2D Processing - use selected features
+keypoint_df_2d = keypoint_df_2d.dropna(subset=selected_features['2d_features'])
 keypoint_df_2d = resample_dataframe_by_interpolation(keypoint_df_2d, input_fs=sampling_freq, output_fs=30, columns_to_resample=None)
-keypoint_df_2d['x_norm'] = min_max_normalize(keypoint_df_2d['x'], feature_range=(0, 1))
-keypoint_df_2d['y_norm'] = min_max_normalize(keypoint_df_2d['y'], feature_range=(0, 1))
+keypoint_df_2d['norm_x'] = min_max_normalize(keypoint_df_2d[selected_features['2d_features'][0]], feature_range=(0, 1))
+keypoint_df_2d['norm_y'] = min_max_normalize(keypoint_df_2d[selected_features['2d_features'][1]], feature_range=(0, 1))
 
-x = keypoint_df_2d['x_norm'].to_numpy()
-y = keypoint_df_2d['y_norm'].to_numpy()
+x = keypoint_df_2d['norm_x'].to_numpy()
+y = keypoint_df_2d['norm_y'].to_numpy()
 time = keypoint_df_2d['time'].to_numpy()
 
 # x = band_pass_filter(x, [0.05, 0.35], sampling_freq)
@@ -103,17 +113,16 @@ plt.tight_layout()
 plt.savefig(Path(output_directory) / f"{video_name}_motion_signals.png", dpi=300)
 plt.show()
 
-# 3D
-
-keypoint_df_3d = keypoint_df_3d.dropna(subset=['x', 'y', 'z'])
+# 3D Processing - use selected features  
+keypoint_df_3d = keypoint_df_3d.dropna(subset=selected_features['3d_features'])
 keypoint_df_3d = resample_dataframe_by_interpolation(keypoint_df_3d, input_fs=sampling_freq, output_fs=30, columns_to_resample=None)
-keypoint_df_3d['x_norm'] = min_max_normalize(keypoint_df_3d['x'], feature_range=(0, 1))
-keypoint_df_3d['y_norm'] = min_max_normalize(keypoint_df_3d['y'], feature_range=(0, 1))
-keypoint_df_3d['z_norm'] = min_max_normalize(keypoint_df_3d['z'], feature_range=(0, 1))
+keypoint_df_3d['norm_x'] = min_max_normalize(keypoint_df_3d[selected_features['3d_features'][0]], feature_range=(0, 1))
+keypoint_df_3d['norm_y'] = min_max_normalize(keypoint_df_3d[selected_features['3d_features'][1]], feature_range=(0, 1))
+keypoint_df_3d['norm_z'] = min_max_normalize(keypoint_df_3d[selected_features['3d_features'][2]], feature_range=(0, 1))
 
-x_3d = keypoint_df_3d['x_norm'].to_numpy()
-y_3d = keypoint_df_3d['y_norm'].to_numpy()
-z_3d = keypoint_df_3d['z_norm'].to_numpy()
+x_3d = keypoint_df_3d['norm_x'].to_numpy()
+y_3d = keypoint_df_3d['norm_y'].to_numpy()
+z_3d = keypoint_df_3d['norm_z'].to_numpy()
 time_3d = keypoint_df_3d['time'].to_numpy()
 
 # x_3d = band_pass_filter(x_3d, [0.05, 0.35], sampling_freq)
@@ -137,7 +146,6 @@ plt.title("Estimated 3D Motion Signals (left wrist) from Video Analysis.", fonts
 plt.tight_layout()
 plt.savefig(Path(output_directory) / f"{video_name}_3d_motion_signals.png", dpi=300)
 plt.show()
-
 
 # Comparison Plot 1: X coordinates (2D vs 3D)
 plt.figure(figsize=(12, 6))
@@ -173,27 +181,22 @@ plt.tight_layout()
 plt.savefig(Path(output_directory) / f"{video_name}_y_comparison_2d_vs_3d.png", dpi=300)
 plt.show()
 
-
 print(f"Length of estimated signals: {len(x)}")
 print(f"Length of gt signals: {len(x_3d)}")
 
 pearson_x = calculate_pearson_correlation(x_3d, x)
 dtw_x = calculate_dtw_distance(x_3d, x)
 ncc_x = normalized_cross_correlation(x_3d, x)
-rmse_x = compute_rmse(x_3d, x)  # Usage:
+rmse_x = compute_rmse(x_3d, x)
 phase_sync = phase_synchrony(x_3d, x)
-# esi_value = event_synchronization(x_3d, x)
 plv_value = compute_plv(x_3d, x)
 
 print("\n")
-
 print(f"Pearson Correlation (x-axis signals): {pearson_x}")
 print(f"DTW Distance (x-axis signals): {dtw_x}")
 print(f"NCC Distance (x-axis signals): {ncc_x}")
 print(f"RMSE x-axis: {rmse_x:.3f}")
 print(f"Phase Synchronization x-axis: {phase_sync:.3f}")
-# print(f"Event Synchronization Index x-axis: {esi_value:.3f}")
 print(f"Phase Locking Value (PLV) x-axis: {plv_value:.3f}")
 print("\n")
 print("\n")
-
