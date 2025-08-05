@@ -2,7 +2,8 @@ from .config import COCO, COCO_WHOLEBODY, HALPE_TO_COCO_KEYPOINT_MAP, HUMAN26M
 import json
 import os
 from tqdm import tqdm
-
+import numpy as np
+from pathlib import Path
 
 class Keypoint:
     def __init__(self, id, x, y, confidence, keypoint_names):
@@ -185,6 +186,105 @@ def COCO2Halpe(input_json_path, output_json_path, video_name=None):
     with open(output_json_path, 'w') as f:
         json.dump(all_converted_data, f, indent=2)
     return output_json_path
+
+def get_coco_to_h36m_mapping():
+    """
+    Map COCO keypoints to H36M format
+    """
+    
+    # Create mapping from COCO to H36M
+    coco_to_h36m = np.zeros(17, dtype=int)
+    
+    # Map joints
+    coco_to_h36m[0] = 0   # COCO nose -> H36M Hip (approximation - will be computed as hip center)
+    coco_to_h36m[1] = 12  # COCO right_hip -> H36M RHip
+    coco_to_h36m[2] = 14  # COCO right_knee -> H36M RKnee
+    coco_to_h36m[3] = 16  # COCO right_ankle -> H36M RFoot
+    coco_to_h36m[4] = 11  # COCO left_hip -> H36M LHip
+    coco_to_h36m[5] = 13  # COCO left_knee -> H36M LKnee
+    coco_to_h36m[6] = 15  # COCO left_ankle -> H36M LFoot
+    coco_to_h36m[7] = 0   # H36M Spine (will be computed)
+    coco_to_h36m[8] = 0   # H36M Thorax (will be computed)
+    coco_to_h36m[9] = 0   # COCO nose -> H36M Neck/Nose
+    coco_to_h36m[10] = 0  # H36M Head (will be computed from nose)
+    coco_to_h36m[11] = 5  # COCO left_shoulder -> H36M LShoulder
+    coco_to_h36m[12] = 7  # COCO left_elbow -> H36M LElbow
+    coco_to_h36m[13] = 9  # COCO left_wrist -> H36M LWrist
+    coco_to_h36m[14] = 6  # COCO right_shoulder -> H36M RShoulder
+    coco_to_h36m[15] = 8  # COCO right_elbow -> H36M RElbow
+    coco_to_h36m[16] = 10 # COCO right_wrist -> H36M RWrist
+    
+    return coco_to_h36m
+
+
+def coco2h36m(filepath):
+    """Load 2D keypoints from file (NPZ or JSON format)"""
+    filepath = Path(filepath)
+    
+    if filepath.suffix == '.npz':
+        data = np.load(filepath)
+        keypoints = data['keypoints']  # Shape: (N, 17, 2) or (N, 17, 3)
+    elif filepath.suffix == '.json':
+        with open(filepath, 'r') as f:
+            data = json.load(f)
+        keypoints_list = []
+        # Handle new format with frame_id and detections
+        if isinstance(data, list) and len(data) > 0:
+            # Sort by frame_id to ensure correct temporal order
+            data_sorted = sorted(data, key=lambda x: x['frame_id'])
+            for frame_data in data_sorted:
+                if 'detections' in frame_data and len(frame_data['detections']) > 0:
+                    # Take the first detection (assuming single person)
+                    detection = frame_data['detections'][0]
+                    keypoints_dict = {}
+                    for kpt in detection['keypoints']:
+                        keypoints_dict[kpt['id']] = [kpt['x'], kpt['y'], kpt['confidence']]
+                    # Create array in order (0-16 for COCO format)
+                    frame_keypoints = []
+                    for i in range(17):  # COCO has 17 body keypoints
+                        if i in keypoints_dict:
+                            frame_keypoints.append(keypoints_dict[i][:2])  # x, y only
+                        else:
+                            # Handle missing keypoints
+                            frame_keypoints.append([0.0, 0.0])
+                    keypoints_list.append(frame_keypoints)
+            
+            keypoints = np.array(keypoints_list)  # Shape: (N, 17, 2)
+            print(f"Loaded {len(keypoints)} frames from new JSON format")
+
+            coco_keypoints = keypoints
+            N = coco_keypoints.shape[0]
+            h36m_keypoints = np.zeros((N, 17, 2), dtype=coco_keypoints.dtype)
+            
+            # Direct mappings
+            h36m_keypoints[:, 1] = coco_keypoints[:, 12]   # RHip
+            h36m_keypoints[:, 2] = coco_keypoints[:, 14]   # RKnee
+            h36m_keypoints[:, 3] = coco_keypoints[:, 16]   # RFoot
+            h36m_keypoints[:, 4] = coco_keypoints[:, 11]   # LHip
+            h36m_keypoints[:, 5] = coco_keypoints[:, 13]   # LKnee
+            h36m_keypoints[:, 6] = coco_keypoints[:, 15]   # LFoot
+            h36m_keypoints[:, 11] = coco_keypoints[:, 5]   # LShoulder
+            h36m_keypoints[:, 12] = coco_keypoints[:, 7]   # LElbow
+            h36m_keypoints[:, 13] = coco_keypoints[:, 9]   # LWrist
+            h36m_keypoints[:, 14] = coco_keypoints[:, 6]   # RShoulder
+            h36m_keypoints[:, 15] = coco_keypoints[:, 8]   # RElbow
+            h36m_keypoints[:, 16] = coco_keypoints[:, 10]  # RWrist
+            h36m_keypoints[:, 0] = (coco_keypoints[:, 11] + coco_keypoints[:, 12]) / 2  # Hip center (average of left and right hips)
+            h36m_keypoints[:, 8] = (coco_keypoints[:, 5] + coco_keypoints[:, 6]) / 2  # Thorax (average of left and right shoulders) 
+            h36m_keypoints[:, 7] = (h36m_keypoints[:, 0] + h36m_keypoints[:, 8]) / 2  # Spine (midpoint between hip center and thorax)
+            h36m_keypoints[:, 9] = coco_keypoints[:, 0]   # Neck/Nose
+            h36m_keypoints[:, 10] = coco_keypoints[:, 0]  # Head (slightly above nose)
+
+            keypoints = h36m_keypoints
+            print("Converted COCO keypoints to H36M format")
+    else:
+        raise ValueError(f"Unsupported file format: {filepath.suffix}")
+    
+    # Ensure (N, 17, 2) shape
+    if keypoints.shape[-1] == 3:
+        keypoints = keypoints[..., :2]  # Remove confidence scores if present
+    
+    return keypoints
 
 def add_3d_keypoints(frame_data, npy_data):
     """

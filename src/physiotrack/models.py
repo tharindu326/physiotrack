@@ -67,6 +67,9 @@ class Models:
             # MB_ft_h36m_global = ''
             MB_train_h36m = 'MB_train_h36m/best_epoch.bin'
 
+        class DDH(Enum):
+            best = 'best_epoch_DDHPose.bin'
+
     class Segmentation:
         class Sapiens:
             class BodyPart(Enum):
@@ -74,6 +77,7 @@ class Models:
                 B06_TS_SEG = "sapiens_0.6b_seg_best_goliath_mIoU_7673_epoch_178_torchscript.pt2"
                 B03_TS_SEG = "sapiens_0.3b_seg_best_goliath_mIoU_7673_epoch_178_torchscript.pt2"
 
+    @staticmethod
     @staticmethod
     def _get_model_info(model_enum):
         """Extract model information from enum instance"""
@@ -91,29 +95,30 @@ class Models:
                 backend = getattr(category, backend_name)
                 if not inspect.isclass(backend):
                     continue
-                for enum_class_name in dir(backend):
-                    if enum_class_name.startswith('_'):
-                        continue
-                    if backend_name == "MotionBERT":
-                        info = {
-                            'category': category_name,
-                            'backend': backend_name,
-                            'enum_class': enum_class_name,
-                            'model_name': model_enum.name,
-                            'file_name': model_enum.value
-                        }
-                        return info
-                    enum_class = getattr(backend, enum_class_name)
-                    if (inspect.isclass(enum_class) and 
-                        issubclass(enum_class, Enum) and 
-                        isinstance(model_enum, enum_class)):
+                if category_name == "Pose3D":
+                    if issubclass(backend, Enum) and isinstance(model_enum, backend):
                         return {
                             'category': category_name,
                             'backend': backend_name,
-                            'enum_class': enum_class_name,
+                            'enum_class': backend_name,  # For Pose3D, backend and enum_class are the same
                             'model_name': model_enum.name,
                             'file_name': model_enum.value
                         }
+                else:
+                    for enum_class_name in dir(backend):
+                        if enum_class_name.startswith('_'):
+                            continue
+                        enum_class = getattr(backend, enum_class_name)
+                        if (inspect.isclass(enum_class) and 
+                            issubclass(enum_class, Enum) and 
+                            isinstance(model_enum, enum_class)):
+                            return {
+                                'category': category_name,
+                                'backend': backend_name,
+                                'enum_class': enum_class_name,
+                                'model_name': model_enum.name,
+                                'file_name': model_enum.value
+                            }
         return None
     
     @staticmethod
@@ -170,6 +175,18 @@ class Models:
         download_url = f"{base_url}/{file_name}?download=true"
         
         return Models._download_file(download_url, actual_filename, full_download_path)
+    
+    def _download_ddh_model(model_info, download_path):
+        """Download MotionBERT models from HuggingFace"""
+        file_name = model_info['file_name']
+        file_dir = os.path.dirname(file_name)
+        actual_filename = os.path.basename(file_name)
+        full_download_path = os.path.join(download_path, file_dir)
+        os.makedirs(full_download_path, exist_ok=True)
+        base_url = f"https://huggingface.co/tharindu326/physiotrack/resolve/main"
+        download_url = f"{base_url}/{file_name}?download=true"
+        
+        return Models._download_file(download_url, actual_filename, full_download_path)
 
     @staticmethod
     def _download_file(url, file_name, download_path):
@@ -223,6 +240,7 @@ class Models:
             raise ValueError(f"Expected an Enum instance, got {type(model_enum)}")
         
         model_info = Models._get_model_info(model_enum)
+        print(model_enum, model_info)
         if not model_info:
             raise ValueError(f"Could not determine model information for {model_enum}")
         
@@ -238,6 +256,8 @@ class Models:
             return Models._download_vitpose_model(model_info, download_path)
         elif model_info['backend'] == 'MotionBERT':
             return Models._download_motionbert_model(model_info, download_path)
+        elif model_info['backend'] == 'DDH':
+            return Models._download_ddh_model(model_info, download_path)
         else:
             raise ValueError(f"Unknown backend: {model_info['backend']}")
 

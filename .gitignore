@@ -4,6 +4,7 @@ __pycache__
 model_data
 src/physiotrack.egg-info
 examples/output
+physiotrack/
 
 # model files
 *.pt
@@ -24,5 +25,6 @@ main.py
 
 # other
 *.ovpn
+*.npz
 
 

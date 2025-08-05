@@ -1,8 +1,8 @@
 from . import Models
-from .. import MotionBERTInference
+from .. import MotionBERTInference, DDHPoseInference
 import os
 import numpy as np
-from .utils import COCO2Halpe, add_3d_keypoints
+from .utils import COCO2Halpe, add_3d_keypoints, coco2h36m
 import json
 
 
@@ -14,6 +14,18 @@ class Pose3D:
                  render_video=True,
                  save_npy=True,
                  testloader_params=None,
+                 # DDHPose specific parameters
+                 boneindex_h36m='0,1,1,2,2,3,0,4,4,5,5,6,0,7,7,8,8,9,9,10,8,11,11,12,12,13,8,14,14,15,15,16',
+                 number_of_frames=243,
+                 test_time_augmentation=True,
+                 timestep=1000,
+                 scale=1.0,
+                 cs=512,
+                 dep=8,
+                 joints_left=[4, 5, 6, 11, 12, 13],
+                 joints_right=[1, 2, 3, 14, 15, 16],
+                 num_proposals=300,
+                 sampling_timesteps=5,
                  **kwargs):
         
         if model is None:
@@ -22,9 +34,6 @@ class Pose3D:
         model_path = os.path.join(os.path.dirname(__file__), '..', 'modules', 'model_data', model.value)
         if not os.path.isfile(model_path):
             Models.download_model(model)
-        
-        if config is None:
-            config = os.path.join(os.path.dirname(__file__), '..', 'modules', 'MotionBERT', 'configs', f'{model.name}.yaml')
 
         Models.validate_pose3d_model(model)
     
@@ -34,11 +43,29 @@ class Pose3D:
         
         # Initialize 3D pose estimator based on framework
         if self.pose3d_framework == 'MotionBERT':
+            if config is None:
+                config = os.path.join(os.path.dirname(__file__), '..', 'modules', 'MotionBERT', 'configs', f'{model.name}.yaml')
             self.pose3d_estimator = MotionBERTInference(
                 config_path=config,
                 checkpoint_path=model_path,
                 clip_len=clip_len,
                 testloader_params=testloader_params,
+                device=device
+            )
+        elif self.pose3d_framework == 'DDH':
+            self.pose3d_estimator = DDHPoseInference(
+                boneindex_h36m=boneindex_h36m,
+                number_of_frames=number_of_frames,
+                test_time_augmentation=test_time_augmentation,
+                timestep=timestep,
+                scale=scale,
+                cs=cs,
+                dep=dep,
+                joints_left=joints_left,
+                joints_right=joints_right,
+                num_proposals=num_proposals,
+                sampling_timesteps=sampling_timesteps,
+                checkpoint_path=model_path,
                 device=device
             )
         else:
@@ -54,36 +81,54 @@ class Pose3D:
     
     def estimate(self, json_path, vid_path, out_path=None, focus=None, 
                  scale_range=None, keep_imgs=False, no_conf=None, 
-                 flip=None, rootrel=None, gt_2d=None, convert2alpha=True):
+                 flip=None, rootrel=None, gt_2d=None, convert2alpha=True,
+                 # DDHPose specific parameters
+                 batch_size=64):
         """
         Estimate 3D poses from 2D pose detection JSON file
         """
         with open(json_path, 'r') as f:
             frames_data = json.load(f)
 
-        if convert2alpha:
-            dir_path = os.path.dirname(json_path)
-            base_name = os.path.splitext(os.path.basename(json_path))[0]
-            temp_output_json_path = os.path.join(dir_path, f"{base_name}_temp_alphapose.json")
-            json_path = COCO2Halpe(json_path, temp_output_json_path) # converted temporary json file path
+        if self.pose3d_framework == 'MotionBERT':
+            if convert2alpha:
+                dir_path = os.path.dirname(json_path)
+                base_name = os.path.splitext(os.path.basename(json_path))[0]
+                temp_output_json_path = os.path.join(dir_path, f"{base_name}_temp_alphapose.json")
+                json_path = COCO2Halpe(json_path, temp_output_json_path) # converted temporary json file path
 
-        results_3d = self.pose3d_estimator.infer(
-            json_path=json_path,
-            vid_path=vid_path,
-            out_path=out_path,
-            pixel=self.pixel,
-            focus=focus,
-            scale_range=scale_range,
-            render_video=self.render_video,
-            save_npy=self.save_npy,
-            keep_imgs=keep_imgs,
-            no_conf=no_conf,
-            flip=flip,
-            rootrel=rootrel,
-            gt_2d=gt_2d
-        )
-        if convert2alpha:
-            os.remove(temp_output_json_path)
+            results_3d = self.pose3d_estimator.infer(
+                json_path=json_path,
+                vid_path=vid_path,
+                out_path=out_path,
+                pixel=self.pixel,
+                focus=focus,
+                scale_range=scale_range,
+                render_video=self.render_video,
+                save_npy=self.save_npy,
+                keep_imgs=keep_imgs,
+                no_conf=no_conf,
+                flip=flip,
+                rootrel=rootrel,
+                gt_2d=gt_2d
+            )
+            
+            if convert2alpha:
+                os.remove(temp_output_json_path)
+                
+        elif self.pose3d_framework == 'DDH':
+
+            keypoints_2d = coco2h36m(json_path)
+            results_3d = self.pose3d_estimator.infer(
+                keypoints_2d=keypoints_2d,
+                vid_path=vid_path,
+                keep_imgs=keep_imgs,
+                batch_size=batch_size,
+                save_npy=self.save_npy,
+                out_path=out_path,
+                render_video=self.render_video
+            )
+        
         frames_data = add_3d_keypoints(frames_data, results_3d)
 
         if out_path:
