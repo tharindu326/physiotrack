@@ -4,6 +4,9 @@ import os
 import numpy as np
 from .utils import COCO2Halpe, add_3d_keypoints, coco2h36m
 import json
+from .canonicalizer import canonicalize_pose, CanonicalView
+from ..modules.MotionBERT.utils.vismo import render_and_save
+from datetime import datetime
 
 
 class Pose3D:
@@ -81,7 +84,7 @@ class Pose3D:
     
     def estimate(self, json_path, vid_path, out_path=None, focus=None, 
                  scale_range=None, keep_imgs=False, no_conf=None, 
-                 flip=None, rootrel=None, gt_2d=None, convert2alpha=True,
+                 flip=None, rootrel=None, gt_2d=None, convert2alpha=True, canonical_view=None,
                  # DDHPose specific parameters
                  batch_size=64):
         """
@@ -100,13 +103,9 @@ class Pose3D:
             results_3d = self.pose3d_estimator.infer(
                 json_path=json_path,
                 vid_path=vid_path,
-                out_path=out_path,
                 pixel=self.pixel,
                 focus=focus,
                 scale_range=scale_range,
-                render_video=self.render_video,
-                save_npy=self.save_npy,
-                keep_imgs=keep_imgs,
                 no_conf=no_conf,
                 flip=flip,
                 rootrel=rootrel,
@@ -122,13 +121,27 @@ class Pose3D:
             results_3d = self.pose3d_estimator.infer(
                 keypoints_2d=keypoints_2d,
                 vid_path=vid_path,
-                keep_imgs=keep_imgs,
                 batch_size=batch_size,
-                save_npy=self.save_npy,
-                out_path=out_path,
-                render_video=self.render_video
             )
         
+        if canonical_view:
+            results_3d = canonicalize_pose(results_3d, canonical_view)
+
+        if out_path:
+            os.makedirs(out_path, exist_ok=True)
+            
+        if self.render_video and out_path:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            render_and_save(
+                results_3d, 
+                f'{out_path}/X3D_{timestamp}.mp4', 
+                fps=self.pose3d_estimator.fps_in
+            )
+
+        if self.save_npy and out_path:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            np.save(f'{out_path}/X3D_{timestamp}.npy', results_3d)
+
         frames_data = add_3d_keypoints(frames_data, results_3d)
 
         if out_path:

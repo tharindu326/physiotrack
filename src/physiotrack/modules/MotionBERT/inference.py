@@ -8,7 +8,6 @@ from torch.utils.data import DataLoader
 from .utils.utils import get_config
 from .utils.utils_data import flip_data
 from .utils.dataloader import WildDetDataset
-from .utils.vismo import render_and_save
 from functools import partial
 from .model.DSTformer import DSTformer
 
@@ -38,6 +37,7 @@ class MotionBERTInference:
             'persistent_workers': False,
             'drop_last': False
         }
+        self.fps_in = 30
     
     def _load_model(self):
         """Load and initialize the model"""
@@ -74,7 +74,7 @@ class MotionBERTInference:
     def _prepare_dataset(self, json_path, vid_path, pixel=False, focus=None, scale_range=None):
         """Prepare dataset for inference"""
         vid = imageio.get_reader(vid_path, 'ffmpeg')
-        fps_in = vid.get_meta_data()['fps']
+        self.fps_in = vid.get_meta_data()['fps']
         vid_size = vid.get_meta_data()['size']
         
         if pixel:
@@ -95,7 +95,7 @@ class MotionBERTInference:
                 focus=focus
             )
         
-        return wild_dataset, fps_in, vid_size
+        return wild_dataset, self.fps_in, vid_size
     
     def _process_batch(self, batch_input, no_conf=None, flip=None, rootrel=None, gt_2d=None):
         """Process a single batch through the model"""
@@ -136,21 +136,15 @@ class MotionBERTInference:
     def infer(self, 
               json_path, 
               vid_path, 
-              out_path=None,
               pixel=False, 
               focus=None,
               scale_range=None,
-              render_video=True,
-              save_npy=True,
-              keep_imgs=False,
               no_conf=None,
               flip=None,
               rootrel=None,
               gt_2d=None,
               custom_testloader_params=None):
         """Run inference on a video"""
-        if out_path:
-            os.makedirs(out_path, exist_ok=True)
         
         testloader_params = custom_testloader_params or self.testloader_params
         
@@ -169,21 +163,10 @@ class MotionBERTInference:
         
         results_all = np.hstack(results_all)
         results_all = np.concatenate(results_all)
-        
-        if render_video and out_path:
-            render_and_save(
-                results_all, 
-                f'{out_path}/X3D.mp4', 
-                keep_imgs=keep_imgs, 
-                fps=fps_in
-            )
-        
+
         if pixel:
             results_all = results_all * (min(vid_size) / 2.0)
             results_all[:, :, :2] = results_all[:, :, :2] + np.array(vid_size) / 2.0
-        
-        if save_npy and out_path:
-            np.save(f'{out_path}/X3D.npy', results_all)
         
         return results_all
     

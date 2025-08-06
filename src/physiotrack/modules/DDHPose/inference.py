@@ -3,12 +3,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from einops import rearrange
-import json
-from pathlib import Path
 from .common.camera import normalize_screen_coordinates
 from .common.ddhpose import DDHPose
-from ..MotionBERT.utils.vismo import render_and_save
-import os
 import imageio
 from tqdm import tqdm
 
@@ -46,6 +42,7 @@ class DDHPoseInference:
                                         sampling_timesteps=sampling_timesteps
                                         )
         self.number_of_frames = number_of_frames
+        self.fps_in = 30
 
     def _load_model(self, 
                     boneindex_h36m='0,1,1,2,2,3,0,4,4,5,5,6,0,7,7,8,8,9,9,10,8,11,11,12,12,13,8,14,14,15,15,16',
@@ -94,7 +91,7 @@ class DDHPoseInference:
         """Normalize 2D keypoints to [-1, 1] range"""
 
         vid = imageio.get_reader(vid_path, 'ffmpeg')
-        fps_in = vid.get_meta_data()['fps']
+        self.fps_in = vid.get_meta_data()['fps']
         vid_size = vid.get_meta_data()['size']
         width, height = vid_size
         keypoints_2d = normalize_screen_coordinates(keypoints_2d, w=width, h=height)
@@ -134,9 +131,7 @@ class DDHPoseInference:
             output = predictions.reshape(original_length, 17, 3)
         return output
 
-    def infer(self, keypoints_2d, vid_path, batch_size=64, save_npy=True, out_path=None, render_video=True, keep_imgs=False):
-        if out_path:
-            os.makedirs(out_path, exist_ok=True)
+    def infer(self, keypoints_2d, vid_path, batch_size=64):
         kps_left = [4, 5, 6, 11, 12, 13]
         kps_right = [1, 2, 3, 14, 15, 16]
         
@@ -189,29 +184,6 @@ class DDHPoseInference:
         all_predictions = np.concatenate(all_predictions, axis=0)
         # Reconstruct full sequence
         output_3d = self.reconstruct_poses(all_predictions, receptive_field, original_length)
-        
-        if render_video and out_path:
-            render_and_save(
-                output_3d, 
-                f'{out_path}/X3D_DDHP.mp4', 
-                keep_imgs=keep_imgs, 
-                fps=50
-            )
-
-        if save_npy:
-            np.savez(f'{out_path}/X3D_DDHP', 
-                    poses_3d=output_3d,
-                    metadata={
-                        'num_frames': original_length,
-                        'num_joints': 17,
-                        'fps': 50,  # Assuming 50fps, adjust as needed
-                        'model': 'DDHPose',
-                        'checkpoint': self.checkpoint,
-                        'format': 'H36M',
-                        'joint_names': ['Hip', 'RHip', 'RKnee', 'RFoot', 'LHip', 'LKnee', 'LFoot',
-                                    'Spine', 'Thorax', 'Neck/Nose', 'Head', 'LShoulder', 'LElbow',
-                                    'LWrist', 'RShoulder', 'RElbow', 'RWrist']
-                    })
         return output_3d
 
 
