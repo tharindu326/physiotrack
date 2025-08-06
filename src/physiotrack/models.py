@@ -78,7 +78,6 @@ class Models:
                 B03_TS_SEG = "sapiens_0.3b_seg_best_goliath_mIoU_7673_epoch_178_torchscript.pt2"
 
     @staticmethod
-    @staticmethod
     def _get_model_info(model_enum):
         """Extract model information from enum instance"""
         if not isinstance(model_enum, Enum):
@@ -240,7 +239,6 @@ class Models:
             raise ValueError(f"Expected an Enum instance, got {type(model_enum)}")
         
         model_info = Models._get_model_info(model_enum)
-        print(model_enum, model_info)
         if not model_info:
             raise ValueError(f"Could not determine model information for {model_enum}")
         
