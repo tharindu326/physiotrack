@@ -1,4 +1,8 @@
 # Physiotrack
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python 3.8+](https://img.shields.io/badge/python-3.8+-green.svg)](https://www.python.org/downloads/release/python-380/)
+![Static Badge](https://img.shields.io/badge/status%20-%20under%20construction%20-%20%23FF0000)
+
 
 **Physiotrack** is a Python library for detection and pose estimation using a variety of state-of-the-art models like YOLO, RT-DETR, Sapiens, and ViTPose. The framework supports modular detection and pose pipelines with validated models for specialized tasks like VR student monitoring, face detection, and whole-body pose estimation.
 
