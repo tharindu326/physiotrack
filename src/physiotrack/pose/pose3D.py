@@ -84,11 +84,25 @@ class Pose3D:
     
     def estimate(self, json_path, vid_path, out_path=None, focus=None, 
                  scale_range=None, keep_imgs=False, no_conf=None, 
-                 flip=None, rootrel=None, gt_2d=None, convert2alpha=True, canonical_view=None,
+                 flip=None, rootrel=None, gt_2d=None, convert2alpha=True, canonical_view=None, canonical_method=None,
                  # DDHPose specific parameters
                  batch_size=64):
         """
         Estimate 3D poses from 2D pose detection JSON file
+        
+        Args:
+            json_path: Path to 2D pose detection JSON file
+            vid_path: Path to input video
+            out_path: Optional output directory path
+            canonical_view: Optional canonical view to apply (CanonicalView.FRONT, BACK, LEFT_SIDE, RIGHT_SIDE).
+                          If None, no canonical transformation is applied.
+                          Note: Canonical view can also be applied separately using CanonicalViewProcessor
+            Other args: Various model-specific parameters
+        
+        Returns:
+            Tuple of (frames_data, results_3d):
+            - frames_data: Detection data with 3D keypoints
+            - results_3d: Raw 3D poses array (N, 17, 3)
         """
         with open(json_path, 'r') as f:
             frames_data = json.load(f)
@@ -125,7 +139,7 @@ class Pose3D:
             )
         
         if canonical_view:
-            results_3d = canonicalize_pose(results_3d, canonical_view)
+            results_3d = canonicalize_pose(results_3d, view=canonical_view, method=canonical_method)
 
         if out_path:
             os.makedirs(out_path, exist_ok=True)
@@ -153,7 +167,7 @@ class Pose3D:
             with open(output_json_path, 'w') as f:
                 json.dump(frames_data, f, indent=2)
         
-        return frames_data
+        return frames_data, results_3d
     
     def process_batch(self, json_paths, vid_paths, out_paths=None, **kwargs):
         """Process multiple videos in batch"""
@@ -164,13 +178,13 @@ class Pose3D:
             out_paths = [None] * len(json_paths)
         
         for json_path, vid_path, out_path in zip(json_paths, vid_paths, out_paths):
-            result_3d, pose_3d = self.estimate(
+            frames_data, results_3d = self.estimate(
                 json_path=json_path,
                 vid_path=vid_path,
                 out_path=out_path,
                 **kwargs
             )
-            results.append(result_3d)
-            poses.append(pose_3d)
+            results.append(frames_data)
+            poses.append(results_3d)
         
         return results, poses

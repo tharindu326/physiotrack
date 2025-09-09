@@ -1,16 +1,17 @@
 import numpy as np
-from enum import Enum
-from typing import Tuple, Union
+from typing import Tuple, Union, Optional, Dict, Any
+import json
+from pathlib import Path
+from ..models import Models
 
-class CanonicalView(Enum):
-    FRONT = "front"
-    BACK = "back" 
-    LEFT_SIDE = "left_side"
-    RIGHT_SIDE = "right_side"
+# Import the enums from Models
+CanonicalView = Models.Pose3DCanonicalizer.View
+CanonicalMethod = Models.Pose3DCanonicalizer.Method
 
 class PoseCanonicalizer:
     """
-    Transform 3D poses to canonical orientations for IMU comparison
+    Transform 3D poses to canonical orientations using different methods.
+    Supports geometric transformation and future 3DPCNet-based canonicalization.
     """
     
     # H36M joint indices
@@ -200,9 +201,27 @@ class PoseCanonicalizer:
         return right_poses
     
     @staticmethod
-    def get_canonical_form(poses_3d: np.ndarray, view: Union[CanonicalView, str]) -> np.ndarray:
+    def canonicalize_3dcpnet(poses_3d: np.ndarray, view: Union[CanonicalView, str]) -> np.ndarray:
         """
-        Transform poses to specified canonical orientation
+        Future 3DPCNet-based canonicalization method.
+        
+        Args:
+            poses_3d: Input poses with shape (N, 17, 3)
+            view: Desired canonical view
+            
+        Returns:
+            Transformed poses (N, 17, 3)
+        """
+        # Placeholder for future 3DPCNet implementation
+        raise NotImplementedError(
+            "3DPCNet canonicalization is not yet implemented. "
+            "This will be added when the 3DPCNet model is integrated."
+        )
+    
+    @staticmethod
+    def get_canonical_form_geometric(poses_3d: np.ndarray, view: Union[CanonicalView, str]) -> np.ndarray:
+        """
+        Transform poses to specified canonical orientation using geometric method.
         Args:
             poses_3d: Input poses with shape (N, 17, 3)
             view: Desired canonical view
@@ -211,7 +230,7 @@ class PoseCanonicalizer:
         """
         if isinstance(view, str):
             view = CanonicalView(view.lower())
-        print(f'Pose is canonicalized to direction of {view.value}')
+        print(f'Pose is canonicalized to {view.value} view using geometric method')
         transform_map = {
             CanonicalView.FRONT: PoseCanonicalizer.transform_to_front_view,
             CanonicalView.BACK: PoseCanonicalizer.transform_to_back_view,
@@ -221,21 +240,172 @@ class PoseCanonicalizer:
         if view not in transform_map:
             raise ValueError(f"Unsupported view: {view}. Choose from {list(CanonicalView)}")
         return transform_map[view](poses_3d)
+    
+    @staticmethod
+    def process_json_file(json_path: str, output_path: Optional[str] = None, 
+                         view: Union[CanonicalView, str] = "front",
+                         method: Union[CanonicalMethod, str] = CanonicalMethod.GEOMETRIC) -> Dict[str, Any]:
+        """
+        Process 3D poses from a JSON file containing detection data.
+        
+        Args:
+            json_path: Path to input JSON file with 3D keypoints
+            output_path: Optional path to save processed JSON
+            view: Target canonical view
+            method: Canonicalization method to use
+            
+        Returns:
+            Updated detection data with canonicalized 3D poses
+        """
+        with open(json_path, 'r') as f:
+            data = json.load(f)
+        
+        # Extract 3D keypoints from detection data
+        poses_3d = PoseCanonicalizer._extract_3d_from_json(data)
+        
+        if poses_3d is not None:
+            # Apply canonical transformation
+            canonical_poses = canonicalize_pose(poses_3d, view, method)
+            
+            # Update the data with canonical poses
+            data = PoseCanonicalizer._update_json_with_3d(data, canonical_poses, view, method)
+            
+            # Save if output path provided
+            if output_path:
+                Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+                with open(output_path, 'w') as f:
+                    json.dump(data, f, indent=2)
+        
+        return data
+    
+    @staticmethod
+    def process_npy_file(npy_path: str, output_path: Optional[str] = None,
+                        view: Union[CanonicalView, str] = "front",
+                        method: Union[CanonicalMethod, str] = CanonicalMethod.GEOMETRIC) -> np.ndarray:
+        """
+        Process 3D poses from a numpy file.
+        
+        Args:
+            npy_path: Path to input numpy file with 3D poses
+            output_path: Optional path to save processed numpy array
+            view: Target canonical view
+            method: Canonicalization method to use
+            
+        Returns:
+            Canonicalized poses array
+        """
+        poses_3d = np.load(npy_path)
+        canonical_poses = canonicalize_pose(poses_3d, view, method)
+        
+        if output_path:
+            Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+            np.save(output_path, canonical_poses)
+        
+        return canonical_poses
+    
+    @staticmethod
+    def _extract_3d_from_json(data: Dict[str, Any]) -> Optional[np.ndarray]:
+        """
+        Extract 3D keypoints from detection JSON data.
+        
+        Args:
+            data: Detection data dictionary
+            
+        Returns:
+            3D poses array or None if not found
+        """
+        # Check if data contains 3D keypoints
+        if not isinstance(data, list) or len(data) == 0:
+            return None
+        
+        # Collect all 3D keypoints
+        poses_3d_list = []
+        for frame_data in data:
+            if 'keypoints_3d' in frame_data:
+                poses_3d_list.append(frame_data['keypoints_3d'])
+        
+        if len(poses_3d_list) > 0:
+            poses_3d = np.array(poses_3d_list)
+            # Reshape if necessary (assuming 17 joints with 3 coordinates each)
+            if poses_3d.ndim == 2:
+                poses_3d = poses_3d.reshape(-1, 17, 3)
+            return poses_3d
+        
+        return None
+    
+    @staticmethod
+    def _update_json_with_3d(data: Dict[str, Any], poses_3d: np.ndarray, 
+                            view: Union[CanonicalView, str], method: Union[CanonicalMethod, str]) -> Dict[str, Any]:
+        """
+        Update detection JSON data with canonicalized 3D poses.
+        
+        Args:
+            data: Original detection data
+            poses_3d: Canonicalized 3D poses
+            view: Applied canonical view
+            method: Applied canonicalization method
+            
+        Returns:
+            Updated detection data
+        """
+        if isinstance(view, str):
+            view = CanonicalView(view.lower())
+        if isinstance(method, str):
+            method = CanonicalMethod(method.lower())
+            
+        if isinstance(data, list) and len(data) == len(poses_3d):
+            for i, frame_data in enumerate(data):
+                if 'keypoints_3d' in frame_data:
+                    # Update with canonicalized poses
+                    frame_data['keypoints_3d'] = poses_3d[i].flatten().tolist()
+                    frame_data['canonical_view_applied'] = view.value
+                    frame_data['canonical_method'] = method.value
+        
+        return data
 
 
-def canonicalize_pose(poses_3d: np.ndarray, view: Union[CanonicalView, str] = "front") -> np.ndarray:
+def canonicalize_pose(poses_3d: np.ndarray, 
+                     view: Union[CanonicalView, str] = "front",
+                     method: Union[CanonicalMethod, str] = CanonicalMethod.GEOMETRIC) -> np.ndarray:
     """
-    Main function to canonicalize poses
+    Main function to canonicalize poses using specified method.
+    
+    Args:
+        poses_3d: Input poses with shape (N, 17, 3)
+        view: Desired canonical view (front, back, left_side, right_side)
+        method: Canonicalization method (geometric or 3dcpnet)
+        
+    Returns:
+        Canonicalized poses (N, 17, 3)
     """
-    return PoseCanonicalizer.get_canonical_form(poses_3d, view)
+    if isinstance(method, str):
+        method = CanonicalMethod(method.lower())
+    
+    if method == CanonicalMethod.GEOMETRIC:
+        return PoseCanonicalizer.get_canonical_form_geometric(poses_3d, view)
+    elif method == CanonicalMethod.THREECPNET:
+        return PoseCanonicalizer.canonicalize_3dcpnet(poses_3d, view)
+    else:
+        raise ValueError(f"Unsupported canonicalization method: {method}. Choose from {list(CanonicalMethod)}")
 
 
 if __name__ == "__main__":
     poses = np.random.randn(100, 17, 3)  # 100 frames, 17 joints, 3D coords
-    front_poses = canonicalize_pose(poses, "front")
-    back_poses = canonicalize_pose(poses, CanonicalView.BACK)
+    
+    # Test geometric method
+    print("Testing geometric canonicalization method:")
+    front_poses = canonicalize_pose(poses, "front", method="geometric")
+    back_poses = canonicalize_pose(poses, CanonicalView.BACK, method=CanonicalMethod.GEOMETRIC)
     left_poses = canonicalize_pose(poses, "left_side")
     right_poses = canonicalize_pose(poses, "right_side")
     print(f"Original poses shape: {poses.shape}")
     print(f"Canonical poses shape: {front_poses.shape}")
     print(f"Available views: {[v.value for v in CanonicalView]}")
+    print(f"Available methods: {[m.value for m in CanonicalMethod]}")
+    
+    # Test future 3DPCNet method (will raise NotImplementedError)
+    print("\nTesting 3DPCNet method (not yet implemented):")
+    try:
+        future_poses = canonicalize_pose(poses, "front", method="3dcpnet")
+    except NotImplementedError as e:
+        print(f"Expected error: {e}")

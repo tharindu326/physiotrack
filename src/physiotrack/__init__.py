@@ -24,3 +24,5 @@ from .trackers import Tracker
 from .modules.MotionBERT.inference import MotionBERTInference
 from .modules.DDHPose.inference import DDHPoseInference
 
+from .pose.canonicalizer import PoseCanonicalizer, canonicalize_pose, CanonicalView, CanonicalMethod
+

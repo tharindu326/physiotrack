@@ -1,6 +1,8 @@
 from physiotrack.pose.pose3D import Pose3D
 from physiotrack import Models
-from physiotrack.pose.canonicalizer import CanonicalView
+
+# Use the View enum from Models
+CanonicalView = Models.Pose3DCanonicalizer.View
 
 # ------------------- MotionBERT -------------------
 
@@ -13,7 +15,8 @@ pose3D = Pose3D(    model=Models.Pose3D.MotionBERT.MB_ft_h36m_global_lite,
                     save_npy=True,
                     testloader_params=None)
 
-poseout = pose3D.estimate(json_path='output/BV_S17_cut1_result.json', vid_path='BV_S17_cut1.mp4', out_path='output/', canonical_view=CanonicalView.FRONT)
+# Returns both frames_data and results_3d
+frames_data, results_3d = pose3D.estimate(json_path='output/BV_S17_cut1_result.json', vid_path='BV_S17_cut1.mp4', out_path='output/', canonical_view=CanonicalView.FRONT)
 
 # ------------------- DDHPose -------------------
 
@@ -25,7 +28,8 @@ pose3D = Pose3D(    model=Models.Pose3D.DDH.best,
                     sampling_timesteps=5
                     )
 
-poseout = pose3D.estimate(json_path='output/BV_S17_cut1_result.json', 
+# Returns both frames_data and results_3d
+frames_data, results_3d = pose3D.estimate(json_path='output/BV_S17_cut1_result.json', 
                           vid_path='BV_S17_cut1.mp4',
                           out_path='output/', 
                           batch_size=8, 

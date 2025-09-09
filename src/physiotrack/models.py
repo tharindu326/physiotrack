@@ -70,6 +70,17 @@ class Models:
         class DDH(Enum):
             best = 'best_epoch_DDHPose.bin'
 
+    class Pose3DCanonicalizer:
+        class View(Enum):
+            FRONT = "front"
+            BACK = "back" 
+            LEFT_SIDE = "left_side"
+            RIGHT_SIDE = "right_side"
+        
+        class Method(Enum):
+            GEOMETRIC = "geometric"  # Current torso-plane based method
+            THREECPNET = "3dcpnet"   # Future 3DPCNet method
+
     class Segmentation:
         class Sapiens:
             class BodyPart(Enum):
