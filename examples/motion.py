@@ -6,6 +6,7 @@ from physiotrack.signals.motion.features import get_relative_coordinates, comput
 from physiotrack.signals.normalize import min_max_normalize
 from physiotrack.signals.filters import band_pass_filter
 from physiotrack.pose.pose3D import Pose3D
+from physiotrack.pose.canonicalizer import CanonicalView
 from physiotrack.signals.evaluate import calculate_pearson_correlation, calculate_dtw_distance, normalized_cross_correlation, phase_synchrony, compute_rmse, compute_plv
 from pathlib import Path
 import pandas as pd
@@ -45,7 +46,7 @@ video_processor = Video(
 video_output_path = Path(output_directory) / f"{video_name}_poses.mp4"
 json_output_path = Path(output_directory) / f"{video_name}_result.json"
 
-# detection_data_2D = video_processor.run(video_output_path, json_output_path)
+detection_data_2D = video_processor.run(video_output_path, json_output_path)
 
 sampling_freq = video_processor.video_fps
 
@@ -59,7 +60,7 @@ pose3D = Pose3D(model=Models.Pose3D.MotionBERT.MB_ft_h36m_global_lite,
                 save_npy=True,
                 testloader_params=None)
 
-detection_data_3D = pose3D.estimate(json_path=json_output_path, vid_path=input_video, out_path='output/')
+detection_data_3D = pose3D.estimate(json_path=json_output_path, vid_path=input_video, out_path=output_directory, canonical_view=CanonicalView.FRONT)
 # file_path = 'output/BV_S17_cut1_result_temp_alphapose_with_3d_keypoints.json'
 # with open(file_path, 'r', encoding='utf-8') as file:
 #     detection_data_3D = json.load(file)
