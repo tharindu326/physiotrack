@@ -84,7 +84,7 @@ class Pose3D:
     
     def estimate(self, json_path, vid_path, out_path=None, focus=None, 
                  scale_range=None, keep_imgs=False, no_conf=None, 
-                 flip=None, rootrel=None, gt_2d=None, convert2alpha=True, canonical_view=None, canonical_method=None,
+                 flip=None, rootrel=None, gt_2d=None, convert2alpha=True, canonical_view=None, canonical_model=None,
                  # DDHPose specific parameters
                  batch_size=64):
         """
@@ -139,7 +139,7 @@ class Pose3D:
             )
         
         if canonical_view:
-            results_3d = canonicalize_pose(results_3d, view=canonical_view, method=canonical_method)
+            results_3d = canonicalize_pose(results_3d, model=canonical_model, view=canonical_view)
 
         if out_path:
             os.makedirs(out_path, exist_ok=True)

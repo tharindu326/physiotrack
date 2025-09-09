@@ -1,4 +1,4 @@
-from physiotrack import Pose, Video, Models, Detection, Tracker, PoseCanonicalizer, canonicalize_pose
+from physiotrack import Pose, Video, Models, Detection, Tracker
 from physiotrack.trackers import Config
 from physiotrack.pose.config import COCO_WHOLEBODY_NAMES, HUMAN26M_NAMES
 from physiotrack.signals.motion.utils import extract_keypoint_sequence_3d, extract_keypoint_sequence_2d, add_body_centroid, add_head_centroid, resample_dataframe_by_interpolation, add_pelvic_centroid, extract_keypoints_sequence
@@ -6,6 +6,7 @@ from physiotrack.signals.motion.features import get_relative_coordinates, comput
 from physiotrack.signals.normalize import min_max_normalize
 from physiotrack.signals.filters import band_pass_filter
 from physiotrack.pose.pose3D import Pose3D
+from physiotrack.pose.canonicalizer import PoseCanonicalizer
 from physiotrack.signals.evaluate import calculate_pearson_correlation, calculate_dtw_distance, normalized_cross_correlation, phase_synchrony, compute_rmse, compute_plv
 from pathlib import Path
 import pandas as pd
@@ -60,8 +61,8 @@ pose3D = Pose3D(model=Models.Pose3D.MotionBERT.MB_ft_h36m_global_lite,
                 testloader_params=None)
 
 detection_data_3D, results_3d = pose3D.estimate(json_path=json_output_path, vid_path=input_video, out_path=output_directory, 
-                                                canonical_view=Models.Pose3DCanonicalizer.View.FRONT,
-                                                canonical_method=Models.Pose3DCanonicalizer.Method.GEOMETRIC)
+                                                canonical_view=Models.Pose3D.Canonicalizer.View.FRONT,
+                                                canonical_model=Models.Pose3D.Canonicalizer.Models._3DPCNetS2)
 
 # file_path = 'output/BV_S17_cut1_result_temp_alphapose_with_3d_keypoints.json'
 # with open(file_path, 'r', encoding='utf-8') as file:

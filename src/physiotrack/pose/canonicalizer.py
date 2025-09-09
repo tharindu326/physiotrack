@@ -2,16 +2,17 @@ import numpy as np
 from typing import Tuple, Union, Optional, Dict, Any
 import json
 from pathlib import Path
+import os
 from ..models import Models
+from ..modules._3DCPNet.inference import canonicalize_poses_3dpcnet
 
-# Import the enums from Models
-CanonicalView = Models.Pose3DCanonicalizer.View
-CanonicalMethod = Models.Pose3DCanonicalizer.Method
+CanonicalView = Models.Pose3D.Canonicalizer.View
+CanonicalModels = Models.Pose3D.Canonicalizer.Models
 
 class PoseCanonicalizer:
     """
     Transform 3D poses to canonical orientations using different methods.
-    Supports geometric transformation and future 3DPCNet-based canonicalization.
+    Supports geometric transformation and 3DPCNet-based canonicalization.
     """
     
     # H36M joint indices
@@ -201,22 +202,63 @@ class PoseCanonicalizer:
         return right_poses
     
     @staticmethod
-    def canonicalize_3dcpnet(poses_3d: np.ndarray, view: Union[CanonicalView, str]) -> np.ndarray:
+    def canonicalize_3dpcnet(poses_3d: np.ndarray, 
+                            model: Union[CanonicalModels, None] = None,
+                            view: Union[CanonicalView, str] = "front",
+                            checkpoint_path: Optional[str] = None, 
+                            config_path: Optional[str] = None,
+                            device: str = 'cuda') -> np.ndarray:
         """
-        Future 3DPCNet-based canonicalization method.
+        3DPCNet-based canonicalization method.
         
         Args:
             poses_3d: Input poses with shape (N, 17, 3)
-            view: Desired canonical view
+            model: Model enum from Models.Pose3D.Canonicalizer.Models (e.g., _3DPCNetS2, _3DPCNetS3)
+            view: Desired canonical view (currently only FRONT is supported)
+            checkpoint_path: Optional path to model checkpoint (overrides model enum)
+            config_path: Optional path to model config (overrides automatic config)
+            device: Device to run inference on
             
         Returns:
-            Transformed poses (N, 17, 3)
+            Canonicalized poses (N, 17, 3)
         """
-        # Placeholder for future 3DPCNet implementation
-        raise NotImplementedError(
-            "3DPCNet canonicalization is not yet implemented. "
-            "This will be added when the 3DPCNet model is integrated."
+        
+        if isinstance(view, CanonicalView):
+            view = view.value
+        
+        if view != 'front':
+            print(f"Warning: 3DPCNet currently only supports front view. Applying front view.")
+        
+        # Handle model download if model enum is provided
+        if model is not None and model != CanonicalModels.GEOMETRIC:
+            if checkpoint_path is None:
+                # Download model if not exists
+                model_path = os.path.join(os.path.dirname(__file__), '..', 'modules', 'model_data')
+                checkpoint_file = os.path.join(model_path, model.value)
+                
+                if not os.path.isfile(checkpoint_file):
+                    print(f"Downloading model {model.name}...")
+                    Models.download_model(model)
+                
+                checkpoint_path = checkpoint_file
+            
+            if config_path is None and checkpoint_path:
+                checkpoint_dir = os.path.dirname(checkpoint_path)
+                model_basename = os.path.basename(checkpoint_path).replace('.pth', '.yaml')
+                potential_config = os.path.join(checkpoint_dir, model_basename)
+                if os.path.isfile(potential_config):
+                    config_path = potential_config
+        
+        # Use the inference module function
+        canonical_poses = canonicalize_poses_3dpcnet(
+            poses_3d,
+            checkpoint_path=checkpoint_path,
+            config_path=config_path,
+            device=device
         )
+        
+        print(f'Pose is canonicalized using 3DPCNet method')
+        return canonical_poses
     
     @staticmethod
     def get_canonical_form_geometric(poses_3d: np.ndarray, view: Union[CanonicalView, str]) -> np.ndarray:
@@ -244,7 +286,7 @@ class PoseCanonicalizer:
     @staticmethod
     def process_json_file(json_path: str, output_path: Optional[str] = None, 
                          view: Union[CanonicalView, str] = "front",
-                         method: Union[CanonicalMethod, str] = CanonicalMethod.GEOMETRIC) -> Dict[str, Any]:
+                         model: Union[CanonicalModels, None] = CanonicalModels.GEOMETRIC) -> Dict[str, Any]:
         """
         Process 3D poses from a JSON file containing detection data.
         
@@ -252,7 +294,7 @@ class PoseCanonicalizer:
             json_path: Path to input JSON file with 3D keypoints
             output_path: Optional path to save processed JSON
             view: Target canonical view
-            method: Canonicalization method to use
+            model: Canonicalization model to use (GEOMETRIC, _3DPCNetS2, _3DPCNetS3)
             
         Returns:
             Updated detection data with canonicalized 3D poses
@@ -265,10 +307,10 @@ class PoseCanonicalizer:
         
         if poses_3d is not None:
             # Apply canonical transformation
-            canonical_poses = canonicalize_pose(poses_3d, view, method)
+            canonical_poses = canonicalize_pose(poses_3d, model, view)
             
             # Update the data with canonical poses
-            data = PoseCanonicalizer._update_json_with_3d(data, canonical_poses, view, method)
+            data = PoseCanonicalizer._update_json_with_3d(data, canonical_poses, view, model)
             
             # Save if output path provided
             if output_path:
@@ -281,7 +323,7 @@ class PoseCanonicalizer:
     @staticmethod
     def process_npy_file(npy_path: str, output_path: Optional[str] = None,
                         view: Union[CanonicalView, str] = "front",
-                        method: Union[CanonicalMethod, str] = CanonicalMethod.GEOMETRIC) -> np.ndarray:
+                        model: Union[CanonicalModels, None] = CanonicalModels.GEOMETRIC) -> np.ndarray:
         """
         Process 3D poses from a numpy file.
         
@@ -289,13 +331,13 @@ class PoseCanonicalizer:
             npy_path: Path to input numpy file with 3D poses
             output_path: Optional path to save processed numpy array
             view: Target canonical view
-            method: Canonicalization method to use
+            model: Canonicalization model to use
             
         Returns:
             Canonicalized poses array
         """
         poses_3d = np.load(npy_path)
-        canonical_poses = canonicalize_pose(poses_3d, view, method)
+        canonical_poses = canonicalize_pose(poses_3d, model, view)
         
         if output_path:
             Path(output_path).parent.mkdir(parents=True, exist_ok=True)
@@ -335,7 +377,7 @@ class PoseCanonicalizer:
     
     @staticmethod
     def _update_json_with_3d(data: Dict[str, Any], poses_3d: np.ndarray, 
-                            view: Union[CanonicalView, str], method: Union[CanonicalMethod, str]) -> Dict[str, Any]:
+                            view: Union[CanonicalView, str], model: Union[CanonicalModels, None]) -> Dict[str, Any]:
         """
         Update detection JSON data with canonicalized 3D poses.
         
@@ -343,15 +385,13 @@ class PoseCanonicalizer:
             data: Original detection data
             poses_3d: Canonicalized 3D poses
             view: Applied canonical view
-            method: Applied canonicalization method
+            model: Applied canonicalization model
             
         Returns:
             Updated detection data
         """
         if isinstance(view, str):
             view = CanonicalView(view.lower())
-        if isinstance(method, str):
-            method = CanonicalMethod(method.lower())
             
         if isinstance(data, list) and len(data) == len(poses_3d):
             for i, frame_data in enumerate(data):
@@ -359,53 +399,59 @@ class PoseCanonicalizer:
                     # Update with canonicalized poses
                     frame_data['keypoints_3d'] = poses_3d[i].flatten().tolist()
                     frame_data['canonical_view_applied'] = view.value
-                    frame_data['canonical_method'] = method.value
+                    frame_data['canonical_model'] = model.name if model else 'GEOMETRIC'
         
         return data
 
 
 def canonicalize_pose(poses_3d: np.ndarray, 
-                     view: Union[CanonicalView, str] = "front",
-                     method: Union[CanonicalMethod, str] = CanonicalMethod.GEOMETRIC) -> np.ndarray:
+                     model: Union[CanonicalModels, None] = CanonicalModels.GEOMETRIC,
+                     view: Union[CanonicalView, str] = "front") -> np.ndarray:
     """
-    Main function to canonicalize poses using specified method.
+    Main function to canonicalize poses using specified model.
     
     Args:
         poses_3d: Input poses with shape (N, 17, 3)
+        model: Canonicalization model from Models.Pose3D.Canonicalizer.Models
         view: Desired canonical view (front, back, left_side, right_side)
-        method: Canonicalization method (geometric or 3dcpnet)
         
     Returns:
         Canonicalized poses (N, 17, 3)
     """
-    if isinstance(method, str):
-        method = CanonicalMethod(method.lower())
-    
-    if method == CanonicalMethod.GEOMETRIC:
+    if model is None or model == CanonicalModels.GEOMETRIC:
         return PoseCanonicalizer.get_canonical_form_geometric(poses_3d, view)
-    elif method == CanonicalMethod.THREECPNET:
-        return PoseCanonicalizer.canonicalize_3dcpnet(poses_3d, view)
+    elif model in [CanonicalModels._3DPCNetS2, CanonicalModels._3DPCNetS3]:
+        return PoseCanonicalizer.canonicalize_3dpcnet(poses_3d, model, view)
     else:
-        raise ValueError(f"Unsupported canonicalization method: {method}. Choose from {list(CanonicalMethod)}")
+        raise ValueError(f"Unsupported canonicalization model: {model}. Choose from {list(CanonicalModels)}")
 
 
 if __name__ == "__main__":
     poses = np.random.randn(100, 17, 3)  # 100 frames, 17 joints, 3D coords
     
     # Test geometric method
-    print("Testing geometric canonicalization method:")
-    front_poses = canonicalize_pose(poses, "front", method="geometric")
-    back_poses = canonicalize_pose(poses, CanonicalView.BACK, method=CanonicalMethod.GEOMETRIC)
-    left_poses = canonicalize_pose(poses, "left_side")
-    right_poses = canonicalize_pose(poses, "right_side")
+    print("Testing geometric canonicalization:")
+    front_poses = canonicalize_pose(poses, CanonicalModels.GEOMETRIC, "front")
+    back_poses = canonicalize_pose(poses, CanonicalModels.GEOMETRIC, CanonicalView.BACK)
+    left_poses = canonicalize_pose(poses, view="left_side")
+    right_poses = canonicalize_pose(poses, view="right_side")
     print(f"Original poses shape: {poses.shape}")
     print(f"Canonical poses shape: {front_poses.shape}")
     print(f"Available views: {[v.value for v in CanonicalView]}")
-    print(f"Available methods: {[m.value for m in CanonicalMethod]}")
+    print(f"Available models: {[m.name for m in CanonicalModels]}")
     
-    # Test future 3DPCNet method (will raise NotImplementedError)
-    print("\nTesting 3DPCNet method (not yet implemented):")
+    # Test 3DPCNet models
+    print("\nTesting 3DPCNet models:")
     try:
-        future_poses = canonicalize_pose(poses, "front", method="3dcpnet")
-    except NotImplementedError as e:
-        print(f"Expected error: {e}")
+        # Test with S2 model
+        dpcnet_poses = canonicalize_pose(poses, CanonicalModels._3DPCNetS2, "front")
+        print(f"3DPCNet S2 canonicalized poses shape: {dpcnet_poses.shape}")
+    except Exception as e:
+        print(f"3DPCNet S2 error (model/checkpoint may not be available): {e}")
+    
+    try:
+        # Test with S3 model
+        dpcnet_poses = canonicalize_pose(poses, CanonicalModels._3DPCNetS3, "front")
+        print(f"3DPCNet S3 canonicalized poses shape: {dpcnet_poses.shape}")
+    except Exception as e:
+        print(f"3DPCNet S3 error (model/checkpoint may not be available): {e}")

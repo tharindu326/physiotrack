@@ -1,5 +1,5 @@
 """
-Example demonstrating three methods to apply canonical view to 3D poses
+Example demonstrating methods to apply canonical view to 3D poses
 """
 
 from physiotrack.pose.pose3D import Pose3D
@@ -28,8 +28,8 @@ frames_data, results_3d = pose3D.estimate(
     json_path=json_path,
     vid_path=video_path,
     out_path=output_dir,
-    canonical_view=Models.Pose3DCanonicalizer.View.FRONT,
-    canonical_method=Models.Pose3DCanonicalizer.Method.GEOMETRIC
+    canonical_view=Models.Pose3D.Canonicalizer.View.FRONT,
+    canonical_model=Models.Pose3D.Canonicalizer.Models.GEOMETRIC
 )
 
 # =============================================================================
@@ -46,8 +46,8 @@ frames_data_raw, results_3d_raw = pose3D.estimate(
 # Apply canonical view directly to the array
 canonical_poses = canonicalize_pose(
     results_3d_raw,
-    view=Models.Pose3DCanonicalizer.View.FRONT,
-    method=Models.Pose3DCanonicalizer.Method.GEOMETRIC
+    model=Models.Pose3D.Canonicalizer.Models.GEOMETRIC,
+    view=Models.Pose3D.Canonicalizer.View.FRONT
 )
 
 # =============================================================================
@@ -60,6 +60,31 @@ if Path(npy_file).exists():
     canonical_from_file = PoseCanonicalizer.process_npy_file(
         npy_file,
         output_path='output/X3D_canonical.npy',
-        view=Models.Pose3DCanonicalizer.View.FRONT,
-        method=Models.Pose3DCanonicalizer.Method.GEOMETRIC
+        view=Models.Pose3D.Canonicalizer.View.FRONT,
+        model=Models.Pose3D.Canonicalizer.Models.GEOMETRIC
     )
+
+# =============================================================================
+# Method 4: 3DPCNet
+# =============================================================================
+# Apply 3DPCNet method with S2 model (auto-downloads from HuggingFace)
+try:
+    canonical_3dpcnet = canonicalize_pose(
+        results_3d_raw,
+        model=Models.Pose3D.Canonicalizer.Models._3DPCNetS2,
+        view=Models.Pose3D.Canonicalizer.View.FRONT
+    )
+    print(f"3DPCNet S2 canonicalized shape: {canonical_3dpcnet.shape}")
+except Exception as e:
+    print(f"3DPCNet S2 not available: {e}")
+
+# Try with S3 model
+try:
+    canonical_3dpcnet_s3 = canonicalize_pose(
+        results_3d_raw,
+        model=Models.Pose3D.Canonicalizer.Models._3DPCNetS3,
+        view=Models.Pose3D.Canonicalizer.View.FRONT
+    )
+    print(f"3DPCNet S3 canonicalized shape: {canonical_3dpcnet_s3.shape}")
+except Exception as e:
+    print(f"3DPCNet S3 not available: {e}")

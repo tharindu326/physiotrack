@@ -70,16 +70,21 @@ class Models:
         class DDH(Enum):
             best = 'best_epoch_DDHPose.bin'
 
-    class Pose3DCanonicalizer:
-        class View(Enum):
-            FRONT = "front"
-            BACK = "back" 
-            LEFT_SIDE = "left_side"
-            RIGHT_SIDE = "right_side"
-        
-        class Method(Enum):
-            GEOMETRIC = "geometric"  # Current torso-plane based method
-            THREECPNET = "3dcpnet"   # Future 3DPCNet method
+        class Canonicalizer:
+            class Models(Enum):
+                _3DPCNetS2 = 'best_model_3DPCNetS2.pth'
+                _3DPCNetS3 = 'best_model_3DPCNetS3.pth'
+                GEOMETRIC = ''
+
+            class Configs(Enum):
+                _3DPCNetS2 = 'best_model_3DPCNetS2.yaml'
+                _3DPCNetS3 = 'best_model_3DPCNetS3.yaml'
+            
+            class View(Enum):
+                FRONT = "front"
+                BACK = "back" 
+                LEFT_SIDE = "left_side"
+                RIGHT_SIDE = "right_side"
 
     class Segmentation:
         class Sapiens:
@@ -114,6 +119,22 @@ class Models:
                             'model_name': model_enum.name,
                             'file_name': model_enum.value
                         }
+                    # Check for Canonicalizer models
+                    elif backend_name == 'Canonicalizer':
+                        for enum_class_name in dir(backend):
+                            if enum_class_name.startswith('_'):
+                                continue
+                            enum_class = getattr(backend, enum_class_name)
+                            if (inspect.isclass(enum_class) and 
+                                issubclass(enum_class, Enum) and 
+                                isinstance(model_enum, enum_class)):
+                                return {
+                                    'category': category_name,
+                                    'backend': 'Canonicalizer',
+                                    'enum_class': enum_class_name,
+                                    'model_name': model_enum.name,
+                                    'file_name': model_enum.value
+                                }
                 else:
                     for enum_class_name in dir(backend):
                         if enum_class_name.startswith('_'):
@@ -197,6 +218,29 @@ class Models:
         download_url = f"{base_url}/{file_name}?download=true"
         
         return Models._download_file(download_url, actual_filename, full_download_path)
+    
+    @staticmethod
+    def _download_canonicalizer_model(model_info, download_path):
+        """Download Canonicalizer (3DPCNet) models and configs from HuggingFace"""
+        file_name = model_info['file_name']
+        file_dir = os.path.dirname(file_name)
+        full_download_path = os.path.join(download_path, file_dir)
+        os.makedirs(full_download_path, exist_ok=True)
+        base_url = f"https://huggingface.co/tharindu326/physiotrack/resolve/main"
+        
+        # Download model file
+        model_download_url = f"{base_url}/{file_name}?download=true"
+        model_path = Models._download_file(model_download_url, file_name, full_download_path)
+        
+        # Also download corresponding config file if it's a 3DPCNet model
+        if file_name.startswith('best_model_3DPCNet'):
+            # Extract model name (e.g., '3DPCNetS2' from 'best_model_3DPCNetS2.pth')
+            model_name = file_name.replace('best_model_', '').replace('.pth', '')
+            config_name = f"best_model_{model_name}.yaml"
+            config_download_url = f"{base_url}/{config_name}?download=true"
+            Models._download_file(config_download_url, config_name, full_download_path)
+        
+        return model_path
 
     @staticmethod
     def _download_file(url, file_name, download_path):
@@ -267,6 +311,8 @@ class Models:
             return Models._download_motionbert_model(model_info, download_path)
         elif model_info['backend'] == 'DDH':
             return Models._download_ddh_model(model_info, download_path)
+        elif model_info['backend'] == 'Canonicalizer':
+            return Models._download_canonicalizer_model(model_info, download_path)
         else:
             raise ValueError(f"Unknown backend: {model_info['backend']}")
 
