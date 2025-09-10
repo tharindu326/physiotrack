@@ -25,4 +25,11 @@ from .modules.MotionBERT.inference import MotionBERTInference
 from .modules.DDHPose.inference import DDHPoseInference
 
 from .pose.canonicalizer import PoseCanonicalizer, canonicalize_pose
+from .pose.evaluate import (
+    evaluate_pose_predictions,
+    evaluate_canonicalization,
+    calculate_mpjpe,
+    calculate_pampjpe,
+    calculate_rotation_error
+)
 
