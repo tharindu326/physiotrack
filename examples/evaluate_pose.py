@@ -18,12 +18,12 @@ from tqdm import tqdm
 
 from physiotrack import Models, canonicalize_pose
 from physiotrack.pose.evaluate import evaluate_canonicalization
-from physiotrack.modules._3DCPNet.inference import reverse_3dpcnet_transform
+from physiotrack.modules._3DCPNet.inference import reverse_3dpcnet_transform, apply_3dpcnet_transform
 
 
 # Load test data
-print("Loading test data from: test.npz")
-data = np.load('S3test.npz', allow_pickle=True)
+print("Loading test data from: S3test_filtered_mpjpe500.npz")
+data = np.load('S2test_filtered_mpjpe500.npz', allow_pickle=True)
 
 # Get ALL data - in 3DPCNET FORMAT (transformed and centered)
 input_poses_3dpcnet = data['input_pose']  # All samples
@@ -48,10 +48,10 @@ print("EVALUATION RESULTS")
 print("="*60)
 
 # ==============================================================================
-# Method 1: GEOMETRIC (needs standard format input)
+# Method 1: GEOMETRIC (proper transformation pipeline)
 # ==============================================================================
 print("\n--- GEOMETRIC Method ---")
-print("Converting from 3DPCNet format to standard format for geometric method...")
+print("Pipeline: 3DPCNet format → Standard format → GEOMETRIC → Standard format → 3DPCNet format")
 try:
     # Process in batches
     all_geometric_canonical = []
@@ -64,31 +64,31 @@ try:
         # Get batch
         batch_input_3dpcnet = input_poses_3dpcnet[start_idx:end_idx]
         
-        # GEOMETRIC needs standard format (like results_3d from pose estimator)
+        # Step 1: Transform from 3DPCNet format to standard format
         batch_input_standard = reverse_3dpcnet_transform(batch_input_3dpcnet)
         
-        # Run geometric canonicalization on batch
-        batch_canonical, batch_rotation = canonicalize_pose(
+        # Step 2: Run geometric canonicalization in standard format
+        batch_canonical_standard, batch_rotation = canonicalize_pose(
             batch_input_standard,  # Standard format input
             model=Models.Pose3D.Canonicalizer.Models.GEOMETRIC,
             view=Models.Pose3D.Canonicalizer.View.FRONT,
             return_rotation=True
         )
         
-        all_geometric_canonical.append(batch_canonical)
+        # Step 3: Transform canonical output back to 3DPCNet format for comparison
+        batch_canonical_3dpcnet = apply_3dpcnet_transform(batch_canonical_standard)
+        
+        all_geometric_canonical.append(batch_canonical_3dpcnet)
         all_geometric_rotation.append(batch_rotation)
     
     # Concatenate all batches
     geometric_canonical = np.concatenate(all_geometric_canonical, axis=0)
     geometric_rotation = np.concatenate(all_geometric_rotation, axis=0)
     
-    # For fair comparison, convert GT to standard format too
-    canonical_gt_standard = reverse_3dpcnet_transform(canonical_gt_3dpcnet)
-    
-    # Evaluate in standard format
+    # Evaluate in 3DPCNet format (same format as ground truth)
     metrics = evaluate_canonicalization(
-        geometric_canonical,  # Standard format output
-        canonical_gt_standard,  # Standard format GT
+        geometric_canonical,  # 3DPCNet format output
+        canonical_gt_3dpcnet,  # 3DPCNet format GT
         pred_rotation=geometric_rotation,
         gt_rotation=rotation_gt,
         scale=1000.0
