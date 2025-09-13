@@ -245,45 +245,89 @@ def motion2video(motion, save_path, colors, h=512, w=512, bg_color=(255, 255, 25
 
     return out_array
 
-def motion2video_3d(motion, save_path, fps=25, keep_imgs = False):
-#     motion: (17,3,N)
-    videowriter = imageio.get_writer(save_path, fps=fps)
-    vlen = motion.shape[-1]
-    save_name = save_path.split('.')[0]
-    frames = []
-    joint_pairs = [[0, 1], [1, 2], [2, 3], [0, 4], [4, 5], [5, 6], [0, 7], [7, 8], [8, 9], [8, 11], [8, 14], [9, 10], [11, 12], [12, 13], [14, 15], [15, 16]]
-    joint_pairs_left = [[8, 11], [11, 12], [12, 13], [0, 4], [4, 5], [5, 6]]
-    joint_pairs_right = [[8, 14], [14, 15], [15, 16], [0, 1], [1, 2], [2, 3]]
+def render_single_frame(args):
+    """Render a single frame - used for parallel processing"""
+    f, motion_frame, joint_pairs, joint_pairs_left, joint_pairs_right = args
     
     color_mid = "#00457E"
     color_left = "#02315E"
     color_right = "#2F70AF"
-    for f in tqdm(range(vlen)):
-        j3d = motion[:,:,f]
-        fig = plt.figure(0, figsize=(10, 10))
-        ax = plt.axes(projection="3d")
-        ax.set_xlim(-512, 0)
-        ax.set_ylim(-256, 256)
-        ax.set_zlim(-512, 0)
-        # ax.set_xlabel('X')
-        # ax.set_ylabel('Y')
-        # ax.set_zlabel('Z')
-        ax.view_init(elev=12., azim=80)
-        plt.tick_params(left = False, right = False , labelleft = False ,
-                        labelbottom = False, bottom = False)
-        for i in range(len(joint_pairs)):
-            limb = joint_pairs[i]
-            xs, ys, zs = [np.array([j3d[limb[0], j], j3d[limb[1], j]]) for j in range(3)]
-            if joint_pairs[i] in joint_pairs_left:
-                ax.plot(-xs, -zs, -ys, color=color_left, lw=3, marker='o', markerfacecolor='w', markersize=3, markeredgewidth=2) # axis transformation for visualization
-            elif joint_pairs[i] in joint_pairs_right:
-                ax.plot(-xs, -zs, -ys, color=color_right, lw=3, marker='o', markerfacecolor='w', markersize=3, markeredgewidth=2) # axis transformation for visualization
-            else:
-                ax.plot(-xs, -zs, -ys, color=color_mid, lw=3, marker='o', markerfacecolor='w', markersize=3, markeredgewidth=2) # axis transformation for visualization
-            
-        frame_vis = get_img_from_fig(fig)
-        videowriter.append_data(frame_vis)
-        plt.close()
+    
+    j3d = motion_frame
+    fig = plt.figure(figsize=(10, 10))
+    ax = plt.axes(projection="3d")
+    ax.set_xlim(-512, 0)
+    ax.set_ylim(-256, 256)
+    ax.set_zlim(-512, 0)
+    ax.view_init(elev=12., azim=80)
+    plt.tick_params(left = False, right = False , labelleft = False ,
+                    labelbottom = False, bottom = False)
+    
+    for i in range(len(joint_pairs)):
+        limb = joint_pairs[i]
+        xs, ys, zs = [np.array([j3d[limb[0], j], j3d[limb[1], j]]) for j in range(3)]
+        if joint_pairs[i] in joint_pairs_left:
+            ax.plot(-xs, -zs, -ys, color=color_left, lw=3, marker='o', markerfacecolor='w', markersize=3, markeredgewidth=2)
+        elif joint_pairs[i] in joint_pairs_right:
+            ax.plot(-xs, -zs, -ys, color=color_right, lw=3, marker='o', markerfacecolor='w', markersize=3, markeredgewidth=2)
+        else:
+            ax.plot(-xs, -zs, -ys, color=color_mid, lw=3, marker='o', markerfacecolor='w', markersize=3, markeredgewidth=2)
+    
+    frame_vis = get_img_from_fig(fig)
+    plt.close()
+    return f, frame_vis
+
+def motion2video_3d(motion, save_path, fps=25, keep_imgs = False, batch_size=32, n_workers=8):
+#     motion: (17,3,N)
+    import multiprocessing as mp
+    from concurrent.futures import ProcessPoolExecutor, as_completed
+    
+    # OPTIMIZATION TIPS:
+    # 1. Increase n_workers to use more CPU cores (default 8, can go up to mp.cpu_count())
+    # 2. Skip frames: render every 2nd or 3rd frame for preview (e.g., motion[:,:,::2])
+    # 3. Reduce figure resolution: change figsize=(10,10) to (5,5) in render_single_frame
+    # 4. Use matplotlib Agg backend to avoid GUI overhead: plt.switch_backend('Agg')
+    # 5. Pre-allocate frame buffer size to avoid resizing
+    # 6. Use threading instead of multiprocessing for I/O bound operations
+    # 7. Batch write frames to video instead of one at a time
+    
+    videowriter = imageio.get_writer(save_path, fps=fps)
+    vlen = motion.shape[-1]
+    save_name = save_path.split('.')[0]
+    
+    joint_pairs = [[0, 1], [1, 2], [2, 3], [0, 4], [4, 5], [5, 6], [0, 7], [7, 8], [8, 9], [8, 11], [8, 14], [9, 10], [11, 12], [12, 13], [14, 15], [15, 16]]
+    joint_pairs_left = [[8, 11], [11, 12], [12, 13], [0, 4], [4, 5], [5, 6]]
+    joint_pairs_right = [[8, 14], [14, 15], [15, 16], [0, 1], [1, 2], [2, 3]]
+    
+    # Process frames in batches
+    frames_buffer = {}
+    next_frame_to_write = 0
+    
+    # Use all available CPU cores by default
+    n_workers = min(n_workers, mp.cpu_count())
+    print(f"Using {n_workers} workers for parallel rendering")
+    
+    with ProcessPoolExecutor(max_workers=n_workers) as executor:
+        # Submit all work
+        futures = {}
+        for f in range(vlen):
+            args = (f, motion[:,:,f], joint_pairs, joint_pairs_left, joint_pairs_right)
+            future = executor.submit(render_single_frame, args)
+            futures[future] = f
+        
+        # Process completed frames
+        with tqdm(total=vlen, desc="Rendering frames") as pbar:
+            for future in as_completed(futures):
+                frame_idx, frame_data = future.result()
+                frames_buffer[frame_idx] = frame_data
+                
+                # Write frames in order
+                while next_frame_to_write in frames_buffer:
+                    videowriter.append_data(frames_buffer[next_frame_to_write])
+                    del frames_buffer[next_frame_to_write]
+                    next_frame_to_write += 1
+                    pbar.update(1)
+    
     videowriter.close()
 
 def motion2video_mesh(motion, save_path, fps=25, keep_imgs = False, draw_face=True):

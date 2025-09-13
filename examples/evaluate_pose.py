@@ -22,8 +22,9 @@ from physiotrack.modules._3DCPNet.inference import reverse_3dpcnet_transform, ap
 
 
 # Load test data
-print("Loading test data from: S3test_filtered_mpjpe500.npz")
-data = np.load('S2test_filtered_mpjpe500.npz', allow_pickle=True)
+test_set = 'S2test_filtered_mpjpe500.npz'
+data = np.load(test_set, allow_pickle=True)
+print(f"Loading test data from: {test_set}")
 
 # Get ALL data - in 3DPCNET FORMAT (transformed and centered)
 input_poses_3dpcnet = data['input_pose']  # All samples
@@ -51,8 +52,21 @@ print("="*60)
 # Method 1: GEOMETRIC (proper transformation pipeline)
 # ==============================================================================
 print("\n--- GEOMETRIC Method ---")
-print("Pipeline: 3DPCNet format → Standard format → GEOMETRIC → Standard format → 3DPCNet format")
+print("Pipeline: A:3DPCNet format → B:Standard format → C:GEOMETRIC → D:Standard format → E:3DPCNet format")
 try:
+    # Define transformation matrices for coordinate system changes
+    # T_AB: 3DPCNet to Standard (reverse transform)
+    # Based on reverse_3dpcnet_transform: old_x = -new_y, old_y = -new_z, old_z = new_x
+    T_AB = np.array([[0, -1, 0],
+                     [0, 0, -1],
+                     [1, 0, 0]], dtype=np.float32)
+    
+    # T_DE: Standard to 3DPCNet (forward transform)  
+    # Based on apply_3dpcnet_transform: new_x = old_z, new_y = -old_x, new_z = -old_y
+    T_DE = np.array([[0, 0, 1],
+                     [-1, 0, 0],
+                     [0, -1, 0]], dtype=np.float32)
+    
     # Process in batches
     all_geometric_canonical = []
     all_geometric_rotation = []
@@ -68,7 +82,7 @@ try:
         batch_input_standard = reverse_3dpcnet_transform(batch_input_3dpcnet)
         
         # Step 2: Run geometric canonicalization in standard format
-        batch_canonical_standard, batch_rotation = canonicalize_pose(
+        batch_canonical_standard, batch_rotation_standard = canonicalize_pose(
             batch_input_standard,  # Standard format input
             model=Models.Pose3D.Canonicalizer.Models.GEOMETRIC,
             view=Models.Pose3D.Canonicalizer.View.FRONT,
@@ -78,19 +92,39 @@ try:
         # Step 3: Transform canonical output back to 3DPCNet format for comparison
         batch_canonical_3dpcnet = apply_3dpcnet_transform(batch_canonical_standard)
         
+        # Step 4: Convert rotation matrix from standard space to 3DPCNet space
+        # The GEOMETRIC method gives us rotation in standard coordinate system
+        # But ground truth is in 3DPCNet coordinate system
+        # So we need: R_3dpcnet = T_DE @ R_standard @ T_AB
+        batch_size = batch_rotation_standard.shape[0]
+        batch_rotation_3dpcnet = np.zeros_like(batch_rotation_standard)
+        
+        for i in range(batch_size):
+            # Apply coordinate transformations to rotation matrix
+            # This converts rotation from standard space to 3DPCNet space
+            R_standard = batch_rotation_standard[i]
+            R_3dpcnet = T_DE @ R_standard @ T_AB
+            # GEOMETRIC computes input→canonical, but GT stores canonical→input
+            # So we need to transpose to match GT convention
+            R_3dpcnet_transposed = R_3dpcnet.T
+            batch_rotation_3dpcnet[i] = R_3dpcnet_transposed
+        
         all_geometric_canonical.append(batch_canonical_3dpcnet)
-        all_geometric_rotation.append(batch_rotation)
+        all_geometric_rotation.append(batch_rotation_3dpcnet)
     
     # Concatenate all batches
     geometric_canonical = np.concatenate(all_geometric_canonical, axis=0)
     geometric_rotation = np.concatenate(all_geometric_rotation, axis=0)
     
+    # GEOMETRIC rotation has been transposed to match GT convention (canonical→input)
+    # GT rotation is already in canonical→input format
+    
     # Evaluate in 3DPCNet format (same format as ground truth)
     metrics = evaluate_canonicalization(
         geometric_canonical,  # 3DPCNet format output
         canonical_gt_3dpcnet,  # 3DPCNet format GT
-        pred_rotation=geometric_rotation,
-        gt_rotation=rotation_gt,
+        pred_rotation=geometric_rotation,  # Already transposed to canonical→input
+        gt_rotation=rotation_gt,  # GT is canonical→input
         scale=1000.0
     )
     
@@ -138,11 +172,14 @@ try:
     s2_canonical = np.concatenate(all_s2_canonical, axis=0)
     s2_rotation = np.concatenate(all_s2_rotation, axis=0)
     
+    # 3DPCNet models output R directly (the canonical→input rotation)
+    # So we compare with the original GT rotation (no transpose needed)
+    
     metrics = evaluate_canonicalization(
         s2_canonical,  # 3DPCNet format output
         canonical_gt_3dpcnet,  # 3DPCNet format GT
-        pred_rotation=s2_rotation,  # Now we have rotation matrices!
-        gt_rotation=rotation_gt,
+        pred_rotation=s2_rotation,  # Model outputs R (canonical→input)
+        gt_rotation=rotation_gt,  # GT is also R (canonical→input)
         scale=1000.0
     )
     
@@ -190,11 +227,14 @@ try:
     s3_canonical = np.concatenate(all_s3_canonical, axis=0)
     s3_rotation = np.concatenate(all_s3_rotation, axis=0)
     
+    # 3DPCNet models output R directly (the canonical→input rotation)
+    # So we compare with the original GT rotation (no transpose needed)
+    
     metrics = evaluate_canonicalization(
         s3_canonical,  # 3DPCNet format output
         canonical_gt_3dpcnet,  # 3DPCNet format GT
-        pred_rotation=s3_rotation,  # Now we have rotation matrices!
-        gt_rotation=rotation_gt,
+        pred_rotation=s3_rotation,  # Model outputs R (canonical→input)
+        gt_rotation=rotation_gt,  # GT is also R (canonical→input)
         scale=1000.0
     )
     
