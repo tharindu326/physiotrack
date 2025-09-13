@@ -260,8 +260,24 @@ def render_single_frame(args):
     ax.set_ylim(-256, 256)
     ax.set_zlim(-512, 0)
     ax.view_init(elev=12., azim=80)
-    plt.tick_params(left = False, right = False , labelleft = False ,
-                    labelbottom = False, bottom = False)
+    # Add axis labels with values
+    ax.set_xlabel('X (cm)', fontsize=12, labelpad=10)
+    ax.set_ylabel('Y (cm)', fontsize=12, labelpad=10)
+    ax.set_zlabel('Z (cm)', fontsize=12, labelpad=10)
+    # Set number of ticks on each axis
+    ax.xaxis.set_major_locator(plt.MaxNLocator(5))
+    ax.yaxis.set_major_locator(plt.MaxNLocator(5))
+    ax.zaxis.set_major_locator(plt.MaxNLocator(5))
+    # Show tick labels for axis values
+    ax.tick_params(axis='x', labelsize=10, colors='black')
+    ax.tick_params(axis='y', labelsize=10, colors='black')
+    ax.tick_params(axis='z', labelsize=10, colors='black')
+    # Make sure tick labels are visible
+    ax.xaxis.set_tick_params(labelbottom=True)
+    ax.yaxis.set_tick_params(labelleft=True)
+    ax.zaxis.set_tick_params(labelleft=True)
+    # Add grid for better visualization
+    ax.grid(True, alpha=0.3)
     
     for i in range(len(joint_pairs)):
         limb = joint_pairs[i]
