@@ -89,6 +89,56 @@ def run_motion_pipeline():
         canonical_view=Models.Pose3D.Canonicalizer.View.FRONT,
         canonical_model=Models.Pose3D.Canonicalizer.Models._3DPCNetS2
     )
+
+    # input_video = 'CVSSP3D/s1/rom1/TC_S1_rom1_cam1.mp4'
+    # output_directory = 'output/CVSSP3D_s1_rom1_cam1_DDH'
+    # input_path = Path(input_video)
+    # video_name = input_path.stem
+    
+    # # Process 2D poses
+    # print("Processing 2D poses...")
+    # video_processor = Video(
+    #     video_path=input_video,
+    #     pose_estimator=pose_estimator,
+    #     detector=detector,
+    #     tracker=tracker,
+    #     required_fps=None,
+    #     frame_resize=None,
+    #     frame_rotate=False,
+    #     output_path=output_directory,
+    #     verbose=True
+    # )
+    
+    # # video_output_path = Path(output_directory) / f"{video_name}_poses.mp4"
+    # # json_output_path = Path(output_directory) / f"{video_name}_result.json"
+    # # detection_data_2D = video_processor.run(video_output_path, json_output_path)
+    # json_output_path = 'output/CVSSP3D_s1_rom1_cam1/TC_S1_rom1_cam1_result.json'
+    # detection_data_2D =None
+    # sampling_freq = video_processor.video_fps
+    
+    # # Process 3D poses
+    # print("Processing 3D poses...")
+    # pose3D = Pose3D(
+    #     model=Models.Pose3D.DDH.best,
+    #     config=None,
+    #     device='cuda',
+    #     clip_len=243,
+    #     pixel=False,
+    #     render_video=True,
+    #     save_npy=True,
+    #     testloader_params=None,
+    #     num_proposals=10,
+    #     sampling_timesteps=5
+    # )
+    
+    # detection_data_3D, results_3d = pose3D.estimate(
+    #     json_path=json_output_path,
+    #     vid_path='BV_S17_cut1.mp4',
+    #     out_path=output_directory,
+    #     canonical_view=Models.Pose3D.Canonicalizer.View.FRONT,
+    #     canonical_model=Models.Pose3D.Canonicalizer.Models._3DPCNetS2,
+    #     batch_size=1  # Small batch size for DDH to avoid OOM
+    # )
     
     return detection_data_2D, detection_data_3D, results_3d, pose_estimator, sampling_freq, output_directory, video_name
 
