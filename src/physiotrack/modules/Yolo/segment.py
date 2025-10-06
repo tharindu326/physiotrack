@@ -17,7 +17,9 @@ class Segmentor:
         self.names = self.model.names
         self.COLORS = COLORS
         random = np.random.RandomState(11)
-        colors = random.randint(0, 255, (len(classes) - 1, 3))
+        # Handle classes being None
+        num_classes = len(classes) if classes is not None else len(self.names)
+        colors = random.randint(0, 255, (num_classes - 1, 3))
         colors = np.vstack((np.array([128, 128, 128]), colors)).astype(np.uint8)  # Add background color
         self.colors = colors[:, ::-1]
 
@@ -30,17 +32,18 @@ class Segmentor:
         self.extra_args = kwargs 
 
     def segment(self, frame, **kwargs):
-        
+
         all_kwargs = {
             "conf": self.conf,
             "iou": self.iou,
             "classes": self.classes,
             "device": self.device,
             "verbose": self.verbose,
+            "retina_masks": True,  # Enable high-precision masks
             **self.extra_args,
             **kwargs,
         }
-        
+
         results = self.model.predict(
             source=frame,
             task="segment",
@@ -59,8 +62,10 @@ class Segmentor:
 
                 for i, mask in enumerate(masks):
                     class_id = int(class_ids[i])
-                    segmentation_map[mask > 0] = class_id + 28 # appending from Spaiens classes 
-                
+                    # Resize mask to match frame dimensions
+                    mask_resized = cv2.resize(mask, (w, h), interpolation=cv2.INTER_NEAREST)
+                    segmentation_map[mask_resized > 0.5] = class_id + 28 # appending from Sapiens classes
+
                     if self.render_segmenttion_map:
                         color = np.array(self.COLORS[list(self.COLORS)[(class_id + 28) % len(self.COLORS)]], dtype=np.uint8)
                         segmentation_img[segmentation_map == class_id + 28] = color

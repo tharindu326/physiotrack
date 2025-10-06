@@ -15,6 +15,7 @@ from .trackers import BoostTrack
 from .models import Models
 
 from .detect import Detection
+from .segment import Segmentation
 from .pose import Pose
 
 from .capture.video import Video

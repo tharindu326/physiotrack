@@ -89,9 +89,18 @@ class Models:
     class Segmentation:
         class Sapiens:
             class BodyPart(Enum):
-                B1_TS_SEG = "sapiens_1b_seg_best_goliath_mIoU_7994_epoch_151_torchscript.pt2"
-                B06_TS_SEG = "sapiens_0.6b_seg_best_goliath_mIoU_7673_epoch_178_torchscript.pt2"
-                B03_TS_SEG = "sapiens_0.3b_seg_best_goliath_mIoU_7673_epoch_178_torchscript.pt2"
+                B1_TS_SEG = "sapiens_1b_goliath_best_goliath_mIoU_7994_epoch_151_torchscript.pt2"
+                B06_TS_SEG = "sapiens_0.6b_goliath_best_goliath_mIoU_7777_epoch_178_torchscript.pt2"
+                B03_TS_SEG = "sapiens_0.3b_goliath_best_goliath_mIoU_7673_epoch_194_torchscript.pt2"
+
+        class Yolo: 
+            class VRHEAD(Enum):
+                M11 = "yolo11m_VR_faceNeck.pt"
+
+            class PERSON(Enum):
+                m_person = "yolo11m-seg.pt"
+                l_person = "yolo11l-seg.pt"
+            
 
     @staticmethod
     def _get_model_info(model_enum):
@@ -164,24 +173,22 @@ class Models:
     def _download_sapiens_model(model_info, download_path):
         """Download Sapiens models from HuggingFace"""
         file_name = model_info['file_name']
-        
+
         parts = file_name.split('_')
         size = parts[1] if len(parts) > 1 else "1b"
-        
+
         size_map = {"03b": "0.3b", "06b": "0.6b", "1b": "1b"}
         size = size_map.get(size, size)
-        
+
         if model_info['category'] == 'Pose':
             task = "pose-coco"
             format_type = "torchscript"
             base_url = f"https://huggingface.co/noahcao/sapiens-{task}/resolve/main/sapiens_lite_host/{format_type}/pose/checkpoints/sapiens_{size}"
         elif model_info['category'] == 'Segmentation':
-            if "2" in size:  # Special case for some segmentation models
-                base_url = "https://huggingface.co/camenduru/sapiens-body-part-segmentation/resolve/main"
-            else:
-                task = "seg"
-                format_type = "torchscript"
-                base_url = f"https://huggingface.co/facebook/sapiens-{task}-{size}-{format_type}/resolve/main"
+            # Sapiens segmentation models - all use facebook repos
+            task = "seg"
+            format_type = "torchscript"
+            base_url = f"https://huggingface.co/facebook/sapiens-{task}-{size}-{format_type}/resolve/main"
         download_url = f"{base_url}/{file_name}?download=true"
         return Models._download_file(download_url, file_name, download_path)
 
@@ -299,10 +306,18 @@ class Models:
         
         # print(f"Downloading {model_info['category']} model: {model_info['backend']}.{model_info['enum_class']}.{model_info['model_name']}")
         if model_info['backend'] == 'YOLO' or model_info['backend'] == 'RLDETR':
-            if model_info['category'] == 'Pose' or model_info['enum_class'] == 'PERSON':
+            if model_info['category'] == 'Pose' or (model_info['category'] == 'Detection' and model_info['enum_class'] == 'PERSON'):
                 return None
             else:
                 return Models._download_yolo_model(model_info, download_path)
+        elif model_info['backend'] == 'Yolo':
+            # Handle Segmentation.Yolo backend (note the capital 'Y')
+            if model_info['category'] == 'Segmentation':
+                # VRHEAD needs custom download, PERSON uses standard ultralytics
+                if model_info['enum_class'] == 'PERSON':
+                    return None  # Standard YOLO segmentation models auto-download
+                else:
+                    return Models._download_yolo_model(model_info, download_path)
         elif model_info['backend'] == 'Sapiens':
             return Models._download_sapiens_model(model_info, download_path)
         elif model_info['backend'] == 'ViTPose':
@@ -340,6 +355,61 @@ class Models:
             f"Model '{model.name}' is not valid for subclass '{expected_subclass}'.\n"
             f"Valid members are:\n  {valid_str}"
         )
+
+    @staticmethod
+    def validate_seg_model(model, expected_subclass: str = None):
+        """Verifies that `model` is a member of the Segmentation Enum"""
+        if not isinstance(model, Enum):
+            raise ValueError(f"Expected an Enum member for `model`, got {type(model).__name__}")
+
+        # If expected_subclass is provided, validate against specific subclass
+        if expected_subclass:
+            target = expected_subclass.strip().upper()
+            enum_classes = []
+            for backend in (Models.Segmentation.Yolo, Models.Segmentation.Sapiens):
+                # Check if the target exists in the backend
+                for attr_name in dir(backend):
+                    if attr_name.upper() == target:
+                        enum_classes.append(getattr(backend, attr_name))
+
+            if not enum_classes:
+                raise ValueError(f"No segmentation subclass named '{expected_subclass}' in Yolo or Sapiens.")
+
+            for enum_cls in enum_classes:
+                if isinstance(model, enum_cls):
+                    return  # ✅ valid
+
+            all_valid = []
+            for enum_cls in enum_classes:
+                names = ", ".join(e.name for e in enum_cls)
+                all_valid.append(f"{enum_cls.__module__.split('.')[-1]}.{enum_cls.__name__}: [{names}]")
+            valid_str = "\n  ".join(all_valid)
+            raise ValueError(
+                f"Model '{model.name}' is not valid for subclass '{expected_subclass}'.\n"
+                f"Valid members are:\n  {valid_str}"
+            )
+        else:
+            # General validation - check if it's any valid segmentation model
+            for backend_name in dir(Models.Segmentation):
+                if backend_name.startswith('_'):
+                    continue
+                backend = getattr(Models.Segmentation, backend_name)
+                if not inspect.isclass(backend):
+                    continue
+
+                for enum_class_name in dir(backend):
+                    if enum_class_name.startswith('_'):
+                        continue
+                    enum_class = getattr(backend, enum_class_name)
+                    if (inspect.isclass(enum_class) and
+                        issubclass(enum_class, Enum) and
+                        isinstance(model, enum_class)):
+                        return  # ✅ valid
+
+            raise ValueError(
+                f"Invalid segmentation model: {repr(model)}.\n"
+                f"Expected a valid enum member from Models.Segmentation.<Backend>.<EnumClass>"
+            )
 
     @staticmethod
     def validate_pose_model(model):

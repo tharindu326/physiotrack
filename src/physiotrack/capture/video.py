@@ -154,7 +154,8 @@ class Video:
             if frame_filter_count in selected_frame_ids:
                 boxes = None
                 result_frame = frame.copy()
-                
+                segmentation_img = None
+
                 if self.detector is not None:
                     results, frame = self.detector.detect(frame)
                     detections = results[0].boxes.data.cpu().numpy()  # (x1, y1, x2, y2, conf, cls)
@@ -162,7 +163,7 @@ class Video:
 
                     if self.pose_estimator and self.pose_estimator.__class__.__name__ != "Custom":
                         raise ValueError("Please use Pose.Custom class if you want to use a custom detector with the Video class. Alternatively, you can: 1) Not provide a detector to use the default detector (Models.Detection.YOLO.PERSON.m_person) of the Pose estimator, or 2) Pass a detector to the Pose estimator from the Models zoo if you don't wish to use the Tracker class.")
-                
+
                     if self.tracker is not None:
                         frame, online_targets = self.tracker.track(frame, detections)
                         # filter boxes based on student track to obtain only the student box
@@ -172,6 +173,12 @@ class Video:
                 if self.pose_estimator is not None:
                     result_frame, results = self.pose_estimator.estimate(frame, boxes)
                     pose_results = results.to_json()['detections']
+
+                # Apply segmentation if segmentator is provided
+                if self.segmentator is not None:
+                    segmentation_img, segmentation_map = self.segmentator.segment(frame)
+                    # Overlay segmentation on result_frame
+                    result_frame = cv2.addWeighted(result_frame, 0.7, segmentation_img, 0.3, 0)
                 
                 # Store frame data
                 frame_data = {
