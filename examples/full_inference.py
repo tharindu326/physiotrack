@@ -78,7 +78,7 @@ def run_full_inference(video_path, output_dir='output/full_inference'):
         NMS_THRESHOLD=0.4,
         # classes=[0],
         render_segmenttion_map=True,
-        verbose=True
+        verbose=False
     )
 
     # Combine multiple segmentators
