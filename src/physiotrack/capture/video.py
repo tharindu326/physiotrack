@@ -5,6 +5,7 @@ import numpy as np
 from pathlib import Path
 from typing import Optional, Union, List, Dict, Any, Tuple
 from tqdm import tqdm
+from physiotrack.modules.Yolo.classes_and_palettes import COLORS
 
 
 class Video:
@@ -25,10 +26,11 @@ class Video:
                  verbose: bool = False):
 
         self.video_path = video_path
-        self.detector = detector
+        # Support both single instance and list of instances for detector and segmentator
+        self.detectors = detector if isinstance(detector, list) else ([detector] if detector is not None else [])
+        self.segmentators = segmentator if isinstance(segmentator, list) else ([segmentator] if segmentator is not None else [])
         self.tracker = tracker
         self.pose_estimator = pose_estimator
-        self.segmentator = segmentator
         self.verbose = verbose
         self.required_fps = required_fps
         self.frame_resize = frame_resize
@@ -156,29 +158,84 @@ class Video:
                 result_frame = frame.copy()
                 segmentation_img = None
 
-                if self.detector is not None:
-                    results, frame = self.detector.detect(frame)
-                    detections = results[0].boxes.data.cpu().numpy()  # (x1, y1, x2, y2, conf, cls)
-                    boxes = detections[:, :-2].astype(int)
+                # Run all detectors and combine results
+                if len(self.detectors) > 0:
+                    all_detections = []
+                    combined_frame = frame.copy()
 
-                    if self.pose_estimator and self.pose_estimator.__class__.__name__ != "Custom":
-                        raise ValueError("Please use Pose.Custom class if you want to use a custom detector with the Video class. Alternatively, you can: 1) Not provide a detector to use the default detector (Models.Detection.YOLO.PERSON.m_person) of the Pose estimator, or 2) Pass a detector to the Pose estimator from the Models zoo if you don't wish to use the Tracker class.")
+                    # Use predefined colors from COLORS palette
+                    color_names = list(COLORS.keys())
 
-                    if self.tracker is not None:
-                        frame, online_targets = self.tracker.track(frame, detections)
-                        # filter boxes based on student track to obtain only the student box
-                        if self.tracker.student_track_id is not None and self.tracker.last_known_bbox is not None:
-                            boxes = np.array(self.tracker.last_known_bbox, dtype=int).reshape(1, -1)
+                    for idx, detector in enumerate(self.detectors):
+                        results, detected_frame = detector.detect(frame)
+                        detections = results[0].boxes.data.cpu().numpy()  # (x1, y1, x2, y2, conf, cls)
+
+                        # Get color for this detector
+                        color_name = color_names[idx % len(color_names)]
+                        color = tuple(COLORS[color_name])
+
+                        # Draw boxes with unique color for this detector
+                        for det in detections:
+                            x1, y1, x2, y2, conf, cls = det
+                            cv2.rectangle(combined_frame, (int(x1), int(y1)), (int(x2), int(y2)), color, 2)
+                            # Add label with detector index
+                            label = f"D{idx}-C{int(cls)}: {conf:.2f}"
+                            cv2.putText(combined_frame, label, (int(x1), int(y1)-5),
+                                      cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+
+                        all_detections.append(detections)
+
+                    # Combine all detections into one array
+                    if len(all_detections) > 0:
+                        detections = np.vstack(all_detections)
+                        boxes = detections[:, :-2].astype(int)
+                        frame = combined_frame
+
+                        if self.pose_estimator and self.pose_estimator.__class__.__name__ != "Custom":
+                            raise ValueError("Please use Pose.Custom class if you want to use a custom detector with the Video class. Alternatively, you can: 1) Not provide a detector to use the default detector (Models.Detection.YOLO.PERSON.m_person) of the Pose estimator, or 2) Pass a detector to the Pose estimator from the Models zoo if you don't wish to use the Tracker class.")
+
+                        if self.tracker is not None:
+                            frame, online_targets = self.tracker.track(frame, detections)
+                            # filter boxes based on student track to obtain only the student box
+                            if self.tracker.student_track_id is not None and self.tracker.last_known_bbox is not None:
+                                boxes = np.array(self.tracker.last_known_bbox, dtype=int).reshape(1, -1)
 
                 if self.pose_estimator is not None:
                     result_frame, results = self.pose_estimator.estimate(frame, boxes)
                     pose_results = results.to_json()['detections']
 
-                # Apply segmentation if segmentator is provided
-                if self.segmentator is not None:
-                    segmentation_img, segmentation_map = self.segmentator.segment(frame)
-                    # Overlay segmentation on result_frame
-                    result_frame = cv2.addWeighted(result_frame, 0.7, segmentation_img, 0.3, 0)
+                # Run all segmentators and combine results
+                if len(self.segmentators) > 0:
+                    h, w = frame.shape[:2]
+                    combined_segmentation_map = np.zeros((h, w), dtype=np.uint8)
+                    combined_segmentation_img = np.zeros((h, w, 3), dtype=np.uint8)
+
+                    # Use predefined colors from COLORS palette
+                    color_names = list(COLORS.keys())
+                    color_list = [COLORS[name] for name in color_names]
+
+                    for seg_idx, segmentator in enumerate(self.segmentators):
+                        seg_img, seg_map = segmentator.segment(frame)
+
+                        # Remap class IDs to make them unique across segmentators
+                        # Offset by segmentator index * 100 to avoid conflicts
+                        unique_classes = np.unique(seg_map)
+                        for cls_id in unique_classes:
+                            if cls_id > 0:  # Skip background
+                                new_cls_id = seg_idx * 100 + cls_id
+                                mask = seg_map == cls_id
+
+                                # Assign color from palette based on segmentator and class
+                                # Use different color for each segmentator-class combination
+                                color_idx = (seg_idx * 10 + cls_id) % len(color_list)
+                                color = color_list[color_idx]
+
+                                # Apply color to segmentation
+                                combined_segmentation_map[mask] = new_cls_id
+                                combined_segmentation_img[mask] = color
+
+                    # Overlay combined segmentation on result_frame
+                    result_frame = cv2.addWeighted(result_frame, 0.7, combined_segmentation_img, 0.3, 0)
                 
                 # Store frame data
                 frame_data = {

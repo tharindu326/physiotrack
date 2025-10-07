@@ -95,7 +95,7 @@ class Models:
 
         class Yolo: 
             class VRHEAD(Enum):
-                M11 = "yolo11m_VR_faceNeck.pt"
+                M11 = "yolo11m_VR_head.pt"
 
             class PERSON(Enum):
                 m_person = "yolo11m-seg.pt"

@@ -41,7 +41,7 @@ def run_full_inference(video_path, output_dir='output/full_inference'):
         model=Models.Detection.YOLO.PERSON.m_person,
         render_box_detections=True,
         render_labels=True,
-        verbose=True,
+        verbose=False,
         device=0
     )
 
@@ -62,8 +62,8 @@ def run_full_inference(video_path, output_dir='output/full_inference'):
     tracker_config.classes = [0]
     tracker = Tracker(config=tracker_config)
 
-    print("[4/4] Initializing Segmentor...")
-    segmentor = Segmentation.Person(
+    print("[4/4] Initializing Segmentors...")
+    segmentor_person = Segmentation.Person(
         device=0,
         OBJECTNESS_CONFIDENCE=0.24,
         NMS_THRESHOLD=0.4,
@@ -72,7 +72,20 @@ def run_full_inference(video_path, output_dir='output/full_inference'):
         verbose=False
     )
 
+    segmentor_vrhead = Segmentation.VRHEAD(
+        device=0,
+        OBJECTNESS_CONFIDENCE=0.24,
+        NMS_THRESHOLD=0.4,
+        # classes=[0],
+        render_segmenttion_map=True,
+        verbose=True
+    )
+
+    # Combine multiple segmentators
+    segmentors = [segmentor_person, segmentor_vrhead]
+
     print("\n✓ All models initialized successfully!")
+    print(f"  - Segmentators: {len(segmentors)} (Person + VRHEAD)")
 
     # Process video using Video processor
     print("\n" + "="*60)
@@ -84,7 +97,7 @@ def run_full_inference(video_path, output_dir='output/full_inference'):
         pose_estimator=pose_estimator,
         detector=detector,  # Pass VRStudent detector to work with Pose.Custom
         tracker=tracker,
-        segmentator=segmentor,
+        segmentator=segmentors,  # Pass list of segmentators (Person + VRHEAD)
         required_fps=None,
         frame_resize=None,
         frame_rotate=False,
