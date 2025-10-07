@@ -69,6 +69,7 @@ def run_full_inference(video_path, output_dir='output/full_inference'):
         NMS_THRESHOLD=0.4,
         classes=[0],  # Person class only
         render_segmenttion_map=True,
+        segmentation_filter={'bbox_filter': False},
         verbose=False
     )
 
@@ -78,6 +79,11 @@ def run_full_inference(video_path, output_dir='output/full_inference'):
         NMS_THRESHOLD=0.4,
         # classes=[0],
         render_segmenttion_map=True,
+        segmentation_filter={
+            'bbox_filter': True,
+            'detector_index': 0,  # Use detector index 0
+            'detector_class_filter': None  # Use all classes
+        },
         verbose=False
     )
 

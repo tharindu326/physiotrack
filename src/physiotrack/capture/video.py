@@ -215,7 +215,34 @@ class Video:
                     color_list = [COLORS[name] for name in color_names]
 
                     for seg_idx, segmentator in enumerate(self.segmentators):
-                        seg_img, seg_map = segmentator.segment(frame)
+                        # Determine which bboxes to use for filtering
+                        filter_bboxes = None
+                        if segmentator.bbox_filter and len(all_detections) > 0:
+                            # Use specific detector if detector_index is set
+                            if segmentator.detector_index is not None and segmentator.detector_index < len(all_detections):
+                                detections = all_detections[segmentator.detector_index]
+
+                                # Filter by class if detector_class_filter is specified
+                                if segmentator.detector_class_filter is not None:
+                                    class_filter = segmentator.detector_class_filter if isinstance(segmentator.detector_class_filter, list) else [segmentator.detector_class_filter]
+                                    class_mask = np.isin(detections[:, 5], class_filter)
+                                    filter_bboxes = detections[class_mask][:, :4] if np.any(class_mask) else None
+                                else:
+                                    filter_bboxes = detections[:, :4]
+                            else:
+                                # Use all detections if no specific detector is specified
+                                all_dets = np.vstack(all_detections) if len(all_detections) > 0 else None
+                                if all_dets is not None:
+                                    # Filter by class if detector_class_filter is specified
+                                    if segmentator.detector_class_filter is not None:
+                                        class_filter = segmentator.detector_class_filter if isinstance(segmentator.detector_class_filter, list) else [segmentator.detector_class_filter]
+                                        class_mask = np.isin(all_dets[:, 5], class_filter)
+                                        filter_bboxes = all_dets[class_mask][:, :4] if np.any(class_mask) else None
+                                    else:
+                                        filter_bboxes = all_dets[:, :4]
+
+                        # Segment with optional bbox filtering
+                        seg_img, seg_map = segmentator.segment(frame, bboxes=filter_bboxes)
 
                         # Remap class IDs to make them unique across segmentators
                         # Offset by segmentator index * 100 to avoid conflicts
