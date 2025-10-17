@@ -1,7 +1,6 @@
 import numpy as np
 import cv2
-import os
-from . import cfg
+from physiotrack.core import cfg
 
 
 def filter_by_box(segmentation_map, bbox=None):

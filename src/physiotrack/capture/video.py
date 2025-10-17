@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Optional, Union, List, Dict, Any, Tuple
 from tqdm import tqdm
 from physiotrack.modules.Yolo.classes_and_palettes import COLORS
+from physiotrack.core.radar_view import RadarView
 
 
 class Video:
@@ -38,16 +39,9 @@ class Video:
         self.frame_rotate = frame_rotate
         self.floor_map = floor_map
 
-        # Initialize radar view components
-        self.radar_view_enabled = floor_map is not None and len(floor_map) == 4
-        self.person_trajectories = {}  # {track_id: [(x, y), ...]}
-        self.person_colors = {}  # {track_id: color}
-        self.homography_matrix = None
-        self.radar_canvas_size = (300, 300)  # Will be updated based on floor_map aspect ratio
+        # Initialize radar view
+        self.radar_view = RadarView(floor_map) if floor_map else None
 
-        if self.radar_view_enabled:
-            self._setup_homography()
-        
         self.cap = cv2.VideoCapture(video_path)
         if not self.cap.isOpened():
             raise ValueError(f"Could not open video: {video_path}")
@@ -106,153 +100,11 @@ class Video:
         """
         if required_fps == camera_fps or required_fps is None:
             return [int(i) for i in np.arange(1, camera_fps+1, dtype=float)]
-        
+
         delta = camera_fps - 1
         step = delta / required_fps
         y = np.arange(0, required_fps, dtype=float) * step + 1
         return [int(i) for i in y]
-    
-    def _setup_homography(self):
-        """
-        Setup homography matrix for perspective transformation from image coordinates to floor map.
-        floor_map should contain 4 points: [(x1,y1), (x2,y2), (x3,y3), (x4,y4)]
-        """
-        if not self.floor_map or len(self.floor_map) != 4:
-            return
-
-        # Source points from floor_map (in video coordinates)
-        src_pts = np.array(self.floor_map, dtype=np.float32)
-
-        # Calculate the bounding box of floor_map to determine aspect ratio
-        xs = [pt[0] for pt in self.floor_map]
-        ys = [pt[1] for pt in self.floor_map]
-        width = max(xs) - min(xs)
-        height = max(ys) - min(ys)
-
-        # Scale to fit within max dimension of 400 while maintaining aspect ratio
-        max_dim = 400
-        if width > height:
-            canvas_width = max_dim
-            canvas_height = int(max_dim * height / width)
-        else:
-            canvas_height = max_dim
-            canvas_width = int(max_dim * width / height)
-
-        self.radar_canvas_size = (canvas_width, canvas_height)
-
-        # Destination points (normalized 2D floor space scaled to canvas size)
-        dst_pts = np.array([
-            [0, 0],                              # top-left
-            [canvas_width, 0],                   # top-right
-            [canvas_width, canvas_height],       # bottom-right
-            [0, canvas_height]                   # bottom-left
-        ], dtype=np.float32)
-
-        # Compute homography matrix
-        self.homography_matrix = cv2.getPerspectiveTransform(src_pts, dst_pts)
-
-        if self.verbose:
-            print(f"Homography matrix computed for floor map: {self.floor_map}")
-            print(f"Radar canvas size: {canvas_width}x{canvas_height}")
-
-    def _get_foot_center(self, pose_keypoints):
-        """
-        Calculate foot center from pose keypoints.
-        Returns the midpoint between left and right ankle positions.
-        Keypoints format: [{'id': int, 'x': float, 'y': float, 'confidence': float}, ...]
-        COCO format: 15=left ankle, 16=right ankle
-        """
-        if pose_keypoints is None or len(pose_keypoints) == 0:
-            return None
-
-        # Create a dictionary for quick lookup by id
-        keypoints_dict = {kp['id']: kp for kp in pose_keypoints}
-
-        # COCO keypoint indices: 15=left ankle, 16=right ankle
-        left_ankle_id = 15
-        right_ankle_id = 16
-
-        left_ankle = keypoints_dict.get(left_ankle_id)
-        right_ankle = keypoints_dict.get(right_ankle_id)
-
-        # Check if both ankles are visible (confidence > 0.3)
-        if left_ankle and right_ankle:
-            if left_ankle['confidence'] > 0.3 and right_ankle['confidence'] > 0.3:
-                foot_x = (left_ankle['x'] + right_ankle['x']) / 2
-                foot_y = (left_ankle['y'] + right_ankle['y']) / 2
-                return (foot_x, foot_y)
-            elif left_ankle['confidence'] > 0.3:
-                return (left_ankle['x'], left_ankle['y'])
-            elif right_ankle['confidence'] > 0.3:
-                return (right_ankle['x'], right_ankle['y'])
-
-        return None
-
-    def _transform_to_floor_coords(self, point):
-        """
-        Transform a point from video coordinates to floor map coordinates using homography.
-        """
-        if self.homography_matrix is None or point is None:
-            return None
-
-        pt = np.array([[point[0], point[1]]], dtype=np.float32)
-        transformed = cv2.perspectiveTransform(pt.reshape(-1, 1, 2), self.homography_matrix)
-        return (int(transformed[0][0][0]), int(transformed[0][0][1]))
-
-    def _get_color_for_track_id(self, track_id):
-        """
-        Get a unique color for a track ID.
-        """
-        if track_id not in self.person_colors:
-            # Use COLORS palette to assign unique colors
-            color_names = list(COLORS.keys())
-            color_idx = len(self.person_colors) % len(color_names)
-            self.person_colors[track_id] = tuple(COLORS[color_names[color_idx]])
-
-        return self.person_colors[track_id]
-
-    def _draw_radar_view(self, radar_canvas):
-        """
-        Draw the radar view with all person trajectories.
-        """
-        canvas_width, canvas_height = self.radar_canvas_size
-
-        # Fill background
-        radar_canvas.fill(40)
-
-        # Draw floor boundary
-        cv2.rectangle(radar_canvas, (0, 0), (canvas_width-1, canvas_height-1), (100, 100, 100), 2)
-
-        # Draw trajectories for each person
-        for track_id, trajectory in self.person_trajectories.items():
-            if len(trajectory) > 0:
-                color = self._get_color_for_track_id(track_id)
-
-                # Draw trajectory path
-                for i in range(1, len(trajectory)):
-                    pt1 = trajectory[i-1]
-                    pt2 = trajectory[i]
-                    # Ensure points are within bounds
-                    if (0 <= pt1[0] < canvas_width and 0 <= pt1[1] < canvas_height and
-                        0 <= pt2[0] < canvas_width and 0 <= pt2[1] < canvas_height):
-                        cv2.line(radar_canvas, pt1, pt2, color, 2)
-
-                # Draw current position (larger circle)
-                if len(trajectory) > 0:
-                    current_pos = trajectory[-1]
-                    if 0 <= current_pos[0] < canvas_width and 0 <= current_pos[1] < canvas_height:
-                        cv2.circle(radar_canvas, current_pos, 6, color, -1)
-                        cv2.circle(radar_canvas, current_pos, 8, (255, 255, 255), 1)
-                        # Add track ID label
-                        cv2.putText(radar_canvas, f"ID:{track_id}",
-                                   (current_pos[0] + 10, current_pos[1] - 10),
-                                   cv2.FONT_HERSHEY_SIMPLEX, 0.4, color, 1)
-
-        # Add title
-        cv2.putText(radar_canvas, "Floor Map", (10, 20),
-                   cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
-
-        return radar_canvas
 
     def preprocess_frame(self, frame):
         """
@@ -419,66 +271,10 @@ class Video:
                     # Overlay combined segmentation on result_frame
                     result_frame = cv2.addWeighted(result_frame, 0.7, combined_segmentation_img, 0.3, 0)
 
-                # Track foot centers and update radar view
-                if self.radar_view_enabled and self.tracker is not None and self.pose_estimator is not None:
-                    # Extract track IDs and their corresponding poses
-                    if len(online_targets) > 0:
-                        # online_targets format: [[x1, y1, x2, y2, track_id, cls, conf], ...]
-                        for target in online_targets:
-                            track_id = int(target[4])  # track_id is at index 4
-                            bbox = target[:4]  # [x1, y1, x2, y2]
-
-                            # Find the pose result that matches this bbox (by proximity)
-                            for pose_result in pose_results:
-                                if 'keypoints' in pose_result and pose_result['keypoints'] is not None:
-                                    # Get foot center from keypoints
-                                    keypoints = pose_result['keypoints']
-                                    foot_center = self._get_foot_center(keypoints)
-
-                                    if foot_center is not None:
-                                        # Check if foot is inside bbox (simple matching)
-                                        x1, y1, x2, y2 = bbox
-                                        if x1 <= foot_center[0] <= x2 and y1 <= foot_center[1] <= y2:
-                                            # Transform to floor coordinates
-                                            floor_coords = self._transform_to_floor_coords(foot_center)
-
-                                            if floor_coords is not None:
-                                                # Initialize trajectory for new track ID
-                                                if track_id not in self.person_trajectories:
-                                                    self.person_trajectories[track_id] = []
-
-                                                # Add to trajectory (keep last 100 points)
-                                                self.person_trajectories[track_id].append(floor_coords)
-                                                if len(self.person_trajectories[track_id]) > 100:
-                                                    self.person_trajectories[track_id].pop(0)
-
-                                                break  # Found matching pose for this track
-
-                    # Create and overlay radar view
-                    canvas_width, canvas_height = self.radar_canvas_size
-                    radar_canvas = np.zeros((canvas_height, canvas_width, 3), dtype=np.uint8)
-                    radar_canvas = self._draw_radar_view(radar_canvas)
-
-                    # Overlay radar view on bottom right corner
-                    h, w = result_frame.shape[:2]
-                    margin = 10
-                    radar_h, radar_w = canvas_height, canvas_width
-
-                    # Position: bottom right with margin
-                    y1 = h - radar_h - margin
-                    y2 = h - margin
-                    x1 = w - radar_w - margin
-                    x2 = w - margin
-
-                    # Ensure coordinates are valid
-                    if y1 >= 0 and x1 >= 0 and y2 <= h and x2 <= w:
-                        # Add semi-transparent background
-                        overlay = result_frame.copy()
-                        cv2.rectangle(overlay, (x1-5, y1-5), (x2+5, y2+5), (0, 0, 0), -1)
-                        result_frame = cv2.addWeighted(result_frame, 0.7, overlay, 0.3, 0)
-
-                        # Overlay radar view
-                        result_frame[y1:y2, x1:x2] = radar_canvas
+                # Update and attach radar view
+                if self.radar_view and self.tracker is not None and self.pose_estimator is not None:
+                    self.radar_view.update(online_targets, pose_results)
+                    result_frame = self.radar_view.attach_to_frame(result_frame)
 
                 # Store frame data
                 frame_data = {
