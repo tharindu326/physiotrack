@@ -1,6 +1,7 @@
 
 from ultralytics import YOLO
-import os 
+import os
+from collections import deque
 from .classes_and_palettes import COLORS
 import cv2
 import numpy as np
@@ -8,7 +9,7 @@ import time
 
 
 class YoloPose:
-    def __init__(self, model, device, OBJECTNESS_CONFIDENCE, NMS_THRESHOLD, classes, overlay_keypoints=True, 
+    def __init__(self, model, device, OBJECTNESS_CONFIDENCE, NMS_THRESHOLD, classes, overlay_keypoints=True,
                  render_labels=False, render_box_detections=False, verbose=False, **kwargs):
         model_path = os.path.join(os.path.dirname(__file__), '..', 'model_data')
         self.model = YOLO(os.path.join(model_path, model.value))
@@ -21,7 +22,10 @@ class YoloPose:
         self.render_box_detections = render_box_detections
         self.render_labels = render_labels
         self.overlay_keypoints = overlay_keypoints
-        self.extra_args = kwargs 
+        self.extra_args = kwargs
+
+        # FPS monitoring
+        self.inference_times = deque(maxlen=100) 
         
     def compute_iou(self, boxA, boxB):
         xA = max(boxA[0], boxB[0])
@@ -60,6 +64,8 @@ class YoloPose:
         }
 
         results = self.model.predict(source=frame, **all_kwargs)
+        inference_time = time.perf_counter() - start
+        self.inference_times.append(inference_time)
 
         for result in results:
             pose = result.keypoints
@@ -138,8 +144,20 @@ class YoloPose:
                 if pose is not None and self.overlay_keypoints:
                     frame = self.plot_skeleton_kpts(frame, [pose.xy[i].tolist()])
 
-        print(f"YOLO Pose inference took: {time.perf_counter() - start:.4f} seconds")
         return frame, frame_data
+
+    def get_avg_inference_time(self):
+        """Get average inference time in milliseconds."""
+        if len(self.inference_times) == 0:
+            return 0.0
+        return (sum(self.inference_times) / len(self.inference_times)) * 1000
+
+    def get_avg_fps(self):
+        """Get average FPS based on inference times."""
+        if len(self.inference_times) == 0:
+            return 0.0
+        avg_time = sum(self.inference_times) / len(self.inference_times)
+        return 1.0 / avg_time if avg_time > 0 else 0.0
 
     
     def plot_skeleton_kpts(self, im, all_kpts):

@@ -25,7 +25,8 @@ class Video:
                  frame_resize: Optional[Tuple[int, int]] = None,
                  frame_rotate: bool = False,
                  floor_map: Optional[List[Tuple[int, int]]] = None,
-                 verbose: bool = False):
+                 verbose: bool = False,
+                 show_fps: bool = False):
 
         self.video_path = video_path
         # Support both single instance and list of instances for detector and segmentator
@@ -34,6 +35,7 @@ class Video:
         self.tracker = tracker
         self.pose_estimator = pose_estimator
         self.verbose = verbose
+        self.show_fps = show_fps
         self.required_fps = required_fps
         self.frame_resize = frame_resize
         self.frame_rotate = frame_rotate
@@ -147,7 +149,9 @@ class Video:
         frame_count = 0
         frame_filter_count = 1
         start_time = time.time()
-        
+        last_fps_print_time = start_time
+        fps_print_interval = 2.0  # Print FPS every 2 seconds for real-time monitoring
+
         while True:
             ret, frame = self.cap.read()
             if not ret:
@@ -294,10 +298,52 @@ class Video:
 
                 if out_writer:
                     out_writer.write(result_frame)
-                    
+
                 if progress_callback:
                     progress_callback(frame_count, self.total_frames, results)
-                
+
+            # Real-time FPS monitoring
+            if self.show_fps:
+                current_time = time.time()
+                if current_time - last_fps_print_time >= fps_print_interval:
+                    elapsed = current_time - start_time
+                    current_fps = frame_count / elapsed if elapsed > 0 else 0
+
+                    # Build component-wise FPS dict
+                    fps_dict = {"Pipeline": f"{current_fps:.2f}"}
+
+                    if len(self.detectors) > 0:
+                        for idx, detector in enumerate(self.detectors):
+                            if hasattr(detector, 'get_avg_fps'):
+                                det_fps = detector.get_avg_fps()
+                                fps_dict[f"Det[{idx}]"] = f"{det_fps:.2f}"
+
+                    if self.pose_estimator and hasattr(self.pose_estimator, 'pose_estimator'):
+                        if hasattr(self.pose_estimator.pose_estimator, 'get_avg_fps'):
+                            pose_fps = self.pose_estimator.pose_estimator.get_avg_fps()
+                            fps_dict["Pose"] = f"{pose_fps:.2f}"
+
+                    if self.tracker and hasattr(self.tracker, 'get_avg_fps'):
+                        tracker_fps = self.tracker.get_avg_fps()
+                        fps_dict["Track"] = f"{tracker_fps:.2f}"
+
+                    if len(self.segmentators) > 0:
+                        for idx, segmentor in enumerate(self.segmentators):
+                            if hasattr(segmentor, 'get_avg_fps'):
+                                seg_fps = segmentor.get_avg_fps()
+                                fps_dict[f"Seg[{idx}]"] = f"{seg_fps:.2f}"
+
+                    if pbar:
+                        # Update progress bar with FPS info
+                        pbar.set_postfix(fps_dict)
+                    else:
+                        # Print FPS on same line if no progress bar
+                        fps_parts = [f"{k}: {v}" for k, v in fps_dict.items()]
+                        fps_display = " | ".join(fps_parts)
+                        print(f"\r{fps_display}", end='', flush=True)
+
+                    last_fps_print_time = current_time
+
             frame_count += 1
             frame_filter_count = frame_filter_count + 1 if frame_filter_count < self.video_fps else 1
             
@@ -310,10 +356,44 @@ class Video:
             
         total_time = time.time() - start_time
         avg_fps = frame_count / total_time if total_time > 0 else 0
-        
-        if self.verbose:
-            print(f"Processing complete: {frame_count} frames, {avg_fps:.2f} FPS, "
-                  f"{len(all_detection_data)} total detections")
+
+        # Print detailed FPS statistics
+        if self.show_fps:
+            print("\n\n" + "="*60)  # Extra newline to clear real-time FPS line
+            print("PERFORMANCE METRICS")
+            print("="*60)
+            print(f"Overall Pipeline FPS: {avg_fps:.2f}")
+            print(f"Total frames processed: {frame_count}")
+            print(f"Total time: {total_time:.2f}s")
+            print("-"*60)
+
+            # Component-level FPS
+            if len(self.detectors) > 0:
+                for idx, detector in enumerate(self.detectors):
+                    if hasattr(detector, 'get_avg_fps'):
+                        det_fps = detector.get_avg_fps()
+                        det_time = detector.get_avg_inference_time()
+                        print(f"Detector[{idx}] FPS: {det_fps:.2f} ({det_time:.2f}ms per frame)")
+
+            if self.pose_estimator and hasattr(self.pose_estimator, 'pose_estimator'):
+                if hasattr(self.pose_estimator.pose_estimator, 'get_avg_fps'):
+                    pose_fps = self.pose_estimator.pose_estimator.get_avg_fps()
+                    pose_time = self.pose_estimator.pose_estimator.get_avg_inference_time()
+                    print(f"Pose Estimator FPS: {pose_fps:.2f} ({pose_time:.2f}ms per frame)")
+
+            if self.tracker and hasattr(self.tracker, 'get_avg_fps'):
+                tracker_fps = self.tracker.get_avg_fps()
+                tracker_time = self.tracker.get_avg_inference_time()
+                print(f"Tracker FPS: {tracker_fps:.2f} ({tracker_time:.2f}ms per frame)")
+
+            if len(self.segmentators) > 0:
+                for idx, segmentor in enumerate(self.segmentators):
+                    if hasattr(segmentor, 'get_avg_fps'):
+                        seg_fps = segmentor.get_avg_fps()
+                        seg_time = segmentor.get_avg_inference_time()
+                        print(f"Segmentor[{idx}] FPS: {seg_fps:.2f} ({seg_time:.2f}ms per frame)")
+
+            print("="*60)
                   
         if output_json_path:
             self._save_json_data(all_detection_data, output_json_path)

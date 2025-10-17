@@ -90,6 +90,18 @@ class SegmentationBase:
 
         return segmentation_img, segmentation_map
 
+    def get_avg_inference_time(self):
+        """Get average inference time in milliseconds."""
+        if hasattr(self.segmentor, 'get_avg_inference_time'):
+            return self.segmentor.get_avg_inference_time()
+        return 0.0
+
+    def get_avg_fps(self):
+        """Get average FPS based on inference times."""
+        if hasattr(self.segmentor, 'get_avg_fps'):
+            return self.segmentor.get_avg_fps()
+        return 0.0
+
 
 class Segmentation:
     class Custom(SegmentationBase):

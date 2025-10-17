@@ -12,6 +12,9 @@ class Tracker:
         self.frame_ID = 0
         self.id_list = []
         self.avg_fps = deque(maxlen=100)
+
+        # FPS monitoring
+        self.inference_times = deque(maxlen=100)
         
         # Track history storage
         self.student_track_history = defaultdict(lambda: deque(maxlen=self.config.trail_length))
@@ -297,15 +300,33 @@ class Tracker:
     
     # ===== Main Tracking Method =====
     def track(self, frame, detections):
+        start = time.time()
+
         detected_items = self.process_detections(detections)
-            
+
         online_targets = self.tracker.update(detected_items, frame)
-        
+
         self.update_track_history(online_targets)
-        
+
         if self.config.enable_student_tracking:
             self.update_student_track(online_targets)
-        
+
         frame = self.draw_tracks(frame, online_targets, detected_items)
-        
+
+        inference_time = time.time() - start
+        self.inference_times.append(inference_time)
+
         return frame, online_targets
+
+    def get_avg_inference_time(self):
+        """Get average inference time in milliseconds."""
+        if len(self.inference_times) == 0:
+            return 0.0
+        return (sum(self.inference_times) / len(self.inference_times)) * 1000
+
+    def get_avg_fps(self):
+        """Get average FPS based on inference times."""
+        if len(self.inference_times) == 0:
+            return 0.0
+        avg_time = sum(self.inference_times) / len(self.inference_times)
+        return 1.0 / avg_time if avg_time > 0 else 0.0

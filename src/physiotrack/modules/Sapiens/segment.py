@@ -3,6 +3,7 @@ import cv2
 import numpy as np
 import torch
 import os
+from collections import deque
 from .common import create_preprocessor
 import torch.nn.functional as F
 from .classes_and_palettes import SEGMENTATION_CLASSES
@@ -23,7 +24,10 @@ class SapiensSegmentation():
         model_folder = os.path.join(os.path.dirname(__file__), '..', 'model_data')
         model_path = os.path.join(model_folder, model.value)
         self.model = torch.jit.load(model_path).eval().to(self.device).to(dtype)
-        self.preprocessor = create_preprocessor(input_size=(1024, 768))  
+        self.preprocessor = create_preprocessor(input_size=(1024, 768))
+
+        # FPS monitoring
+        self.inference_times = deque(maxlen=100)  
         
 
     def __call__(self, img: np.ndarray) -> np.ndarray:
@@ -47,8 +51,22 @@ class SapiensSegmentation():
         with torch.inference_mode():
             results = self.model(tensor)
         segmentation_map = postprocess_segmentation(results, img.shape[:2])
-        print(f"Sapiense segmentation inference took: {time.perf_counter() - start:.4f} seconds")
+        inference_time = time.perf_counter() - start
+        self.inference_times.append(inference_time)
         return segmentation_map
+
+    def get_avg_inference_time(self):
+        """Get average inference time in milliseconds."""
+        if len(self.inference_times) == 0:
+            return 0.0
+        return (sum(self.inference_times) / len(self.inference_times)) * 1000
+
+    def get_avg_fps(self):
+        """Get average FPS based on inference times."""
+        if len(self.inference_times) == 0:
+            return 0.0
+        avg_time = sum(self.inference_times) / len(self.inference_times)
+        return 1.0 / avg_time if avg_time > 0 else 0.0
 
 
 def draw_segmentation_map(segmentation_map: np.ndarray) -> np.ndarray:

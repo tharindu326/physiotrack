@@ -4,6 +4,7 @@ import time
 import numpy as np
 import os
 from pathlib import Path
+from collections import deque
 from .classes_and_palettes import COLORS
 import sys
 main_dir = Path(__file__).resolve().parent.parent
@@ -11,7 +12,7 @@ sys.path.append(str(main_dir))
 
 
 class Detector:
-    def __init__(self, model, device, OBJECTNESS_CONFIDENCE, NMS_THRESHOLD, classes, 
+    def __init__(self, model, device, OBJECTNESS_CONFIDENCE, NMS_THRESHOLD, classes,
                  render_labels=False, render_box_detections=False, verbose=False, **kwargs):
         model_path = os.path.join(os.path.dirname(__file__), '..', 'model_data')
         self.model = YOLO(os.path.join(model_path, model.value))
@@ -23,7 +24,10 @@ class Detector:
         self.COLORS = COLORS
         self.render_box_detections = render_box_detections
         self.render_labels = render_labels
-        self.extra_args = kwargs 
+        self.extra_args = kwargs
+
+        # FPS monitoring
+        self.inference_times = deque(maxlen=100) 
 
 
     def __call__(self, img: np.ndarray) -> np.ndarray:
@@ -41,16 +45,30 @@ class Detector:
         }
         start = time.perf_counter()
         results = self.model.predict(source=frame, **all_kwargs)
-        
+        inference_time = time.perf_counter() - start
+        self.inference_times.append(inference_time)
+
         detections = results[0].boxes.data.cpu().numpy()  # (x1, y1, x2, y2, conf, cls)
         boxes = detections[:, :-2].astype(int)
-        # print(f"Detection inference took: {time.perf_counter() - start:.4f} seconds")
-        
+
         labels = [self.model.names[int(cls)] for cls in results[0].boxes.cls]
         confidences = results[0].boxes.conf.cpu().numpy()
         output_img = self.draw_boxes(frame, boxes, labels, confidences)
-        
+
         return results, output_img
+
+    def get_avg_inference_time(self):
+        """Get average inference time in milliseconds."""
+        if len(self.inference_times) == 0:
+            return 0.0
+        return (sum(self.inference_times) / len(self.inference_times)) * 1000
+
+    def get_avg_fps(self):
+        """Get average FPS based on inference times."""
+        if len(self.inference_times) == 0:
+            return 0.0
+        avg_time = sum(self.inference_times) / len(self.inference_times)
+        return 1.0 / avg_time if avg_time > 0 else 0.0
     
     def draw_boxes(self, img, boxes, labels, confidences, color=(0, 255, 0), thickness=2):
         draw_img = img.copy()

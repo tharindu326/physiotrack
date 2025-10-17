@@ -2,6 +2,7 @@ from typing import List
 import time
 import cv2
 import numpy as np
+from collections import deque
 from torchvision import transforms
 import torch
 import os
@@ -34,6 +35,9 @@ class SapiensPoseEstimation:
                                transforms.ToTensor(),
                                transforms.Normalize(mean=mean, std=std),
                                ])
+
+        # FPS monitoring
+        self.inference_times = deque(maxlen=100)
 
     @torch.inference_mode()
     def estimate_pose(self, img, bboxes):
@@ -114,9 +118,25 @@ class SapiensPoseEstimation:
         return img_copy
     
     def inference(self, img, bboxes):
+        start = time.perf_counter()
         # Process the image and estimate the pose
         pose_result_image, keypoints_frame_data = self.estimate_pose(img, bboxes)
+        inference_time = time.perf_counter() - start
+        self.inference_times.append(inference_time)
         return pose_result_image, keypoints_frame_data
+
+    def get_avg_inference_time(self):
+        """Get average inference time in milliseconds."""
+        if len(self.inference_times) == 0:
+            return 0.0
+        return (sum(self.inference_times) / len(self.inference_times)) * 1000
+
+    def get_avg_fps(self):
+        """Get average FPS based on inference times."""
+        if len(self.inference_times) == 0:
+            return 0.0
+        avg_time = sum(self.inference_times) / len(self.inference_times)
+        return 1.0 / avg_time if avg_time > 0 else 0.0
 
 if __name__ == "__main__":
     from enum import Enum

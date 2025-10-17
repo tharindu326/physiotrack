@@ -3,6 +3,7 @@ from typing import Optional
 import cv2
 import numpy as np
 import torch
+from collections import deque
 from thop import profile
 from .configs.ViTPose_common import data_cfg
 from .vit_models.model import ViTPose
@@ -109,6 +110,9 @@ class VitInference:
         # Override _inference abstract with selected engine
         self._inference = inf_fn  # type: ignore
 
+        # FPS monitoring
+        self.inference_times = deque(maxlen=100)
+
     @classmethod
     def postprocess(cls, heatmaps, org_w, org_h):
         """
@@ -173,8 +177,24 @@ class VitInference:
             
         if self.overlay_keypoints:
             output_frame = self.draw()
-        # print(f"ViTPose inference took: {time.perf_counter() - start:.4f} seconds")
+
+        inference_time = time.perf_counter() - start
+        self.inference_times.append(inference_time)
+
         return output_frame, frame_data
+
+    def get_avg_inference_time(self):
+        """Get average inference time in milliseconds."""
+        if len(self.inference_times) == 0:
+            return 0.0
+        return (sum(self.inference_times) / len(self.inference_times)) * 1000
+
+    def get_avg_fps(self):
+        """Get average FPS based on inference times."""
+        if len(self.inference_times) == 0:
+            return 0.0
+        avg_time = sum(self.inference_times) / len(self.inference_times)
+        return 1.0 / avg_time if avg_time > 0 else 0.0
 
     def draw(self, confidence_threshold=0.5):
         """

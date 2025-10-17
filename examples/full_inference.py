@@ -110,7 +110,8 @@ def run_full_inference(video_path, output_dir='output/full_inference', floor_map
         frame_rotate=False,
         floor_map=floor_map,  # Floor area for radar view
         output_path=output_dir,
-        verbose=True
+        verbose=True,
+        show_fps=True
     )
 
     # Run the pipeline

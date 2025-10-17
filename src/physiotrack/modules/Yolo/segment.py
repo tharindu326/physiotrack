@@ -2,7 +2,9 @@ import os
 from ultralytics import YOLO
 import cv2
 import numpy as np
+import time
 from pathlib import Path
+from collections import deque
 import sys
 from .classes_and_palettes import COLORS
 main_dir = Path(__file__).resolve().parent.parent
@@ -10,7 +12,7 @@ sys.path.append(str(main_dir))
 
 
 class Segmentor:
-    def __init__(self, model, device, OBJECTNESS_CONFIDENCE, NMS_THRESHOLD, classes, 
+    def __init__(self, model, device, OBJECTNESS_CONFIDENCE, NMS_THRESHOLD, classes,
                  render_segmenttion_map=False, verbose=False, **kwargs):
         model_path = os.path.join(os.path.dirname(__file__), '..', 'model_data')
         self.model = YOLO(os.path.join(model_path, model.value))
@@ -29,9 +31,13 @@ class Segmentor:
         self.classes = classes
         self.verbose = verbose
         self.render_segmenttion_map = render_segmenttion_map
-        self.extra_args = kwargs 
+        self.extra_args = kwargs
+
+        # FPS monitoring
+        self.inference_times = deque(maxlen=100) 
 
     def segment(self, frame, **kwargs):
+        start = time.perf_counter()
 
         all_kwargs = {
             "conf": self.conf,
@@ -49,6 +55,9 @@ class Segmentor:
             task="segment",
             **all_kwargs
         )
+
+        inference_time = time.perf_counter() - start
+        self.inference_times.append(inference_time)
 
         output_image = frame.copy()
         segmentation_map = np.zeros(frame.shape[:2], dtype=np.uint8)
@@ -69,8 +78,21 @@ class Segmentor:
                     if self.render_segmenttion_map:
                         color = np.array(self.COLORS[list(self.COLORS)[(class_id + 28) % len(self.COLORS)]], dtype=np.uint8)
                         segmentation_img[segmentation_map == class_id + 28] = color
-            
+
         return segmentation_img, segmentation_map
+
+    def get_avg_inference_time(self):
+        """Get average inference time in milliseconds."""
+        if len(self.inference_times) == 0:
+            return 0.0
+        return (sum(self.inference_times) / len(self.inference_times)) * 1000
+
+    def get_avg_fps(self):
+        """Get average FPS based on inference times."""
+        if len(self.inference_times) == 0:
+            return 0.0
+        avg_time = sum(self.inference_times) / len(self.inference_times)
+        return 1.0 / avg_time if avg_time > 0 else 0.0
     
 
 if __name__ == '__main__':
