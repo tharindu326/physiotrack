@@ -9,13 +9,14 @@ from pathlib import Path
 import argparse
 
 
-def run_full_inference(video_path, output_dir='output/full_inference'):
+def run_full_inference(video_path, output_dir='output/full_inference', floor_map=None):
     """
     Run full inference pipeline on a video
 
     Args:
         video_path: Path to input video
         output_dir: Directory to save output video
+        floor_map: List of 4 corner points [(x1,y1), (x2,y2), (x3,y3), (x4,y4)] defining floor area
     """
 
     # Setup paths
@@ -107,6 +108,7 @@ def run_full_inference(video_path, output_dir='output/full_inference'):
         required_fps=None,
         frame_resize=None,
         frame_rotate=False,
+        floor_map=floor_map,  # Floor area for radar view
         output_path=output_dir,
         verbose=True
     )
@@ -126,7 +128,18 @@ if __name__ == "__main__":
     parser.add_argument('video_path', type=str, help='Path to input video')
     parser.add_argument('--output_dir', type=str, default='output/full_inference',
                         help='Directory to save output video (default: output/full_inference)')
+    parser.add_argument('--floor_map', type=str, default=None,
+                        help='Floor area coordinates as "x1,y1,x2,y2,x3,y3,x4,y4" (e.g., "314,824,778,402,1140,456,936,1035")')
 
     args = parser.parse_args()
 
-    run_full_inference(args.video_path, args.output_dir)
+    # Parse floor_map if provided
+    floor_map = None
+    if args.floor_map:
+        coords = [int(x) for x in args.floor_map.split(',')]
+        if len(coords) == 8:
+            floor_map = [(coords[i], coords[i+1]) for i in range(0, 8, 2)]
+        else:
+            print("Warning: floor_map must have 8 values (4 points with x,y). Ignoring floor_map.")
+
+    run_full_inference(args.video_path, args.output_dir, floor_map)
