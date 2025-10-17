@@ -133,17 +133,22 @@ class Video:
         selected_frame_ids = self.select_frames(self.video_fps, self.required_fps)
         out_writer = None
         if output_video_path:
-            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
             if self.frame_resize:
                 output_width, output_height = self.frame_resize
             else:
                 output_width, output_height = self.width, self.height
             if self.frame_rotate:
                 output_width, output_height = output_height, output_width
-            
+
             effective_fps = self.required_fps if self.required_fps else self.video_fps
-            out_writer = cv2.VideoWriter(str(output_video_path), fourcc, effective_fps, 
+
+            # Use avc1 codec for MP4 output
+            fourcc = cv2.VideoWriter_fourcc(*'avc1')
+            out_writer = cv2.VideoWriter(str(output_video_path), fourcc, effective_fps,
                                        (output_width, output_height))
+
+            if self.verbose:
+                print(f"Using H.264 (avc1) codec for video encoding")
         
         all_detection_data = []
         frame_count = 0
@@ -165,14 +170,14 @@ class Video:
             
             if frame_filter_count in selected_frame_ids:
                 boxes = None
-                result_frame = frame.copy()
+                result_frame = frame
                 segmentation_img = None
                 online_targets = []  # Initialize online_targets for each frame
 
                 # Run all detectors and combine results
                 if len(self.detectors) > 0:
                     all_detections = []
-                    combined_frame = frame.copy()
+                    combined_frame = frame.copy() if len(self.detectors) > 0 else frame
 
                     # Use predefined colors from COLORS palette
                     color_names = list(COLORS.keys())
@@ -214,10 +219,12 @@ class Video:
                 if self.pose_estimator is not None:
                     result_frame, results = self.pose_estimator.estimate(frame, boxes)
                     pose_results = results.to_json()['detections']
+                elif result_frame is frame:
+                    result_frame = frame.copy()
 
-                # Run all segmentators and combine results
                 if len(self.segmentators) > 0:
                     h, w = frame.shape[:2]
+                    # Pre-allocate once outside loop
                     combined_segmentation_map = np.zeros((h, w), dtype=np.uint8)
                     combined_segmentation_img = np.zeros((h, w, 3), dtype=np.uint8)
 
@@ -225,6 +232,8 @@ class Video:
                     color_names = list(COLORS.keys())
                     color_list = [COLORS[name] for name in color_names]
 
+                    # Collect all segmentation results first
+                    seg_results = []
                     for seg_idx, segmentator in enumerate(self.segmentators):
                         # Determine which bboxes to use for filtering
                         filter_bboxes = None
@@ -254,23 +263,34 @@ class Video:
 
                         # Segment with optional bbox filtering
                         seg_img, seg_map = segmentator.segment(frame, bboxes=filter_bboxes)
+                        seg_results.append((seg_idx, seg_img, seg_map))
 
-                        # Remap class IDs to make them unique across segmentators
-                        # Offset by segmentator index * 100 to avoid conflicts
-                        unique_classes = np.unique(seg_map)
+                    # Merge all segmentations using palette colors
+                    # Later segmentators overwrite earlier ones (higher priority for specific segments)
+                    for seg_idx, seg_img, seg_map in seg_results:
+                        # Get mask for all non-background pixels at once
+                        seg_mask = seg_map > 0
+                        if not np.any(seg_mask):
+                            continue
+
+                        # Remap class IDs (vectorized)
+                        remapped_map = seg_map.copy()
+                        remapped_map[seg_mask] = (seg_idx * 100) + seg_map[seg_mask]
+
+                        # Create color image for this segmentation (vectorized)
+                        # Get unique classes to build color mapping
+                        unique_classes = np.unique(seg_map[seg_mask])
+                        seg_colored = np.zeros_like(combined_segmentation_img)
+
                         for cls_id in unique_classes:
                             if cls_id > 0:  # Skip background
-                                new_cls_id = seg_idx * 100 + cls_id
-                                mask = seg_map == cls_id
-
-                                # Assign color from palette based on segmentator and class
-                                # Use different color for each segmentator-class combination
+                                cls_mask = seg_map == cls_id
                                 color_idx = (seg_idx * 10 + cls_id) % len(color_list)
-                                color = color_list[color_idx]
+                                seg_colored[cls_mask] = color_list[color_idx]
 
-                                # Apply color to segmentation
-                                combined_segmentation_map[mask] = new_cls_id
-                                combined_segmentation_img[mask] = color
+                        # Apply to combined maps (vectorized assignment)
+                        combined_segmentation_map[seg_mask] = remapped_map[seg_mask]
+                        combined_segmentation_img[seg_mask] = seg_colored[seg_mask]
 
                     # Overlay combined segmentation on result_frame
                     result_frame = cv2.addWeighted(result_frame, 0.7, combined_segmentation_img, 0.3, 0)
