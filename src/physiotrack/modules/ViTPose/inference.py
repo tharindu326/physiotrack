@@ -120,16 +120,27 @@ class VitInference:
 
         Args:
             heatmaps (ndarray): Heatmap predictions from the model.
-            org_w (int): Original width of the image.
-            org_h (int): Original height of the image.
+            org_w (int or list/array): Original width(s) of the image(s).
+            org_h (int or list/array): Original height(s) of the image(s).
 
         Returns:
             ndarray: Processed keypoints with probabilities.
         """
+        # Handle both single and batch inputs
+        if isinstance(org_w, (list, np.ndarray)):
+            # Batch processing
+            org_w = np.asarray(org_w)
+            org_h = np.asarray(org_h)
+            centers = np.column_stack([org_w // 2, org_h // 2])
+            scales = np.column_stack([org_w, org_h])
+        else:
+            # Single image processing
+            centers = np.array([[org_w // 2, org_h // 2]])
+            scales = np.array([[org_w, org_h]])
+            
         points, prob = keypoints_from_heatmaps(heatmaps=heatmaps,
-                                               center=np.array([[org_w // 2,
-                                                                 org_h // 2]]),
-                                               scale=np.array([[org_w, org_h]]),
+                                               center=centers,
+                                               scale=scales,
                                                unbiased=True, use_udp=True)
         return np.concatenate([points[:, :, ::-1], prob], axis=2)
 
@@ -148,6 +159,18 @@ class VitInference:
         start = time.perf_counter()
         frame_data = {"detections": []}
         output_frame = None
+        
+        if len(bboxes) == 0:
+            if self.overlay_keypoints:
+                output_frame = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+            inference_time = time.perf_counter() - start
+            self.inference_times.append(inference_time)
+            return output_frame, frame_data
+        
+        # Prepare all bbox crops for batch inference
+        cropped_images = []
+        crop_metadata = []  # Store bbox, padding info, and original dimensions
+        
         for i, bbox in enumerate(bboxes):
             pad_bbox = 10
             bbox[[0, 2]] = np.clip(bbox[[0, 2]] + [-pad_bbox, pad_bbox], 0, img.shape[1])
@@ -155,8 +178,25 @@ class VitInference:
 
             img_inf = img[bbox[1]:bbox[3], bbox[0]:bbox[2]]
             img_inf, (left_pad, top_pad) = pad_image(img_inf, 3 / 4)
-
-            keypoints = self._inference(img_inf)[0]
+            
+            cropped_images.append(img_inf)
+            crop_metadata.append({
+                'bbox': bbox,
+                'left_pad': left_pad,
+                'top_pad': top_pad,
+                'orig_width': img_inf.shape[1],
+                'orig_height': img_inf.shape[0]
+            })
+        
+        # Batch inference on all crops
+        keypoints_batch = self._inference_batch(cropped_images)
+        
+        # Process results and map back to original coordinates
+        for i, (keypoints, metadata) in enumerate(zip(keypoints_batch, crop_metadata)):
+            bbox = metadata['bbox']
+            left_pad = metadata['left_pad']
+            top_pad = metadata['top_pad']
+            
             keypoints[:, :2] += bbox[:2][::-1] - [top_pad, left_pad]
             frame_keypoints[len(frame_keypoints)] = keypoints
             
@@ -218,6 +258,52 @@ class VitInference:
                                            points_palette_samples=10,
                                            confidence_threshold=confidence_threshold)
         return img
+
+    def _inference_batch(self, imgs: list) -> list:
+        """
+        Perform batch inference on multiple cropped images.
+
+        Args:
+            imgs (list): List of cropped images (numpy arrays).
+
+        Returns:
+            list: List of keypoints for each image.
+        """
+        if len(imgs) == 0:
+            return []
+        
+        batch_size = len(imgs)
+        batch_inputs = []
+        orig_widths = []
+        orig_heights = []
+        
+        for img in imgs:
+            # Keep the exact same preprocessing as original single inference
+            img_input = cv2.resize(img, self.target_size, interpolation=cv2.INTER_LINEAR) / 255
+            img_input = ((img_input - MEAN) / STD).transpose(2, 0, 1).astype(np.float32)
+            batch_inputs.append(img_input)
+            orig_widths.append(img.shape[1])
+            orig_heights.append(img.shape[0])
+        
+        # Stack into batch
+        batch_inputs = np.stack(batch_inputs, axis=0)
+        
+        # Run batch inference based on model type
+        if hasattr(self, '_vit_pose'):
+            # PyTorch model
+            batch_inputs = torch.from_numpy(batch_inputs).to(torch.device(self.device))
+            with torch.no_grad():
+                heatmaps = self._vit_pose(batch_inputs).detach().cpu().numpy()
+        else:
+            # ONNX model
+            ort_inputs = {self._ort_session.get_inputs()[0].name: batch_inputs}
+            heatmaps = self._ort_session.run(None, ort_inputs)[0]
+        
+        # Postprocess batch results
+        keypoints_batch = self.postprocess(heatmaps, orig_widths, orig_heights)
+        
+        # Return list of keypoints for each image
+        return [keypoints_batch[i] for i in range(batch_size)]
 
     @torch.no_grad()
     def _inference_torch(self, img: np.ndarray) -> np.ndarray:
