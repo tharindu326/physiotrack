@@ -11,7 +11,7 @@ from physiotrack.core.radar_view import RadarView
 
 class Video:
     """
-    A video processor class for handling different processing types on video files.
+    A video processor class for handling different processing types on video files with batch processing support.
     """
     
     def __init__(self,
@@ -26,7 +26,8 @@ class Video:
                  frame_rotate: bool = False,
                  floor_map: Optional[List[Tuple[int, int]]] = None,
                  verbose: bool = False,
-                 show_fps: bool = False):
+                 show_fps: bool = False,
+                 batch_size: int = 1):  # New parameter for batch processing
 
         self.video_path = video_path
         # Support both single instance and list of instances for detector and segmentator
@@ -40,6 +41,7 @@ class Video:
         self.frame_resize = frame_resize
         self.frame_rotate = frame_rotate
         self.floor_map = floor_map
+        self.batch_size = max(1, batch_size)  # Ensure batch size is at least 1
 
         # Initialize radar view
         self.radar_view = RadarView(floor_map) if floor_map else None
@@ -68,6 +70,7 @@ class Video:
         if self.verbose:
             print(f"Video properties: {self.width}x{self.height}, {self.video_fps} FPS")
             print(f"Source: {self.source_identifier}")
+            print(f"Batch size: {self.batch_size}")
     
     def _setup_source_info(self):
         """Setup source identifier and total frames based on video path type."""
@@ -117,13 +120,218 @@ class Video:
         if self.frame_rotate:
             frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
         return frame
+    
+    def process_batch_detections(self, frames_batch: List[np.ndarray]) -> List[Tuple[np.ndarray, np.ndarray]]:
+        """
+        Process a batch of frames through detectors.
+        
+        Returns:
+            List of tuples (combined_frame, all_detections) for each frame in batch
+        """
+        batch_results = []
+        
+        if len(self.detectors) == 0:
+            # No detectors, return empty results for each frame
+            for frame in frames_batch:
+                batch_results.append((frame, []))
+            return batch_results
+        
+        # Prefer batched detection if available
+        if len(self.detectors) > 0 and hasattr(self.detectors[0], 'detect_batch'):
+            det = self.detectors[0]
+            det_outputs = det.detect_batch(frames_batch)
+            batch_results = []
+            color_names = list(COLORS.keys())
+            for frame, (results, detected_frame) in zip(frames_batch, det_outputs):
+                detections = results[0].boxes.data.cpu().numpy()  # match single-frame schema
+                combined_frame = frame.copy()
+                color = tuple(COLORS[color_names[0]])
+                for det_box in (detections[:, :4].astype(int) if detections.size else []):
+                    x1, y1, x2, y2 = det_box
+                    cv2.rectangle(combined_frame, (int(x1), int(y1)), (int(x2), int(y2)), color, 2)
+                batch_results.append((combined_frame, [detections]))
+            return batch_results
+
+        # Process each frame in batch (fallback)
+        for frame in frames_batch:
+            all_detections = []
+            combined_frame = frame.copy()
+            
+            # Use predefined colors from COLORS palette
+            color_names = list(COLORS.keys())
+            
+            for idx, detector in enumerate(self.detectors):
+                # YOLO can handle single frame or batch - we pass single for now
+                # TODO: Update to pass batch directly when YOLO batch inference is confirmed
+                results, detected_frame = detector.detect(frame)
+                detections = results[0].boxes.data.cpu().numpy()  # (x1, y1, x2, y2, conf, cls)
+                
+                # Get color for this detector
+                color_name = color_names[idx % len(color_names)]
+                color = tuple(COLORS[color_name])
+                
+                # Draw boxes with unique color for this detector
+                for det in detections:
+                    x1, y1, x2, y2, conf, cls = det
+                    cv2.rectangle(combined_frame, (int(x1), int(y1)), (int(x2), int(y2)), color, 2)
+                    # Add label with detector index
+                    label = f"D{idx}-C{int(cls)}: {conf:.2f}"
+                    cv2.putText(combined_frame, label, (int(x1), int(y1)-5),
+                              cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+                
+                all_detections.append(detections)
+            
+            batch_results.append((combined_frame, all_detections))
+        
+        return batch_results
+    
+    def process_batch_pose(self, frames_batch: List[np.ndarray], boxes_batch: List[np.ndarray]) -> List[Tuple[np.ndarray, Any]]:
+        """
+        Process a batch of frames through pose estimator.
+        
+        Returns:
+            List of tuples (result_frame, pose_results) for each frame in batch
+        """
+        batch_results = []
+        
+        if self.pose_estimator is None:
+            for frame in frames_batch:
+                batch_results.append((frame, None))
+            return batch_results
+        
+        # If pose supports batch, call once
+        if hasattr(self.pose_estimator, 'estimate_batch'):
+            batched = self.pose_estimator.estimate_batch(frames_batch, boxes_batch)
+            for (result_frame, results) in batched:
+                pose_results = results.to_json()['detections']
+                batch_results.append((result_frame, pose_results))
+            return batch_results
+
+        # Fallback per-frame
+        for frame, boxes in zip(frames_batch, boxes_batch):
+            if boxes is not None and len(boxes) > 0:
+                result_frame, results = self.pose_estimator.estimate(frame, boxes)
+                pose_results = results.to_json()['detections']
+            else:
+                result_frame = frame
+                pose_results = []
+            batch_results.append((result_frame, pose_results))
+        
+        return batch_results
+    
+    def process_batch_segmentation(self, frames_batch: List[np.ndarray], 
+                                  all_detections_batch: List[List[np.ndarray]],
+                                  overlay_frames: Optional[List[np.ndarray]] = None) -> List[np.ndarray]:
+        """
+        Process a batch of frames through segmentators.
+        
+        Returns:
+            List of result frames with segmentation overlay
+        """
+        batch_results = []
+
+        if len(self.segmentators) == 0:
+            return frames_batch
+
+        # Prepare colors for merging
+        color_names = list(COLORS.keys())
+        color_list = [COLORS[name] for name in color_names]
+
+        # First, gather segmentation maps per segmentator, using segment_batch if available
+        base_frames_for_overlay = overlay_frames if overlay_frames is not None else frames_batch
+        seg_maps_per_segmentator = []  # List[List[np.ndarray]] indexed [seg_idx][frame_idx]
+        for seg_idx, segmentator in enumerate(self.segmentators):
+            # Try wrapper's batch API, then inner segmentor batch API, else per-frame
+            batched_outputs = None
+
+            if hasattr(segmentator, 'segmentor') and hasattr(segmentator.segmentor, 'segment_batch'):
+                batched_outputs = segmentator.segmentor.segment_batch(frames_batch)
+
+            seg_maps_for_this_segmentator = []
+            if batched_outputs is not None:
+                # Expect list of (seg_img, seg_map)
+                for (_, seg_map) in batched_outputs:
+                    seg_maps_for_this_segmentator.append(seg_map)
+            else:
+                # Fallback: per-frame segmentation without filtering; we'll filter below
+                for frame in frames_batch:
+                    seg_img, seg_map = segmentator.segment(frame)
+                    seg_maps_for_this_segmentator.append(seg_map)
+
+            # Apply optional bbox filtering per frame, matching single-frame logic
+            for frame_idx, seg_map in enumerate(seg_maps_for_this_segmentator):
+                filter_bboxes = None
+                all_detections = all_detections_batch[frame_idx]
+                if getattr(segmentator, 'bbox_filter', False) and len(all_detections) > 0:
+                    if segmentator.detector_index is not None and segmentator.detector_index < len(all_detections):
+                        detections = all_detections[segmentator.detector_index]
+                        if segmentator.detector_class_filter is not None:
+                            class_filter = segmentator.detector_class_filter if isinstance(segmentator.detector_class_filter, list) else [segmentator.detector_class_filter]
+                            class_mask = np.isin(detections[:, 5], class_filter)
+                            filter_bboxes = detections[class_mask][:, :4] if np.any(class_mask) else None
+                        else:
+                            filter_bboxes = detections[:, :4]
+                    else:
+                        all_dets = np.vstack(all_detections) if len(all_detections) > 0 else None
+                        if all_dets is not None:
+                            if segmentator.detector_class_filter is not None:
+                                class_filter = segmentator.detector_class_filter if isinstance(segmentator.detector_class_filter, list) else [segmentator.detector_class_filter]
+                                class_mask = np.isin(all_dets[:, 5], class_filter)
+                                filter_bboxes = all_dets[class_mask][:, :4] if np.any(class_mask) else None
+                            else:
+                                filter_bboxes = all_dets[:, :4]
+
+                if filter_bboxes is not None and len(filter_bboxes) > 0:
+                    h, w = seg_map.shape[:2]
+                    filtered_map = np.zeros((h, w), dtype=seg_map.dtype)
+                    for bbox in filter_bboxes:
+                        x1, y1, x2, y2 = map(int, bbox[:4])
+                        x1, y1 = max(0, x1), max(0, y1)
+                        x2, y2 = min(w, x2), min(h, y2)
+                        filtered_map[y1:y2, x1:x2] = seg_map[y1:y2, x1:x2]
+                    seg_maps_for_this_segmentator[frame_idx] = filtered_map
+
+            seg_maps_per_segmentator.append(seg_maps_for_this_segmentator)
+
+        # Now merge per-frame across segmentators and overlay
+        for frame_idx, frame in enumerate(frames_batch):
+            h, w = frame.shape[:2]
+            combined_segmentation_map = np.zeros((h, w), dtype=np.uint8)
+            combined_segmentation_img = np.zeros((h, w, 3), dtype=np.uint8)
+
+            for seg_idx, seg_maps in enumerate(seg_maps_per_segmentator):
+                seg_map = seg_maps[frame_idx]
+                seg_mask = seg_map > 0
+                if not np.any(seg_mask):
+                    continue
+
+                # Remap class IDs and colorize
+                remapped_map = seg_map.copy()
+                remapped_map[seg_mask] = (seg_idx * 100) + seg_map[seg_mask]
+
+                unique_classes = np.unique(seg_map[seg_mask])
+                seg_colored = np.zeros_like(combined_segmentation_img)
+                for cls_id in unique_classes:
+                    if cls_id > 0:
+                        cls_mask = seg_map == cls_id
+                        color_idx = (seg_idx * 10 + int(cls_id)) % len(color_list)
+                        seg_colored[cls_mask] = color_list[color_idx]
+
+                combined_segmentation_map[seg_mask] = remapped_map[seg_mask]
+                combined_segmentation_img[seg_mask] = seg_colored[seg_mask]
+
+            base_frame = base_frames_for_overlay[frame_idx]
+            result_frame = cv2.addWeighted(base_frame, 0.7, combined_segmentation_img, 0.3, 0)
+            batch_results.append(result_frame)
+
+        return batch_results
         
     def run(self, 
             output_video_path: Optional[Union[str, Path]] = None,
             output_json_path: Optional[Union[str, Path]] = None,
             progress_callback: Optional[callable] = None) -> List[Dict[str, Any]]:
         """
-        Process the video for pose estimation, segmentation, or detection.
+        Process the video with batch processing support.
         """
         
         pbar = None
@@ -156,216 +364,186 @@ class Video:
         start_time = time.time()
         last_fps_print_time = start_time
         fps_print_interval = 2.0  # Print FPS every 2 seconds for real-time monitoring
+        
+        # Batch collection variables
+        frame_batch = []
+        frame_batch_metadata = []
 
         while True:
-            ret, frame = self.cap.read()
-            if not ret:
-                break
+            # Collect frames into batch
+            batch_ready = False
             
-            if pbar:
-                pbar.update(1)
+            while len(frame_batch) < self.batch_size:
+                ret, frame = self.cap.read()
+                if not ret:
+                    # End of video, process remaining batch if any
+                    if len(frame_batch) > 0:
+                        batch_ready = True
+                    break
+                
+                if pbar:
+                    pbar.update(1)
+                
+                video_timestamp = round(frame_count / self.video_fps, 3)
+                frame = self.preprocess_frame(frame)
+                
+                # Check if this frame should be processed
+                if frame_filter_count in selected_frame_ids:
+                    frame_batch.append(frame)
+                    frame_batch_metadata.append({
+                        'frame_id': frame_count,
+                        'timestamp': video_timestamp,
+                        'frame_filter_count': frame_filter_count
+                    })
+                
+                frame_count += 1
+                frame_filter_count = frame_filter_count + 1 if frame_filter_count < self.video_fps else 1
+                
+                # Check if batch is full
+                if len(frame_batch) == self.batch_size:
+                    batch_ready = True
+                    break
             
-            video_timestamp = round(frame_count / self.video_fps, 3)
-            frame = self.preprocess_frame(frame)
-            
-            if frame_filter_count in selected_frame_ids:
-                boxes = None
-                result_frame = frame
-                segmentation_img = None
-                online_targets = []  # Initialize online_targets for each frame
-
-                # Run all detectors and combine results
-                if len(self.detectors) > 0:
-                    all_detections = []
-                    combined_frame = frame.copy() if len(self.detectors) > 0 else frame
-
-                    # Use predefined colors from COLORS palette
-                    color_names = list(COLORS.keys())
-
-                    for idx, detector in enumerate(self.detectors):
-                        results, detected_frame = detector.detect(frame)
-                        detections = results[0].boxes.data.cpu().numpy()  # (x1, y1, x2, y2, conf, cls)
-
-                        # Get color for this detector
-                        color_name = color_names[idx % len(color_names)]
-                        color = tuple(COLORS[color_name])
-
-                        # Draw boxes with unique color for this detector
-                        for det in detections:
-                            x1, y1, x2, y2, conf, cls = det
-                            cv2.rectangle(combined_frame, (int(x1), int(y1)), (int(x2), int(y2)), color, 2)
-                            # Add label with detector index
-                            label = f"D{idx}-C{int(cls)}: {conf:.2f}"
-                            cv2.putText(combined_frame, label, (int(x1), int(y1)-5),
-                                      cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
-
-                        all_detections.append(detections)
-
-                    # Combine all detections into one array
+            # Process batch if ready
+            if batch_ready and len(frame_batch) > 0:
+                # Step 1: Batch detection
+                detection_results = self.process_batch_detections(frame_batch)
+                
+                # Extract frames and detections from results
+                frames_with_detections = [r[0] for r in detection_results]
+                all_detections_batch = [r[1] for r in detection_results]
+                
+                # Step 2: Extract boxes for pose estimation
+                boxes_batch = []
+                for all_detections in all_detections_batch:
                     if len(all_detections) > 0:
                         detections = np.vstack(all_detections)
                         boxes = detections[:, :-2].astype(int)
-                        frame = combined_frame
-
-                        if self.pose_estimator and self.pose_estimator.__class__.__name__ != "Custom":
-                            raise ValueError("Please use Pose.Custom class if you want to use a custom detector with the Video class. Alternatively, you can: 1) Not provide a detector to use the default detector (Models.Detection.YOLO.PERSON.m_person) of the Pose estimator, or 2) Pass a detector to the Pose estimator from the Models zoo if you don't wish to use the Tracker class.")
-
-                        if self.tracker is not None:
-                            frame, online_targets = self.tracker.track(frame, detections)
-                            # filter boxes based on student track to obtain only the student box
-                            if self.tracker.student_track_id is not None and self.tracker.last_known_bbox is not None:
-                                boxes = np.array(self.tracker.last_known_bbox, dtype=int).reshape(1, -1)
-
-                if self.pose_estimator is not None:
-                    result_frame, results = self.pose_estimator.estimate(frame, boxes)
-                    pose_results = results.to_json()['detections']
-                elif result_frame is frame:
-                    result_frame = frame.copy()
-
-                if len(self.segmentators) > 0:
-                    h, w = frame.shape[:2]
-                    # Pre-allocate once outside loop
-                    combined_segmentation_map = np.zeros((h, w), dtype=np.uint8)
-                    combined_segmentation_img = np.zeros((h, w, 3), dtype=np.uint8)
-
-                    # Use predefined colors from COLORS palette
-                    color_names = list(COLORS.keys())
-                    color_list = [COLORS[name] for name in color_names]
-
-                    # Collect all segmentation results first
-                    seg_results = []
-                    for seg_idx, segmentator in enumerate(self.segmentators):
-                        # Determine which bboxes to use for filtering
-                        filter_bboxes = None
-                        if segmentator.bbox_filter and len(all_detections) > 0:
-                            # Use specific detector if detector_index is set
-                            if segmentator.detector_index is not None and segmentator.detector_index < len(all_detections):
-                                detections = all_detections[segmentator.detector_index]
-
-                                # Filter by class if detector_class_filter is specified
-                                if segmentator.detector_class_filter is not None:
-                                    class_filter = segmentator.detector_class_filter if isinstance(segmentator.detector_class_filter, list) else [segmentator.detector_class_filter]
-                                    class_mask = np.isin(detections[:, 5], class_filter)
-                                    filter_bboxes = detections[class_mask][:, :4] if np.any(class_mask) else None
-                                else:
-                                    filter_bboxes = detections[:, :4]
-                            else:
-                                # Use all detections if no specific detector is specified
-                                all_dets = np.vstack(all_detections) if len(all_detections) > 0 else None
-                                if all_dets is not None:
-                                    # Filter by class if detector_class_filter is specified
-                                    if segmentator.detector_class_filter is not None:
-                                        class_filter = segmentator.detector_class_filter if isinstance(segmentator.detector_class_filter, list) else [segmentator.detector_class_filter]
-                                        class_mask = np.isin(all_dets[:, 5], class_filter)
-                                        filter_bboxes = all_dets[class_mask][:, :4] if np.any(class_mask) else None
-                                    else:
-                                        filter_bboxes = all_dets[:, :4]
-
-                        # Segment with optional bbox filtering
-                        seg_img, seg_map = segmentator.segment(frame, bboxes=filter_bboxes)
-                        seg_results.append((seg_idx, seg_img, seg_map))
-
-                    # Merge all segmentations using palette colors
-                    # Later segmentators overwrite earlier ones (higher priority for specific segments)
-                    for seg_idx, seg_img, seg_map in seg_results:
-                        # Get mask for all non-background pixels at once
-                        seg_mask = seg_map > 0
-                        if not np.any(seg_mask):
-                            continue
-
-                        # Remap class IDs (vectorized)
-                        remapped_map = seg_map.copy()
-                        remapped_map[seg_mask] = (seg_idx * 100) + seg_map[seg_mask]
-
-                        # Create color image for this segmentation (vectorized)
-                        # Get unique classes to build color mapping
-                        unique_classes = np.unique(seg_map[seg_mask])
-                        seg_colored = np.zeros_like(combined_segmentation_img)
-
-                        for cls_id in unique_classes:
-                            if cls_id > 0:  # Skip background
-                                cls_mask = seg_map == cls_id
-                                color_idx = (seg_idx * 10 + cls_id) % len(color_list)
-                                seg_colored[cls_mask] = color_list[color_idx]
-
-                        # Apply to combined maps (vectorized assignment)
-                        combined_segmentation_map[seg_mask] = remapped_map[seg_mask]
-                        combined_segmentation_img[seg_mask] = seg_colored[seg_mask]
-
-                    # Overlay combined segmentation on result_frame
-                    result_frame = cv2.addWeighted(result_frame, 0.7, combined_segmentation_img, 0.3, 0)
-
-                # Update and attach radar view
-                if self.radar_view and self.tracker is not None and self.pose_estimator is not None:
-                    self.radar_view.update(online_targets, pose_results)
-                    result_frame = self.radar_view.attach_to_frame(result_frame)
-
-                # Store frame data
-                frame_data = {
-                    'frame_id': frame_count,
-                    'timestamp': video_timestamp,
-                }
-                
-                # Add tracking box if tracker is available
-                if self.tracker is not None and hasattr(self.tracker, 'last_known_bbox') and self.tracker.last_known_bbox is not None:
-                    frame_data['track_box'] = self.tracker.last_known_bbox.tolist()
-                
-                # Add pose results if available
-                if self.pose_estimator is not None:
-                    frame_data['detections'] = pose_results
-                
-                all_detection_data.append(frame_data)
-
-                if out_writer:
-                    out_writer.write(result_frame)
-
-                if progress_callback:
-                    progress_callback(frame_count, self.total_frames, results)
-
-            # Real-time FPS monitoring
-            if self.show_fps:
-                current_time = time.time()
-                if current_time - last_fps_print_time >= fps_print_interval:
-                    elapsed = current_time - start_time
-                    current_fps = frame_count / elapsed if elapsed > 0 else 0
-
-                    # Build component-wise FPS dict
-                    fps_dict = {"Pipeline": f"{current_fps:.2f}"}
-
-                    if len(self.detectors) > 0:
-                        for idx, detector in enumerate(self.detectors):
-                            if hasattr(detector, 'get_avg_fps'):
-                                det_fps = detector.get_avg_fps()
-                                fps_dict[f"Det[{idx}]"] = f"{det_fps:.2f}"
-
-                    if self.pose_estimator and hasattr(self.pose_estimator, 'pose_estimator'):
-                        if hasattr(self.pose_estimator.pose_estimator, 'get_avg_fps'):
-                            pose_fps = self.pose_estimator.pose_estimator.get_avg_fps()
-                            fps_dict["Pose"] = f"{pose_fps:.2f}"
-
-                    if self.tracker and hasattr(self.tracker, 'get_avg_fps'):
-                        tracker_fps = self.tracker.get_avg_fps()
-                        fps_dict["Track"] = f"{tracker_fps:.2f}"
-
-                    if len(self.segmentators) > 0:
-                        for idx, segmentor in enumerate(self.segmentators):
-                            if hasattr(segmentor, 'get_avg_fps'):
-                                seg_fps = segmentor.get_avg_fps()
-                                fps_dict[f"Seg[{idx}]"] = f"{seg_fps:.2f}"
-
-                    if pbar:
-                        # Update progress bar with FPS info
-                        pbar.set_postfix(fps_dict)
+                        boxes_batch.append(boxes)
                     else:
-                        # Print FPS on same line if no progress bar
-                        fps_parts = [f"{k}: {v}" for k, v in fps_dict.items()]
-                        fps_display = " | ".join(fps_parts)
-                        print(f"\r{fps_display}", end='', flush=True)
-
-                    last_fps_print_time = current_time
-
-            frame_count += 1
-            frame_filter_count = frame_filter_count + 1 if frame_filter_count < self.video_fps else 1
+                        boxes_batch.append(None)
+                
+                # Step 3: Batch pose estimation (if applicable)
+                pose_results_batch = []
+                if self.pose_estimator:
+                    if self.pose_estimator.__class__.__name__ != "Custom" and len(self.detectors) > 0:
+                        raise ValueError("Please use Pose.Custom class if you want to use a custom detector with the Video class.")
+                    
+                    pose_batch_results = self.process_batch_pose(frames_with_detections, boxes_batch)
+                    frames_with_pose = [r[0] for r in pose_batch_results]
+                    pose_results_batch = [r[1] for r in pose_batch_results]
+                else:
+                    frames_with_pose = frames_with_detections
+                    pose_results_batch = [[] for _ in frame_batch]
+                
+                # Step 4: Process tracking frame-by-frame (tracker doesn't support batch)
+                frames_with_tracking = []
+                online_targets_batch = []
+                
+                for idx, (frame, all_detections, metadata) in enumerate(zip(frames_with_pose, all_detections_batch, frame_batch_metadata)):
+                    if self.tracker is not None and len(all_detections) > 0:
+                        detections = np.vstack(all_detections)
+                        frame, online_targets = self.tracker.track(frame, detections)
+                        
+                        # Filter boxes based on student track
+                        if self.tracker.student_track_id is not None and self.tracker.last_known_bbox is not None:
+                            # Update boxes for this frame
+                            boxes_batch[idx] = np.array(self.tracker.last_known_bbox, dtype=int).reshape(1, -1)
+                    else:
+                        online_targets = []
+                    
+                    frames_with_tracking.append(frame)
+                    online_targets_batch.append(online_targets)
+                
+                # Step 5: Batch segmentation
+                # Inference uses clean frames; overlay uses frames_with_tracking to keep pose drawings
+                if len(self.segmentators) > 0:
+                    result_frames = self.process_batch_segmentation(frame_batch, all_detections_batch, overlay_frames=frames_with_tracking)
+                else:
+                    result_frames = frames_with_tracking
+                
+                # Step 6: Process radar view and save results
+                for idx, (result_frame, metadata, pose_results, online_targets) in enumerate(
+                        zip(result_frames, frame_batch_metadata, pose_results_batch, online_targets_batch)):
+                    
+                    # Update and attach radar view
+                    if self.radar_view and self.tracker is not None and self.pose_estimator is not None:
+                        self.radar_view.update(online_targets, pose_results)
+                        result_frame = self.radar_view.attach_to_frame(result_frame)
+                    
+                    # Store frame data
+                    frame_data = {
+                        'frame_id': metadata['frame_id'],
+                        'timestamp': metadata['timestamp'],
+                    }
+                    
+                    # Add tracking box if tracker is available
+                    if self.tracker is not None and hasattr(self.tracker, 'last_known_bbox') and self.tracker.last_known_bbox is not None:
+                        frame_data['track_box'] = self.tracker.last_known_bbox.tolist()
+                    
+                    # Add pose results if available
+                    if self.pose_estimator is not None:
+                        frame_data['detections'] = pose_results
+                    
+                    all_detection_data.append(frame_data)
+                    
+                    if out_writer:
+                        out_writer.write(result_frame)
+                    
+                    if progress_callback:
+                        progress_callback(metadata['frame_id'], self.total_frames, pose_results)
+                
+                # Clear batch
+                frame_batch = []
+                frame_batch_metadata = []
+                
+                # Real-time FPS monitoring
+                if self.show_fps:
+                    current_time = time.time()
+                    if current_time - last_fps_print_time >= fps_print_interval:
+                        elapsed = current_time - start_time
+                        current_fps = frame_count / elapsed if elapsed > 0 else 0
+                        
+                        # Build component-wise FPS dict
+                        fps_dict = {"Pipeline": f"{current_fps:.2f}"}
+                        
+                        if len(self.detectors) > 0:
+                            for idx, detector in enumerate(self.detectors):
+                                if hasattr(detector, 'get_avg_fps'):
+                                    det_fps = detector.get_avg_fps()
+                                    fps_dict[f"Det[{idx}]"] = f"{det_fps:.2f}"
+                        
+                        if self.pose_estimator and hasattr(self.pose_estimator, 'pose_estimator'):
+                            if hasattr(self.pose_estimator.pose_estimator, 'get_avg_fps'):
+                                pose_fps = self.pose_estimator.pose_estimator.get_avg_fps()
+                                fps_dict["Pose"] = f"{pose_fps:.2f}"
+                        
+                        if self.tracker and hasattr(self.tracker, 'get_avg_fps'):
+                            tracker_fps = self.tracker.get_avg_fps()
+                            fps_dict["Track"] = f"{tracker_fps:.2f}"
+                        
+                        if len(self.segmentators) > 0:
+                            for idx, segmentor in enumerate(self.segmentators):
+                                if hasattr(segmentor, 'get_avg_fps'):
+                                    seg_fps = segmentor.get_avg_fps()
+                                    fps_dict[f"Seg[{idx}]"] = f"{seg_fps:.2f}"
+                        
+                        fps_dict["Batch"] = f"{self.batch_size}"
+                        
+                        if pbar:
+                            # Update progress bar with FPS info
+                            pbar.set_postfix(fps_dict)
+                        else:
+                            # Print FPS on same line if no progress bar
+                            fps_parts = [f"{k}: {v}" for k, v in fps_dict.items()]
+                            fps_display = " | ".join(fps_parts)
+                            print(f"\r{fps_display}", end='', flush=True)
+                        
+                        last_fps_print_time = current_time
+            
+            # Check if we're done
+            if not ret and len(frame_batch) == 0:
+                break
             
         if pbar:
             pbar.close()
@@ -382,6 +560,7 @@ class Video:
             print("\n\n" + "="*60)  # Extra newline to clear real-time FPS line
             print("PERFORMANCE METRICS")
             print("="*60)
+            print(f"Batch Size: {self.batch_size}")
             print(f"Overall Pipeline FPS: {avg_fps:.2f}")
             print(f"Total frames processed: {frame_count}")
             print(f"Total time: {total_time:.2f}s")

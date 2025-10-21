@@ -81,6 +81,58 @@ class Segmentor:
 
         return segmentation_img, segmentation_map
 
+    def segment_batch(self, frames, **kwargs):
+        """Batch segmentation: one GPU call for a list of frames.
+
+        Returns list of (segmentation_img, segmentation_map) per frame.
+        """
+        if frames is None or len(frames) == 0:
+            return []
+
+        all_kwargs = {
+            "conf": self.conf,
+            "iou": self.iou,
+            "classes": self.classes,
+            "device": self.device,
+            "verbose": self.verbose,
+            "retina_masks": True,
+            **self.extra_args,
+            **kwargs,
+        }
+        # Avoid passing batch twice; Ultralytics batches lists automatically
+        all_kwargs.pop('batch', None)
+
+        start = time.perf_counter()
+        results_list = self.model.predict(
+            source=frames,
+            task="segment",
+            **all_kwargs
+        )
+        inference_time = time.perf_counter() - start
+        self.inference_times.append(inference_time)
+
+        outputs = []
+        for frame, results in zip(frames, results_list):
+            segmentation_map = np.zeros(frame.shape[:2], dtype=np.uint8)
+            h, w = segmentation_map.shape
+            segmentation_img = np.zeros((h, w, 3), dtype=np.uint8)
+
+            if hasattr(results, 'masks') and results.masks is not None:
+                masks = results.masks.data.cpu().numpy()
+                class_ids = results.boxes.cls.cpu().numpy()
+
+                for i, mask in enumerate(masks):
+                    class_id = int(class_ids[i])
+                    mask_resized = cv2.resize(mask, (w, h), interpolation=cv2.INTER_NEAREST)
+                    segmentation_map[mask_resized > 0.5] = class_id + 28
+                    if self.render_segmenttion_map:
+                        color = np.array(self.COLORS[list(self.COLORS)[(class_id + 28) % len(self.COLORS)]], dtype=np.uint8)
+                        segmentation_img[segmentation_map == class_id + 28] = color
+
+            outputs.append((segmentation_img, segmentation_map))
+
+        return outputs
+
     def get_avg_inference_time(self):
         """Get average inference time in milliseconds."""
         if len(self.inference_times) == 0:

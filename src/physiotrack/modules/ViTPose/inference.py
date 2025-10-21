@@ -223,6 +223,121 @@ class VitInference:
 
         return output_frame, frame_data
 
+    def inference_batch_frames(self, frames: list, boxes_list: list):
+        """
+        Perform true batched inference across multiple frames.
+        All detected person crops across the batch are processed in one model pass,
+        then mapped back to their respective frames.
+
+        Args:
+            frames (list[np.ndarray]): frames in BGR (same as single-call API)
+            boxes_list (list[np.ndarray|None]): per-frame boxes
+        Returns:
+            list[tuple]: [(output_frame, frame_data), ...]
+        """
+        if boxes_list is None:
+            boxes_list = [None] * len(frames)
+
+        start = time.perf_counter()
+
+        # Step 1: Collect crops for all frames into one big batch
+        all_crops = []
+        crop_meta = []  # track frame index and crop-specific metadata
+
+        # Prepare per-frame containers for outputs
+        per_frame_keypoints = [dict() for _ in frames]
+        per_frame_data = [
+            {"detections": []} for _ in frames
+        ]
+
+        # Convert frames to RGB once for consistent preprocessing
+        rgb_frames = [cv2.cvtColor(f, cv2.COLOR_BGR2RGB) for f in frames]
+
+        for frame_idx, (img_rgb, bboxes) in enumerate(zip(rgb_frames, boxes_list)):
+            # Normalize boxes input
+            if bboxes is None:
+                bboxes_iter = []
+            else:
+                bboxes_iter = bboxes
+
+            if len(bboxes_iter) == 0:
+                continue
+
+            for bbox_idx, bbox in enumerate(bboxes_iter):
+                bbox = np.array(bbox, dtype=int).copy()
+                pad_bbox = 10
+                bbox[[0, 2]] = np.clip(bbox[[0, 2]] + [-pad_bbox, pad_bbox], 0, img_rgb.shape[1])
+                bbox[[1, 3]] = np.clip(bbox[[1, 3]] + [-pad_bbox, pad_bbox], 0, img_rgb.shape[0])
+
+                crop = img_rgb[bbox[1]:bbox[3], bbox[0]:bbox[2]]
+                crop, (left_pad, top_pad) = pad_image(crop, 3 / 4)
+
+                all_crops.append(crop)
+                crop_meta.append({
+                    'frame_idx': frame_idx,
+                    'bbox_idx': bbox_idx,
+                    'bbox': bbox,
+                    'left_pad': left_pad,
+                    'top_pad': top_pad,
+                    'orig_width': crop.shape[1],
+                    'orig_height': crop.shape[0]
+                })
+
+        # Step 2: Run a single model pass over all crops
+        if len(all_crops) > 0:
+            keypoints_all = self._inference_batch(all_crops)
+        else:
+            keypoints_all = []
+
+        # Step 3: Scatter results back to frames
+        for kp, meta in zip(keypoints_all, crop_meta):
+            frame_idx = meta['frame_idx']
+            bbox_idx = meta['bbox_idx']
+            bbox = meta['bbox']
+            left_pad = meta['left_pad']
+            top_pad = meta['top_pad']
+
+            # Map keypoints back to original frame coordinates
+            kp[:, :2] += bbox[:2][::-1] - [top_pad, left_pad]
+
+            # Accumulate for drawing
+            key_id = len(per_frame_keypoints[frame_idx])
+            per_frame_keypoints[frame_idx][key_id] = kp
+
+            # Serialize for frame_data
+            keypoints_list = [
+                {"id": j, "x": float(p[1]), "y": float(p[0]), "confidence": float(p[2])}
+                for j, p in enumerate(kp)
+            ]
+            detection = {
+                "id": int(bbox_idx),
+                "bbox": bbox.tolist(),
+                "keypoints": keypoints_list
+            }
+            per_frame_data[frame_idx]["detections"].append(detection)
+
+        # Step 4: Build per-frame outputs (optionally overlay)
+        outputs = []
+        for idx, img_rgb in enumerate(rgb_frames):
+            output_frame = None
+            if self.save_state:
+                self._img = img_rgb
+                self._keypoints = per_frame_keypoints[idx]
+
+            if self.overlay_keypoints:
+                output_frame = self.draw()
+
+            outputs.append((output_frame, per_frame_data[idx]))
+
+        # Update timing metrics approximately per-frame
+        elapsed = time.perf_counter() - start
+        if len(frames) > 0:
+            per_frame_time = elapsed / len(frames)
+            for _ in frames:
+                self.inference_times.append(per_frame_time)
+
+        return outputs
+
     def get_avg_inference_time(self):
         """Get average inference time in milliseconds."""
         if len(self.inference_times) == 0:

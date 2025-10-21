@@ -57,6 +57,42 @@ class Detector:
 
         return results, output_img
 
+    def detect_batch(self, frames, **kwargs):
+        """Batch detection: one GPU call for a list of frames.
+
+        Returns list of (results_list_for_frame, output_img) matching single-frame schema.
+        """
+        if frames is None or len(frames) == 0:
+            return []
+
+        all_kwargs = {
+            "conf": self.conf,
+            "iou": self.iou,
+            "classes": self.classes,
+            "device": self.device,
+            "verbose": self.verbose,
+            **self.extra_args,
+            **kwargs,
+        }
+        # Avoid passing batch twice; Ultralytics batches lists automatically
+        all_kwargs.pop('batch', None)
+
+        start = time.perf_counter()
+        results_list = self.model.predict(source=frames, **all_kwargs)
+        inference_time = time.perf_counter() - start
+        self.inference_times.append(inference_time)
+
+        outputs = []
+        for frame, result in zip(frames, results_list):
+            detections = result.boxes.data.cpu().numpy() if hasattr(result, 'boxes') else np.zeros((0, 6))
+            boxes = detections[:, :-2].astype(int) if detections.size else np.zeros((0, 4), dtype=int)
+            labels = [self.model.names[int(cls)] for cls in result.boxes.cls] if hasattr(result, 'boxes') else []
+            confidences = result.boxes.conf.cpu().numpy() if hasattr(result, 'boxes') else np.array([])
+            output_img = self.draw_boxes(frame, boxes, labels, confidences)
+            outputs.append(([result], output_img))
+
+        return outputs
+
     def get_avg_inference_time(self):
         """Get average inference time in milliseconds."""
         if len(self.inference_times) == 0:

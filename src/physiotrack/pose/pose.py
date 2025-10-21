@@ -81,6 +81,18 @@ class PoseBase:
         frame_with_pose, frame_data = self.pose_estimator.inference(frame, boxes)
         poses = PoseObjectsFrame(frame_data, self.archetecture)
         return frame_with_pose, poses
+
+    def estimate_batch(self, frames, boxes_list=None):
+        if boxes_list is None:
+            boxes_list = [None] * len(frames)
+        if hasattr(self.pose_estimator, 'inference_batch_frames'):
+            outputs = self.pose_estimator.inference_batch_frames(frames, boxes_list)
+            results = []
+            for (frame_with_pose, frame_data) in outputs:
+                poses = PoseObjectsFrame(frame_data, self.archetecture)
+                results.append((frame_with_pose, poses))
+            return results
+        return [self.estimate(f, b) for f, b in zip(frames, boxes_list)]
     
 class Pose:
     class Custom(PoseBase):
