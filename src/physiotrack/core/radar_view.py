@@ -25,7 +25,8 @@ class RadarView:
     def __init__(self, floor_map: Optional[List[Tuple[int, int]]] = None,
                  max_trajectory_length: int = 100,
                  max_canvas_dim: int = 400,
-                 background: Optional[Union[str, np.ndarray]] = None):
+                 background: Optional[Union[str, np.ndarray]] = None,
+                 rotation: int = 0):
         """
         Initialize radar view.
 
@@ -39,6 +40,12 @@ class RadarView:
                          to top-down view using homography (set later via set_background_from_frame)
                        - str (path): Load pre-made floor plan image from file path
                        - np.ndarray: Use provided image array as canvas
+            rotation: Rotation angle in degrees (0, 90, 180, 270) to orient the top-down view.
+                     Use this to align movement directions in the radar view with actual video orientation.
+                     - 0°: No rotation (default)
+                     - 90°: Rotate 90° clockwise
+                     - 180°: Rotate 180°
+                     - 270° (or -90°): Rotate 90° counter-clockwise
                        
         Note:
             Canvas size is always determined by floor_map and max_canvas_dim, regardless of background mode.
@@ -53,10 +60,11 @@ class RadarView:
         self.background_mode = background
         self.floor_map = floor_map
         self.max_canvas_dim = max_canvas_dim
+        self.rotation = rotation
 
         if self.enabled:
             # Compute canvas size based on floor_map (consistent across all modes)
-            self.homography_matrix, self.canvas_size = compute_homography(floor_map, max_canvas_dim)
+            self.homography_matrix, self.canvas_size = compute_homography(floor_map, max_canvas_dim, rotation=rotation)
             
             # Handle background modes
             if background is None or background == "default":
@@ -167,8 +175,8 @@ class RadarView:
                 print(f"Warning: Unsupported source image type: {type(source_image)}")
                 return None
 
-            # Compute homography matrix and canvas size
-            homography_matrix, canvas_size = compute_homography(floor_map_points, max_canvas_dim)
+            # Compute homography matrix and canvas size with rotation
+            homography_matrix, canvas_size = compute_homography(floor_map_points, max_canvas_dim, rotation=self.rotation)
 
             # Apply perspective transformation to extract and transform the floor area to top-down view
             canvas = cv2.warpPerspective(img, homography_matrix, canvas_size)

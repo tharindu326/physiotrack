@@ -26,6 +26,7 @@ class Video:
                  frame_rotate: bool = False,
                  floor_map: Optional[List[Tuple[int, int]]] = None,
                  floor_map_background: Optional[Union[str, np.ndarray]] = None,
+                 floor_map_rotation: int = 90,
                  verbose: bool = False,
                  show_fps: bool = False,
                  batch_size: int = 1):  # New parameter for batch processing
@@ -44,10 +45,11 @@ class Video:
         self.floor_map = floor_map
         self.batch_size = max(1, batch_size)  # Ensure batch size is at least 1
 
-        # Initialize radar view with background mode
+        # Initialize radar view with background mode and rotation
         self.radar_view = RadarView(
             floor_map=floor_map,
-            background=floor_map_background
+            background=floor_map_background,
+            rotation=floor_map_rotation
         ) if floor_map else None
 
         self.cap = cv2.VideoCapture(video_path)

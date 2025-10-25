@@ -9,7 +9,8 @@ from typing import Tuple, List, Optional
 
 def compute_homography(floor_map_points: List[Tuple[int, int]],
                        max_canvas_dim: int = 400,
-                       margin: int = 20) -> Tuple[np.ndarray, Tuple[int, int]]:
+                       margin: int = 20,
+                       rotation: int = 0) -> Tuple[np.ndarray, Tuple[int, int]]:
     """
     Compute homography matrix for perspective transformation from image coordinates to floor map.
 
@@ -17,6 +18,12 @@ def compute_homography(floor_map_points: List[Tuple[int, int]],
         floor_map_points: List of 4 corner points [(x1,y1), (x2,y2), (x3,y3), (x4,y4)]
         max_canvas_dim: Maximum dimension for the output canvas
         margin: Margin to add around the canvas to prevent points going out of bounds
+        rotation: Rotation angle in degrees (0, 90, 180, 270) to orient the top-down view.
+                 Use this to align movement directions with the desired orientation.
+                 - 0°: No rotation (default)
+                 - 90°: Rotate 90° clockwise
+                 - 180°: Rotate 180°
+                 - 270° (or -90°): Rotate 90° counter-clockwise
 
     Returns:
         Tuple of (homography_matrix, canvas_size)
@@ -33,6 +40,10 @@ def compute_homography(floor_map_points: List[Tuple[int, int]],
     width = max(xs) - min(xs)
     height = max(ys) - min(ys)
 
+    # For 90° and 270° rotations, swap width and height
+    if rotation in [90, 270, -90]:
+        width, height = height, width
+
     # Scale to fit within max dimension while maintaining aspect ratio
     if width > height:
         canvas_width = max_canvas_dim
@@ -47,13 +58,35 @@ def compute_homography(floor_map_points: List[Tuple[int, int]],
 
     canvas_size = (canvas_width, canvas_height)
 
-    # Destination points (normalized 2D floor space scaled to canvas size with margin)
-    dst_pts = np.array([
+    # Base destination points (normalized 2D floor space)
+    base_dst_pts = [
         [margin, margin],                                    # top-left
         [canvas_width - margin, margin],                     # top-right
         [canvas_width - margin, canvas_height - margin],     # bottom-right
         [margin, canvas_height - margin]                     # bottom-left
-    ], dtype=np.float32)
+    ]
+
+    # Apply rotation by rearranging destination point order
+    # This rotates the coordinate system to align with desired orientation
+    rotation = rotation % 360  # Normalize to 0-359
+    
+    if rotation == 0:
+        # No rotation: TL, TR, BR, BL
+        dst_pts = base_dst_pts
+    elif rotation == 90:
+        # 90° clockwise: map src [TL,TR,BR,BL] to dst [BL,TL,TR,BR]
+        dst_pts = [base_dst_pts[3], base_dst_pts[0], base_dst_pts[1], base_dst_pts[2]]
+    elif rotation == 180:
+        # 180° rotation: map src [TL,TR,BR,BL] to dst [BR,BL,TL,TR]
+        dst_pts = [base_dst_pts[2], base_dst_pts[3], base_dst_pts[0], base_dst_pts[1]]
+    elif rotation == 270:
+        # 270° clockwise (90° counter-clockwise): map src [TL,TR,BR,BL] to dst [TR,BR,BL,TL]
+        dst_pts = [base_dst_pts[1], base_dst_pts[2], base_dst_pts[3], base_dst_pts[0]]
+    else:
+        # Default to no rotation for unsupported angles
+        dst_pts = base_dst_pts
+
+    dst_pts = np.array(dst_pts, dtype=np.float32)
 
     # Compute homography matrix
     homography_matrix = cv2.getPerspectiveTransform(src_pts, dst_pts)

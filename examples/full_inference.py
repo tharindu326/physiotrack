@@ -10,7 +10,7 @@ import argparse
 
 
 def run_full_inference(video_path, output_dir='output/full_inference', floor_map=None, 
-                       floor_map_background=None, batch_size=1):
+                       floor_map_background=None, floor_map_rotation=0, batch_size=1):
     """
     Run full inference pipeline on a video
 
@@ -22,6 +22,7 @@ def run_full_inference(video_path, output_dir='output/full_inference', floor_map
             - None or "default": Black canvas with gray background (default)
             - "auto" or "extract": Extract floor area from first video frame with homography
             - Path string: Load pre-made floor plan image from file path
+        floor_map_rotation: Rotation angle in degrees (0, 90, 180, 270) to orient the radar view
         batch_size: Number of frames to process in batch (default: 1)
     """
 
@@ -117,6 +118,7 @@ def run_full_inference(video_path, output_dir='output/full_inference', floor_map
         frame_rotate=False,
         floor_map=floor_map,  # Floor area for radar view
         floor_map_background=floor_map_background,  # Background mode: None/"default", "auto"/"extract", or path to image
+        floor_map_rotation=floor_map_rotation,  # Rotation: 0, 90, 180, or 270 degrees
         output_path=output_dir,
         verbose=True,
         show_fps=True,
@@ -138,12 +140,19 @@ if __name__ == "__main__":
         description='Full inference pipeline for video processing',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
-Background Mode Examples:
-  --floor_map_background "default"              # Black canvas (default)
-  --floor_map_background "auto"                 # Extract from first video frame
-  --floor_map_background "path/to/floorplan.png" # Load from image file
-        """
-    )
+                Examples:
+                # Default black canvas
+                python full_inference.py video.mp4 --floor_map "314,824,778,402,1140,456,936,1035"
+                
+                # Auto-extract from video with 90° rotation
+                python full_inference.py video.mp4 --floor_map "314,824,778,402,1140,456,936,1035" \\
+                    --floor_map_background "auto" --floor_map_rotation 90
+                
+                # Custom floor plan
+                python full_inference.py video.mp4 --floor_map "314,824,778,402,1140,456,936,1035" \\
+                    --floor_map_background "floorplan.png"
+                """
+                )
     parser.add_argument('video_path', type=str, help='Path to input video')
     parser.add_argument('--output_dir', type=str, default='output/full_inference',
                         help='Directory to save output video (default: output/full_inference)')
@@ -151,6 +160,8 @@ Background Mode Examples:
                         help='Floor area coordinates as "x1,y1,x2,y2,x3,y3,x4,y4" (e.g., "314,824,778,402,1140,456,936,1035")')
     parser.add_argument('--floor_map_background', type=str, default=None,
                         help='Background mode: "default" (black), "auto"/"extract" (from first frame), or path to floor plan image')
+    parser.add_argument('--floor_map_rotation', type=int, default=90, choices=[0, 90, 180, 270],
+                        help='Rotation angle in degrees to align radar view orientation (default: 0)')
     parser.add_argument('--batch_size', type=int, default=1,
                         help='Number of frames to process in batch (default: 1)')
 
@@ -166,4 +177,4 @@ Background Mode Examples:
             print("Warning: floor_map must have 8 values (4 points with x,y). Ignoring floor_map.")
 
     run_full_inference(args.video_path, args.output_dir, floor_map, 
-                      args.floor_map_background, args.batch_size)
+                      args.floor_map_background, args.floor_map_rotation, args.batch_size)
