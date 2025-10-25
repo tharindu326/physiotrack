@@ -25,6 +25,7 @@ class Video:
                  frame_resize: Optional[Tuple[int, int]] = None,
                  frame_rotate: bool = False,
                  floor_map: Optional[List[Tuple[int, int]]] = None,
+                 floor_map_background: Optional[Union[str, np.ndarray]] = None,
                  verbose: bool = False,
                  show_fps: bool = False,
                  batch_size: int = 1):  # New parameter for batch processing
@@ -43,8 +44,11 @@ class Video:
         self.floor_map = floor_map
         self.batch_size = max(1, batch_size)  # Ensure batch size is at least 1
 
-        # Initialize radar view
-        self.radar_view = RadarView(floor_map) if floor_map else None
+        # Initialize radar view with background mode
+        self.radar_view = RadarView(
+            floor_map=floor_map,
+            background=floor_map_background
+        ) if floor_map else None
 
         self.cap = cv2.VideoCapture(video_path)
         if not self.cap.isOpened():
@@ -368,6 +372,12 @@ class Video:
         # Batch collection variables
         frame_batch = []
         frame_batch_metadata = []
+        
+        # Flag to track if we need to extract floor background from first frame
+        extract_floor_from_first_frame = (
+            self.radar_view is not None and 
+            self.radar_view.background_mode in ["auto", "extract"]
+        )
 
         while True:
             # Collect frames into batch
@@ -386,6 +396,13 @@ class Video:
                 
                 video_timestamp = round(frame_count / self.video_fps, 3)
                 frame = self.preprocess_frame(frame)
+                
+                # Extract floor area from first frame if needed
+                if extract_floor_from_first_frame and frame_count == 0:
+                    if self.verbose:
+                        print("Extracting floor area from first frame and transforming to top-down view...")
+                    self.radar_view.set_background_from_frame(frame)
+                    extract_floor_from_first_frame = False  # Only do this once
                 
                 # Check if this frame should be processed
                 if frame_filter_count in selected_frame_ids:
