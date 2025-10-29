@@ -7,6 +7,7 @@ from typing import Optional, Union, List, Dict, Any, Tuple
 from tqdm import tqdm
 from physiotrack.modules.Yolo.classes_and_palettes import COLORS
 from physiotrack.core.radar_view import RadarView
+from physiotrack.core.keypoint_plotter import KeypointMotionPlotter
 
 
 class Video:
@@ -27,6 +28,8 @@ class Video:
                  floor_map: Optional[List[Tuple[int, int]]] = None,
                  floor_map_background: Optional[Union[str, np.ndarray]] = None,
                  floor_map_rotation: int = 90,
+                 plot_keypoint: Optional[int] = None,
+                 plot_keypoint_name: Optional[str] = None,
                  verbose: bool = False,
                  show_fps: bool = False,
                  batch_size: int = 1):  # New parameter for batch processing
@@ -51,6 +54,30 @@ class Video:
             background=floor_map_background,
             rotation=floor_map_rotation
         ) if floor_map else None
+        
+        # Initialize keypoint motion plotter
+        self.motion_plotter = None
+        if plot_keypoint is not None:
+            # Get video FPS for the plotter
+            cap_temp = cv2.VideoCapture(video_path)
+            video_fps = int(cap_temp.get(cv2.CAP_PROP_FPS))
+            if not video_fps > 0:
+                video_fps = 30
+            cap_temp.release()
+            
+            if plot_keypoint_name is None:
+                plot_keypoint_name = f"keypoint_{plot_keypoint}"
+            
+            self.motion_plotter = KeypointMotionPlotter(
+                keypoint_id=plot_keypoint,
+                keypoint_name=plot_keypoint_name,
+                window_size=300,  # 10 seconds at 30fps
+                canvas_width=450,  # Reduced width for better performance
+                canvas_height=180,  # Reduced height for better performance
+                filter_signal=True,
+                filter_bandpass=(0.5, 5.0),
+                fps=float(video_fps)
+            )
 
         self.cap = cv2.VideoCapture(video_path)
         if not self.cap.isOpened():
@@ -484,6 +511,11 @@ class Video:
                 # Step 6: Process radar view and save results
                 for idx, (result_frame, metadata, pose_results, online_targets) in enumerate(
                         zip(result_frames, frame_batch_metadata, pose_results_batch, online_targets_batch)):
+                    
+                    # Update and attach motion plotter (top right corner)
+                    if self.motion_plotter and self.pose_estimator is not None:
+                        self.motion_plotter.update(pose_results, metadata['timestamp'])
+                        result_frame = self.motion_plotter.attach_to_frame(result_frame, position='top_right')
                     
                     # Update and attach radar view
                     if self.radar_view and self.tracker is not None and self.pose_estimator is not None:

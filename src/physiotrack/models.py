@@ -96,6 +96,7 @@ class Models:
         class Yolo: 
             class VRHEAD(Enum):
                 M11 = "yolo11m_VR_head.pt"
+                M8_251029 =  'yolo8m_VR_head_251029.pt'
 
             class PERSON(Enum):
                 m_person = "yolo11m-seg.pt"

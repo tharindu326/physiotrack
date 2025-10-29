@@ -10,7 +10,8 @@ import argparse
 
 
 def run_full_inference(video_path, output_dir='output/full_inference', floor_map=None, 
-                       floor_map_background=None, floor_map_rotation=0, batch_size=1):
+                       floor_map_background=None, floor_map_rotation=0, 
+                       plot_keypoint=None, plot_keypoint_name=None, batch_size=1):
     """
     Run full inference pipeline on a video
 
@@ -23,6 +24,8 @@ def run_full_inference(video_path, output_dir='output/full_inference', floor_map
             - "auto" or "extract": Extract floor area from first video frame with homography
             - Path string: Load pre-made floor plan image from file path
         floor_map_rotation: Rotation angle in degrees (0, 90, 180, 270) to orient the radar view
+        plot_keypoint: COCO keypoint ID to plot motion (e.g., 9=left_wrist, 10=right_wrist)
+        plot_keypoint_name: Name of keypoint for plot label
         batch_size: Number of frames to process in batch (default: 1)
     """
 
@@ -82,7 +85,8 @@ def run_full_inference(video_path, output_dir='output/full_inference', floor_map
         verbose=False
     )
 
-    segmentor_vrhead = Segmentation.VRHEAD(
+    segmentor_vrhead = Segmentation.Custom(
+        model=Models.Segmentation.Yolo.VRHEAD.M8_251029,
         device=0,
         OBJECTNESS_CONFIDENCE=0.24,
         NMS_THRESHOLD=0.4,
@@ -119,6 +123,8 @@ def run_full_inference(video_path, output_dir='output/full_inference', floor_map
         floor_map=floor_map,  # Floor area for radar view
         floor_map_background=floor_map_background,  # Background mode: None/"default", "auto"/"extract", or path to image
         floor_map_rotation=floor_map_rotation,  # Rotation: 0, 90, 180, or 270 degrees
+        plot_keypoint=plot_keypoint,  # Keypoint ID to plot motion (relative to pelvis)
+        plot_keypoint_name=plot_keypoint_name,  # Keypoint name for plot label
         output_path=output_dir,
         verbose=True,
         show_fps=True,
@@ -141,16 +147,21 @@ if __name__ == "__main__":
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
                 Examples:
-                # Default black canvas
+                # Basic: Floor map with radar view
                 python full_inference.py video.mp4 --floor_map "314,824,778,402,1140,456,936,1035"
                 
-                # Auto-extract from video with 90° rotation
+                # With auto-extracted floor and motion plotting (left wrist)
                 python full_inference.py video.mp4 --floor_map "314,824,778,402,1140,456,936,1035" \\
-                    --floor_map_background "auto" --floor_map_rotation 90
+                    --floor_map_background "auto" --floor_map_rotation 90 \\
+                    --plot_keypoint 9 --plot_keypoint_name "left_wrist"
                 
-                # Custom floor plan
-                python full_inference.py video.mp4 --floor_map "314,824,778,402,1140,456,936,1035" \\
-                    --floor_map_background "floorplan.png"
+                # Motion plotting only (without floor map)
+                python full_inference.py video.mp4 --plot_keypoint 9 --plot_keypoint_name "left_wrist"
+                
+                Common COCO Keypoint IDs:
+                  0=nose, 5=left_shoulder, 6=right_shoulder, 7=left_elbow, 8=right_elbow
+                  9=left_wrist, 10=right_wrist, 11=left_hip, 12=right_hip
+                  13=left_knee, 14=right_knee, 15=left_ankle, 16=right_ankle
                 """
                 )
     parser.add_argument('video_path', type=str, help='Path to input video')
@@ -161,7 +172,11 @@ if __name__ == "__main__":
     parser.add_argument('--floor_map_background', type=str, default=None,
                         help='Background mode: "default" (black), "auto"/"extract" (from first frame), or path to floor plan image')
     parser.add_argument('--floor_map_rotation', type=int, default=90, choices=[0, 90, 180, 270],
-                        help='Rotation angle in degrees to align radar view orientation (default: 0)')
+                        help='Rotation angle in degrees to align radar view orientation (default: 90)')
+    parser.add_argument('--plot_keypoint', type=int, default=None,
+                        help='COCO keypoint ID to plot motion (e.g., 9=left_wrist, 10=right_wrist, 7=left_elbow)')
+    parser.add_argument('--plot_keypoint_name', type=str, default=None,
+                        help='Name of keypoint for plot label (default: auto-detected)')
     parser.add_argument('--batch_size', type=int, default=1,
                         help='Number of frames to process in batch (default: 1)')
 
@@ -177,4 +192,5 @@ if __name__ == "__main__":
             print("Warning: floor_map must have 8 values (4 points with x,y). Ignoring floor_map.")
 
     run_full_inference(args.video_path, args.output_dir, floor_map, 
-                      args.floor_map_background, args.floor_map_rotation, args.batch_size)
+                      args.floor_map_background, args.floor_map_rotation,
+                      args.plot_keypoint, args.plot_keypoint_name, args.batch_size)
