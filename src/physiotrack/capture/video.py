@@ -7,7 +7,7 @@ from typing import Optional, Union, List, Dict, Any, Tuple
 from tqdm import tqdm
 from physiotrack.modules.Yolo.classes_and_palettes import COLORS
 from physiotrack.core.radar_view import RadarView
-from physiotrack.core.keypoint_plotter import KeypointMotionPlotter
+from physiotrack.signals.plotting.keypoint_plotter import KeypointMotionPlotter
 
 
 class Video:
