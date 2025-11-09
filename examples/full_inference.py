@@ -1,12 +1,15 @@
 """
-Full inference pipeline: Detection -> Tracking -> Pose Estimation -> Segmentation
+Full inference pipeline: Detection -> Tracking -> Pose Estimation -> Segmentation -> Face Orientation
 Processes a video and outputs all results overlaid on the same frame
 """
 
-from physiotrack import Pose, Video, Models, Detection, Tracker, Segmentation
+from physiotrack import Pose, Video, Models, Detection, Tracker, Segmentation, Face, FaceOrientation
+from physiotrack.face import draw_axis
 from physiotrack.trackers import Config
 from pathlib import Path
 import argparse
+import cv2
+import numpy as np
 
 
 def run_full_inference(video_path, output_dir='output/full_inference', floor_map=None, 
@@ -48,7 +51,7 @@ def run_full_inference(video_path, output_dir='output/full_inference', floor_map
     print("="*60)
 
     # Initialize models
-    print("\n[1/4] Initializing VRStudent Detector...")
+    print("\n[1/5] Initializing VRStudent Detector...")
     detector = Detection.Person(
         model=Models.Detection.YOLO.PERSON.m_person,
         render_box_detections=True,
@@ -57,7 +60,7 @@ def run_full_inference(video_path, output_dir='output/full_inference', floor_map
         device=0
     )
 
-    print("[2/4] Initializing Pose Estimator...")
+    print("[2/5] Initializing Pose Estimator...")
     pose_estimator = Pose.Custom(
         model=Models.Pose.ViTPose.WholeBody.b_WHOLEBODY,
         render_box_detections=True,
@@ -67,14 +70,14 @@ def run_full_inference(video_path, output_dir='output/full_inference', floor_map
         device=0
     )
 
-    print("[3/4] Initializing Tracker...")
+    print("[3/5] Initializing Tracker...")
     tracker_config = Config()
     tracker_config.tracker_type = 'ocsort'
     tracker_config.debug_mode = False
     tracker_config.classes = [0]
     tracker = Tracker(config=tracker_config)
 
-    print("[4/4] Initializing Segmentors...")
+    print("[4/5] Initializing Segmentors...")
     segmentor_person = Segmentation.Person(
         device=0,
         OBJECTNESS_CONFIDENCE=0.24,
@@ -103,8 +106,13 @@ def run_full_inference(video_path, output_dir='output/full_inference', floor_map
     # Combine multiple segmentators
     segmentors = [segmentor_person, segmentor_vrhead]
 
+    print("[5/5] Initializing Face Orientation Estimator...")
+    face_detector = Face(device=0, verbose=False)
+    face_orientation = FaceOrientation(device=0, render_pose=False, verbose=False)
+
     print("\n✓ All models initialized successfully!")
     print(f"  - Segmentators: {len(segmentors)} (Person + VRHEAD)")
+    print(f"  - Face Orientation: Enabled")
 
     # Process video using Video processor
     print("\n" + "="*60)
@@ -117,6 +125,8 @@ def run_full_inference(video_path, output_dir='output/full_inference', floor_map
         detector=detector,  # Pass VRStudent detector to work with Pose.Custom
         tracker=tracker,
         segmentator=segmentors,  # Pass list of segmentators (Person + VRHEAD)
+        face_detector=face_detector,  # Face detector for face orientation
+        face_orientation=face_orientation,  # Face orientation estimator
         required_fps=None,
         frame_resize=None,
         frame_rotate=False,

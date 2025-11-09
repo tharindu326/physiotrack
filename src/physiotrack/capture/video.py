@@ -21,6 +21,8 @@ class Video:
                  pose_estimator=None,
                  segmentator=None,
                  tracker=None,
+                 face_detector=None,
+                 face_orientation=None,
                  output_path: Optional[Union[str, Path]] = None,
                  required_fps: Optional[int] = None,
                  frame_resize: Optional[Tuple[int, int]] = None,
@@ -40,6 +42,8 @@ class Video:
         self.segmentators = segmentator if isinstance(segmentator, list) else ([segmentator] if segmentator is not None else [])
         self.tracker = tracker
         self.pose_estimator = pose_estimator
+        self.face_detector = face_detector
+        self.face_orientation = face_orientation
         self.verbose = verbose
         self.show_fps = show_fps
         self.required_fps = required_fps
@@ -358,6 +362,75 @@ class Video:
             batch_results.append(result_frame)
 
         return batch_results
+    
+    def process_batch_face_orientation(self, frames_batch: List[np.ndarray]) -> List[Tuple[np.ndarray, List[Dict]]]:
+        """
+        Process a batch of frames for face orientation estimation.
+        
+        Returns:
+            List of (result_frame, face_orientation_results) tuples
+        """
+        if self.face_detector is None or self.face_orientation is None:
+            return [(frame, []) for frame in frames_batch]
+        
+        batch_results = []
+        
+        # Detect faces in batch
+        face_bboxes_batch = []
+        for frame in frames_batch:
+            det_results, _ = self.face_detector.detect(frame)
+            if len(det_results) > 0 and det_results[0].boxes is not None and len(det_results[0].boxes) > 0:
+                bboxes = det_results[0].boxes.data.cpu().numpy()[:, :4]
+                face_bboxes_batch.append(bboxes)
+            else:
+                face_bboxes_batch.append(np.array([]).reshape(0, 4))
+        
+        # Estimate face orientation in batch using batch inference
+        face_orientation_results_batch = []
+        if any(len(bboxes) > 0 for bboxes in face_bboxes_batch):
+            # Use batch inference for frames with faces
+            orientation_batch_results = self.face_orientation.predict_batch(frames_batch, face_bboxes_batch)
+            for output_img, pose_results in orientation_batch_results:
+                if pose_results and 'detections' in pose_results:
+                    face_orientation_results_batch.append(pose_results['detections'])
+                else:
+                    face_orientation_results_batch.append([])
+        else:
+            face_orientation_results_batch = [[] for _ in frames_batch]
+
+        # Visualize face orientation on frames
+        # Reset batch_results to avoid mixing with predict_batch outputs
+        batch_results = []
+        from physiotrack.face import draw_axis
+        for frame, face_bboxes, orientation_results in zip(frames_batch, face_bboxes_batch, face_orientation_results_batch):
+            vis_frame = frame.copy()
+            if len(orientation_results) > 0:
+                for detection in orientation_results:
+                    pose = detection['pose']
+                    bbox = detection['bbox']
+
+                    x1, y1, x2, y2 = bbox
+                    face_center_x = int((x1 + x2) / 2)
+                    face_center_y = int((y1 + y2) / 2)
+
+                    face_width = x2 - x1
+                    face_height = y2 - y1
+                    axis_size = max(face_width, face_height) * 0.6
+
+                    # Draw orientation axes
+                    vis_frame = draw_axis(
+                        vis_frame,
+                        yaw=pose['yaw'],
+                        pitch=pose['pitch'],
+                        roll=pose['roll'],
+                        tdx=face_center_x,
+                        tdy=face_center_y,
+                        size=axis_size
+                    )
+
+            batch_results.append((vis_frame, orientation_results))
+        
+        return batch_results
         
     def run(self, 
             output_video_path: Optional[Union[str, Path]] = None,
@@ -504,13 +577,23 @@ class Video:
                 # Step 5: Batch segmentation
                 # Inference uses clean frames; overlay uses frames_with_tracking to keep pose drawings
                 if len(self.segmentators) > 0:
-                    result_frames = self.process_batch_segmentation(frame_batch, all_detections_batch, overlay_frames=frames_with_tracking)
+                    frames_after_seg = self.process_batch_segmentation(frame_batch, all_detections_batch, overlay_frames=frames_with_tracking)
                 else:
-                    result_frames = frames_with_tracking
+                    frames_after_seg = frames_with_tracking
                 
-                # Step 6: Process radar view and save results
-                for idx, (result_frame, metadata, pose_results, online_targets) in enumerate(
-                        zip(result_frames, frame_batch_metadata, pose_results_batch, online_targets_batch)):
+                # Step 6: Batch face orientation processing
+                face_orientation_results_batch = []
+                if self.face_detector is not None and self.face_orientation is not None:
+                    face_orientation_batch_results = self.process_batch_face_orientation(frames_after_seg)
+                    frames_with_face_orientation = [r[0] for r in face_orientation_batch_results]
+                    face_orientation_results_batch = [r[1] for r in face_orientation_batch_results]
+                else:
+                    frames_with_face_orientation = frames_after_seg
+                    face_orientation_results_batch = [[] for _ in frame_batch]
+                
+                # Step 7: Process radar view and save results
+                for idx, (result_frame, metadata, pose_results, online_targets, face_orientation_results) in enumerate(
+                        zip(frames_with_face_orientation, frame_batch_metadata, pose_results_batch, online_targets_batch, face_orientation_results_batch)):
                     
                     # Update and attach motion plotter (top right corner)
                     if self.motion_plotter and self.pose_estimator is not None:
@@ -535,6 +618,10 @@ class Video:
                     # Add pose results if available
                     if self.pose_estimator is not None:
                         frame_data['detections'] = pose_results
+                    
+                    # Add face orientation results if available
+                    if self.face_orientation is not None and len(face_orientation_results) > 0:
+                        frame_data['face_orientation'] = face_orientation_results
                     
                     all_detection_data.append(frame_data)
                     
@@ -578,6 +665,10 @@ class Video:
                                 if hasattr(segmentor, 'get_avg_fps'):
                                     seg_fps = segmentor.get_avg_fps()
                                     fps_dict[f"Seg[{idx}]"] = f"{seg_fps:.2f}"
+                        
+                        if self.face_orientation and hasattr(self.face_orientation, 'get_avg_fps'):
+                            face_fps = self.face_orientation.get_avg_fps()
+                            fps_dict["Face"] = f"{face_fps:.2f}"
                         
                         fps_dict["Batch"] = f"{self.batch_size}"
                         
@@ -642,6 +733,16 @@ class Video:
                         seg_fps = segmentor.get_avg_fps()
                         seg_time = segmentor.get_avg_inference_time()
                         print(f"Segmentor[{idx}] FPS: {seg_fps:.2f} ({seg_time:.2f}ms per frame)")
+
+            if self.face_detector and hasattr(self.face_detector, 'get_avg_fps'):
+                face_det_fps = self.face_detector.get_avg_fps()
+                face_det_time = self.face_detector.get_avg_inference_time()
+                print(f"Face Detector FPS: {face_det_fps:.2f} ({face_det_time:.2f}ms per frame)")
+
+            if self.face_orientation and hasattr(self.face_orientation, 'get_avg_fps'):
+                face_orient_fps = self.face_orientation.get_avg_fps()
+                face_orient_time = self.face_orientation.get_avg_inference_time()
+                print(f"Face Orientation FPS: {face_orient_fps:.2f} ({face_orient_time:.2f}ms per frame)")
 
             print("="*60)
                   

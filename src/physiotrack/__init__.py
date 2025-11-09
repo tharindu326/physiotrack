@@ -17,6 +17,7 @@ from .models import Models
 from .detect import Detection
 from .segment import Segmentation
 from .pose import Pose
+from .face import Face, FaceOrientation
 
 from .capture.video import Video
 

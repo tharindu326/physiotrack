@@ -12,10 +12,12 @@ class Models:
             class PERSON(Enum):
                 m_person = "yolo11m.pt"
                 l_person = "yolo11l.pt"
+                n_person = "yolo11n.pt"
 
             class FACE(Enum):
-                m_face = "yolo11m_face.pt"
-                l_face = "yolo11l_face.pt"
+                n_face = "yolov11n-face.pt"
+                m_face = "yolov11m-face.pt"
+                l_face = "yolov11l-face.pt"
 
             class VR(Enum):
                 m_VR = "yolo11m_vr.pt"
@@ -69,6 +71,9 @@ class Models:
 
         class DDH(Enum):
             best = 'best_epoch_DDHPose.bin'
+
+        class FaceOrientation(Enum):
+            default = '6DRepNet360_Full-Rotation_300W_LP+Panoptic.pth'
 
         class Canonicalizer:
             class Models(Enum):
@@ -329,6 +334,9 @@ class Models:
             return Models._download_ddh_model(model_info, download_path)
         elif model_info['backend'] == 'Canonicalizer':
             return Models._download_canonicalizer_model(model_info, download_path)
+        elif model_info['backend'] == 'FaceOrientation':
+            # FaceOrientation uses HuggingFace download like DDH
+            return Models._download_ddh_model(model_info, download_path)
         else:
             raise ValueError(f"Unknown backend: {model_info['backend']}")
 
@@ -442,10 +450,25 @@ class Models:
         )
 
     @staticmethod
-    def validate_pose3d_model(model):
-        """Validates whether the given model is one of the defined pose3d enum members"""
+    def validate_pose3d_model(model, expected_subclass=None):
+        """Validates whether the given model is one of the defined pose3d enum members
+        
+        Args:
+            model: The model enum to validate
+            expected_subclass: Optional string to verify the model is from specific backend
+                             (e.g., 'FaceOrientation', 'MotionBERT', 'DDH')
+        """
         if not isinstance(model, Enum):
             raise ValueError(f"Expected an Enum instance, got {type(model)}")
+        
+        # If expected_subclass is provided, validate it matches
+        if expected_subclass:
+            model_class_name = model.__class__.__name__
+            if model_class_name != expected_subclass:
+                raise ValueError(
+                    f"Expected model from Models.Pose3D.{expected_subclass}, "
+                    f"but got {model_class_name}"
+                )
             
         for attr_name in dir(Models.Pose3D):
             if attr_name.startswith('_'):
