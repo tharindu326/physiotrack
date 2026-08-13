@@ -617,6 +617,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -829,6 +833,62 @@
     
   
     Face & Head Orientation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../face-examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Face Detection & Tracking Examples
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../face-validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Face Detection & Tracking Validation
   
 
     
@@ -2607,7 +2667,7 @@ footage shows:</p>
 </span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>
 </span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="c1"># Motion-derived: reuse the per-frame pose records (no face, no extra inference)</span>
 </span><span id="__span-10-6"><a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a><span class="kn">from</span><span class="w"> </span><span class="nn">physiotrack.signals</span><span class="w"> </span><span class="kn">import</span> <span class="n">respiration_from_motion</span>
-</span><span id="__span-10-7"><a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a><span class="n">records</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">Video</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s2">&quot;in.mp4&quot;</span><span class="p">,</span> <span class="n">pose</span><span class="o">=</span><span class="n">pt</span><span class="o">.</span><span class="n">Pose</span><span class="o">.</span><span class="n">Person</span><span class="p">())</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>   <span class="c1"># per-frame detections</span>
+</span><span id="__span-10-7"><a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a><span class="n">records</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">Video</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s2">&quot;in.mp4&quot;</span><span class="p">,</span> <span class="n">pose</span><span class="o">=</span><span class="n">pt</span><span class="o">.</span><span class="n">Pose</span><span class="o">.</span><span class="n">Person</span><span class="p">())</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>   <span class="c1"># VideoResults of frames</span>
 </span><span id="__span-10-8"><a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a><span class="n">resp_wave</span><span class="p">,</span> <span class="n">rr_motion</span> <span class="o">=</span> <span class="n">respiration_from_motion</span><span class="p">(</span><span class="n">records</span><span class="p">,</span> <span class="n">original_fps</span><span class="o">=</span><span class="mf">30.0</span><span class="p">)</span>
 </span></code></pre></div>
 <div class="admonition tip">
@@ -2622,8 +2682,8 @@ choose <code>respiration_source="pulse"</code> or <code>"motion"</code> — see 
 <a href="../video/#vitals-rppg-heart-rate-hrv-respiration">Video guide</a>.</p>
 <hr />
 <h2 id="motion-features-joint-angles-rom">Motion features, Joint Angles &amp; ROM<a class="headerlink" href="#motion-features-joint-angles-rom" title="Permanent link">&para;</a></h2>
-<p>From per-frame pose records (the <code>detections</code> list produced by
-<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Video&lt;/span&gt;" href="../../api/video/#physiotrack.Video"><code>Video</code></a> / <code>Result.to_dict()</code>), the motion tools build keypoint
+<p>From per-frame pose instances (the <code>instances</code> list in
+<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Video&lt;/span&gt;" href="../../api/video/#physiotrack.Video"><code>Video</code></a> / <code>Result.to_dict()</code> output), the motion tools build keypoint
 trajectories, derive velocity/acceleration, and measure anatomical joint angles and clinical
 ROM.</p>
 <h3 id="keypoint-sequences-centroids">Keypoint sequences &amp; centroids<a class="headerlink" href="#keypoint-sequences-centroids" title="Permanent link">&para;</a></h3>
@@ -2662,12 +2722,13 @@ ROM.</p>
 </span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>    <span class="n">resample_dataframe_by_interpolation</span><span class="p">,</span>
 </span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="p">)</span>
 </span><span id="__span-11-6"><a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a>
-</span><span id="__span-11-7"><a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="c1"># `data` = detections from Video.run(...) / Result.to_dict(); `pose` is your Pose estimator</span>
-</span><span id="__span-11-8"><a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a><span class="n">data</span> <span class="o">=</span> <span class="n">add_pelvic_centroid</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">pose</span><span class="o">.</span><span class="n">architecture</span><span class="p">)</span>          <span class="c1"># id 135 = hip midpoint</span>
-</span><span id="__span-11-9"><a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a><span class="n">kp_df</span> <span class="o">=</span> <span class="n">extract_keypoints_sequence</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">candidate_key_points</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">17</span><span class="p">))</span> <span class="o">+</span> <span class="p">[</span><span class="mi">135</span><span class="p">])</span>
-</span><span id="__span-11-10"><a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a><span class="n">rel</span> <span class="o">=</span> <span class="n">get_relative_coordinates</span><span class="p">(</span><span class="n">kp_df</span><span class="p">,</span> <span class="n">reference_point_id</span><span class="o">=</span><span class="mi">135</span><span class="p">)</span>  <span class="c1"># pelvis-centered (translation-invariant)</span>
-</span><span id="__span-11-11"><a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a><span class="n">motion_df</span> <span class="o">=</span> <span class="n">compute_all_motion_features</span><span class="p">(</span><span class="n">rel</span><span class="p">)</span>                   <span class="c1"># + velocity, acceleration, joint angles</span>
-</span><span id="__span-11-12"><a id="__codelineno-11-12" name="__codelineno-11-12" href="#__codelineno-11-12"></a><span class="n">motion_df</span> <span class="o">=</span> <span class="n">resample_dataframe_by_interpolation</span><span class="p">(</span><span class="n">motion_df</span><span class="p">,</span> <span class="n">input_fs</span><span class="o">=</span><span class="n">video_fps</span><span class="p">,</span> <span class="n">output_fs</span><span class="o">=</span><span class="mi">30</span><span class="p">)</span>
+</span><span id="__span-11-7"><a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="c1"># `data` = frame/instance records from Video.run(...) or Result.to_dict()[&quot;instances&quot;]</span>
+</span><span id="__span-11-8"><a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a><span class="c1"># `pose` is your Pose estimator</span>
+</span><span id="__span-11-9"><a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a><span class="n">data</span> <span class="o">=</span> <span class="n">add_pelvic_centroid</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">pose</span><span class="o">.</span><span class="n">architecture</span><span class="p">)</span>          <span class="c1"># id 135 = hip midpoint</span>
+</span><span id="__span-11-10"><a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a><span class="n">kp_df</span> <span class="o">=</span> <span class="n">extract_keypoints_sequence</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">candidate_key_points</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">17</span><span class="p">))</span> <span class="o">+</span> <span class="p">[</span><span class="mi">135</span><span class="p">])</span>
+</span><span id="__span-11-11"><a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a><span class="n">rel</span> <span class="o">=</span> <span class="n">get_relative_coordinates</span><span class="p">(</span><span class="n">kp_df</span><span class="p">,</span> <span class="n">reference_point_id</span><span class="o">=</span><span class="mi">135</span><span class="p">)</span>  <span class="c1"># pelvis-centered (translation-invariant)</span>
+</span><span id="__span-11-12"><a id="__codelineno-11-12" name="__codelineno-11-12" href="#__codelineno-11-12"></a><span class="n">motion_df</span> <span class="o">=</span> <span class="n">compute_all_motion_features</span><span class="p">(</span><span class="n">rel</span><span class="p">)</span>                   <span class="c1"># + velocity, acceleration, joint angles</span>
+</span><span id="__span-11-13"><a id="__codelineno-11-13" name="__codelineno-11-13" href="#__codelineno-11-13"></a><span class="n">motion_df</span> <span class="o">=</span> <span class="n">resample_dataframe_by_interpolation</span><span class="p">(</span><span class="n">motion_df</span><span class="p">,</span> <span class="n">input_fs</span><span class="o">=</span><span class="n">video_fps</span><span class="p">,</span> <span class="n">output_fs</span><span class="o">=</span><span class="mi">30</span><span class="p">)</span>
 </span></code></pre></div>
 <div class="admonition note">
 <p class="admonition-title">Single-keypoint extraction</p>
@@ -2878,7 +2939,7 @@ metrics first trim the inputs to a common length via
 </ul>
 </li>
 <li>Related guides: <a href="../pose/">Pose</a> · <a href="../segmentation/">Segmentation</a> · <a href="../pose3d/">3D Pose</a> · <a href="../video/">Video pipeline</a></li>
-<li><a href="../../api/results/">Result objects</a> — the <code>detections</code> / <code>keypoints</code> structures the motion tools consume.</li>
+<li><a href="../../api/results/">Result objects</a> — the <code>instances</code> / <code>keypoints</code> structures the motion tools consume.</li>
 </ul>
 
 

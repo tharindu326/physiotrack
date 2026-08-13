@@ -617,6 +617,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -829,6 +833,62 @@
     
   
     Face & Head Orientation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../face-examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Face Detection & Tracking Examples
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../face-validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Face Detection & Tracking Validation
   
 
     
@@ -2303,15 +2363,17 @@ regardless of batch size, because a tracker is stateful. See the
 <h2 id="running-the-pipeline">Running the pipeline<a class="headerlink" href="#running-the-pipeline" title="Permanent link">&para;</a></h2>
 <h3 id="run"><code>run()</code><a class="headerlink" href="#run" title="Permanent link">&para;</a></h3>
 <p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;run&lt;/span&gt;" href="../../api/video/#physiotrack.Video.run"><code>run</code></a> processes the whole source and returns a
-<code>list[dict]</code>, one dict per processed frame. It optionally writes an annotated H.264
-(<code>avc1</code>) MP4 and a JSON dump.</p>
+<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VideoResults&lt;/span&gt;" href="../../api/results/#physiotrack.VideoResults"><code>VideoResults</code></a>, a typed sequence with one
+<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;FrameResult&lt;/span&gt;" href="../../api/results/#physiotrack.FrameResult"><code>FrameResult</code></a> per processed frame. It optionally writes an
+annotated MP4 (H.264 when available, otherwise MPEG-4) and a JSON dump.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">results</span> <span class="o">=</span> <span class="n">video</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    <span class="n">output_video</span><span class="o">=</span><span class="s2">&quot;output/clip.mp4&quot;</span><span class="p">,</span>   <span class="c1"># optional</span>
 </span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    <span class="n">output_json</span><span class="o">=</span><span class="s2">&quot;output/clip.json&quot;</span><span class="p">,</span>   <span class="c1"># optional</span>
 </span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="p">)</span>
 </span></code></pre></div>
-<p>Each per-frame dict always carries <code>frame_id</code> (int) and <code>timestamp</code> (float
-seconds), plus, when the relevant stage is enabled:</p>
+<p>Each <code>FrameResult</code> is iterable over its typed <code>Instance</code> objects and carries metadata.
+Its serialized dictionary always has <code>frame_id</code> (int), <code>timestamp</code> (float seconds),
+and <code>instances</code> (list), plus optional pipeline fields:</p>
 <table>
 <thead>
 <tr>
@@ -2332,9 +2394,9 @@ seconds), plus, when the relevant stage is enabled:</p>
 <td>Seconds from start (float).</td>
 </tr>
 <tr>
-<td><code>detections</code></td>
-<td>a pose estimator is attached</td>
-<td>Per-person pose results (keypoints + metadata).</td>
+<td><code>instances</code></td>
+<td>always</td>
+<td>Per-subject fields from the richest attached stage: pose instances with keypoints, else tracked instances with persistent <code>id</code>s, else bare detections. Empty when no detection, tracking, or pose stage is attached.</td>
 </tr>
 <tr>
 <td><code>track_box</code></td>
@@ -2354,7 +2416,7 @@ seconds), plus, when the relevant stage is enabled:</p>
 <p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;batch_run&lt;/span&gt;" href="../../api/video/#physiotrack.Video.batch_run"><code>batch_run</code></a> reuses this pipeline's configuration
 across several input files, writing <code>&lt;name&gt;_processed.mp4</code> / <code>&lt;name&gt;_result.json</code>
 into an output directory and returning a <code>dict</code> mapping each file stem to its
-per-frame results:</p>
+<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VideoResults&lt;/span&gt;" href="../../api/results/#physiotrack.VideoResults"><code>VideoResults</code></a> sequence:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">results</span> <span class="o">=</span> <span class="n">video</span><span class="o">.</span><span class="n">batch_run</span><span class="p">(</span>
 </span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>    <span class="p">[</span><span class="s2">&quot;clip_a.mp4&quot;</span><span class="p">,</span> <span class="s2">&quot;clip_b.mp4&quot;</span><span class="p">],</span>
 </span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>    <span class="n">output_dir</span><span class="o">=</span><span class="s2">&quot;output&quot;</span><span class="p">,</span>

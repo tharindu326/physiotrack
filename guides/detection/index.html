@@ -617,6 +617,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -761,6 +765,23 @@
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Available presets">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#two-face-detector-entry-points" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Two face-detector entry points
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -944,6 +965,62 @@
     
   
     Face & Head Orientation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../face-examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Face Detection & Tracking Examples
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../face-validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Face Detection & Tracking Validation
   
 
     
@@ -1908,6 +1985,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Available presets">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#two-face-detector-entry-points" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Two face-detector entry points
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -2041,6 +2135,33 @@ incompatible model. See the <a href="../../model-zoo/">Model Zoo</a> for every v
 </tr>
 </tbody>
 </table>
+<h3 id="two-face-detector-entry-points">Two face-detector entry points<a class="headerlink" href="#two-face-detector-entry-points" title="Permanent link">&para;</a></h3>
+<p>PhysioTrack also exposes a top-level <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Face&lt;/span&gt;" href="../../api/face/#physiotrack.Face"><code>Face</code></a> preset. Both face
+entry points use <code>Models.Detection.YOLO.FACE.m_face</code> by default and return the same
+box/confidence structure; the difference is the semantic task label:</p>
+<table>
+<thead>
+<tr>
+<th>Entry point</th>
+<th>Result task</th>
+<th>Prefer it when…</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>pt.Face()</code></td>
+<td><code>"face"</code></td>
+<td>face boxes feed head orientation, face parsing, rPPG, or face tracking</td>
+</tr>
+<tr>
+<td><code>pt.Detection.Face()</code></td>
+<td><code>"detect"</code></td>
+<td>face boxes are one detector choice inside a generic object-detection pipeline</td>
+</tr>
+</tbody>
+</table>
+<p>The dedicated <a href="../face-examples/">face examples</a> use <code>pt.Face()</code> so serialized output
+clearly identifies a facial task.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">physiotrack</span><span class="w"> </span><span class="kn">import</span> <span class="n">Detection</span><span class="p">,</span> <span class="n">Models</span>
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
 </span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="c1"># Custom preset: choose an explicit validated model</span>
@@ -2113,7 +2234,7 @@ vectorized <code>boxes</code> view.</p>
 </span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>    <span class="n">x1</span><span class="p">,</span> <span class="n">y1</span><span class="p">,</span> <span class="n">x2</span><span class="p">,</span> <span class="n">y2</span> <span class="o">=</span> <span class="n">inst</span><span class="o">.</span><span class="n">box</span>            <span class="c1"># (4,) pixel box</span>
 </span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">inst</span><span class="o">.</span><span class="n">cls</span><span class="p">,</span> <span class="n">inst</span><span class="o">.</span><span class="n">cls_name</span><span class="p">,</span> <span class="n">inst</span><span class="o">.</span><span class="n">confidence</span><span class="p">)</span>
 </span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>
-</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="n">data</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>  <span class="c1"># JSON-friendly dict: {&quot;task&quot;: &quot;detect&quot;, &quot;detections&quot;: [...]}</span>
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="n">data</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>  <span class="c1"># JSON-friendly: {&quot;task&quot;: &quot;detect&quot;, &quot;instances&quot;: [...]}</span>
 </span></code></pre></div>
 <p>Render an annotated copy with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;plot&lt;/span&gt;" href="../../api/results/#physiotrack.Result.plot"><code>Result.plot</code></a> — the source
 frame is never modified:</p>
@@ -2132,9 +2253,11 @@ frame is never modified:</p>
 </div>
 <div class="admonition tip">
 <p class="admonition-title">Feed a tracker or pose model</p>
-<p>A detector's boxes are the standard input to downstream stages. Serialize with
-<code>result.to_dict()</code> for the <a href="../tracking/">Tracker</a>, or let <a href="../pose/">Pose</a>
-auto-detect people for you.</p>
+<p>A detector's boxes are the standard input to downstream stages. The
+<a href="../tracking/">Tracker</a> needs an <code>(N, 6)</code> NumPy array of
+<code>[x1, y1, x2, y2, confidence, class]</code>, not the dictionary returned by
+<code>result.to_dict()</code>. Build it from the result instances as shown in the tracking
+guide, or let <a href="../pose/">Pose</a> auto-detect people for you.</p>
 </div>
 <div class="admonition warning">
 <p class="admonition-title">Class ids depend on the model</p>

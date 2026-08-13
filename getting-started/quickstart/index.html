@@ -713,6 +713,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -922,6 +926,62 @@
     
   
     Face & Head Orientation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/face-examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Face Detection & Tracking Examples
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/face-validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Face Detection & Tracking Validation
   
 
     
@@ -1965,6 +2025,10 @@ returns an annotated BGR image you can write straight to disk with OpenCV.</p>
 </div>
 <p>See the <a href="../../guides/detection/">Detection guide</a> and the
 <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Detection&lt;/span&gt;" href="../../api/detection/#physiotrack.Detection"><code>Detection</code></a> API for all presets and options.</p>
+<p>For a complete face-specific version with bundled selfie, POV, crowd and VR scenes,
+run <code>python examples/face_detection/detect_faces.py</code>. The
+<a href="../../guides/face-examples/">face examples guide</a> explains its annotated PNG, CSV,
+JSON and run-metadata outputs.</p>
 <h2 id="2-pose-on-the-same-image">2. Pose on the same image<a class="headerlink" href="#2-pose-on-the-same-image" title="Permanent link">&para;</a></h2>
 <p><code>Pose.Person()</code> auto-detects people first (no boxes needed), then estimates
 keypoints. The result is iterable — one entry per person — and each person exposes
@@ -2064,6 +2128,7 @@ OpenCV applies EXIF orientation on load.</p>
   <a href="../../guides/signals/">Signals</a>.</li>
 <li><strong>Reading the output</strong> → <a href="../../api/results/">Result objects</a>.</li>
 <li><strong>Pick different weights</strong> → <a href="../../model-zoo/">Model Zoo</a>.</li>
+<li><strong>Run face detection/tracking examples</strong> → <a href="../../guides/face-examples/">Face Examples</a>.</li>
 </ul>
 
 

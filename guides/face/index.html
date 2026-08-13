@@ -18,7 +18,7 @@
         <link rel="prev" href="../depth/">
       
       
-        <link rel="next" href="../tracking/">
+        <link rel="next" href="../face-examples/">
       
       
         
@@ -617,6 +617,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -983,6 +987,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#runnable-detection-and-tracking-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Runnable detection and tracking examples
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#see-also" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -997,6 +1012,62 @@
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../face-examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Face Detection & Tracking Examples
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../face-validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Face Detection & Tracking Validation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -2034,6 +2105,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#runnable-detection-and-tracking-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Runnable detection and tracking examples
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#see-also" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2188,7 +2270,7 @@ in <strong>degrees</strong>. Other instance fields follow the shared
 </span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>    <span class="n">x1</span><span class="p">,</span> <span class="n">y1</span><span class="p">,</span> <span class="n">x2</span><span class="p">,</span> <span class="n">y2</span> <span class="o">=</span> <span class="n">inst</span><span class="o">.</span><span class="n">box</span>       <span class="c1"># (4,) face box</span>
 </span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>
 </span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="n">result</span><span class="o">.</span><span class="n">boxes</span>        <span class="c1"># (N, 4) all face boxes</span>
-</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="n">result</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>    <span class="c1"># JSON-friendly dict; orientation is stored under &quot;pose&quot;</span>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="n">result</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>    <span class="c1"># JSON-friendly dict; orientation stays under &quot;orientation&quot;</span>
 </span></code></pre></div>
 <p>See <a href="../../api/results/">Result objects</a> for the full container API.</p>
 <h3 id="drawing-the-pose-axis">Drawing the pose axis<a class="headerlink" href="#drawing-the-pose-axis" title="Permanent link">&para;</a></h3>
@@ -2226,6 +2308,16 @@ Face, with a 6DRepNet source fallback for the orientation model).</p>
 physiological signals such as rPPG heart rate are covered in the
 <a href="../signals/">Signals guide</a>, not here.</p>
 </div>
+<h2 id="runnable-detection-and-tracking-examples">Runnable detection and tracking examples<a class="headerlink" href="#runnable-detection-and-tracking-examples" title="Permanent link">&para;</a></h2>
+<p>The repository includes synthetic media and command-line examples that run without
+editing file paths. The image example saves annotated PNGs, per-image JSON, a CSV
+summary and run metadata. The video example runs face detection and tracking
+through the core <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Video&lt;/span&gt;" href="../../api/video/#physiotrack.Video"><code>Video</code></a> pipeline and saves an annotated MP4,
+per-frame JSON, and a per-track CSV.</p>
+<p>See <a href="../face-examples/">Face Detection &amp; Tracking Examples</a> for commands, output
+schemas, and interpretation. These are qualitative teaching examples; use the
+<a href="../face-validation/">Face Detection &amp; Tracking Validation</a> guide before making
+accuracy claims.</p>
 <h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
 <li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Face&lt;/span&gt;" href="../../api/face/#physiotrack.Face"><code>Face</code></a> · <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VRFace&lt;/span&gt;" href="../../api/face/#physiotrack.VRFace"><code>VRFace</code></a> · <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;FaceOrientation&lt;/span&gt;" href="../../api/face/#physiotrack.FaceOrientation"><code>FaceOrientation</code></a> — API reference.</li>
@@ -2233,6 +2325,8 @@ physiological signals such as rPPG heart rate are covered in the
 <li><a href="../../api/results/">Result objects</a> — <code>Result</code>, <code>Instance</code>, the <code>orientation</code> dict.</li>
 <li><a href="../signals/">Signals guide</a> — face parsing and rPPG heart rate.</li>
 <li><a href="../../model-zoo/">Model Zoo</a> — face detector and head-pose weights.</li>
+<li><a href="../face-examples/">Face examples</a> — runnable image/video demos and output schemas.</li>
+<li><a href="../face-validation/">Face validation</a> — datasets, manifests, and reporting boundaries.</li>
 </ul>
 
 
@@ -2288,13 +2382,13 @@ physiological signals such as rPPG heart rate are covered in the
         
         
           
-          <a href="../tracking/" class="md-footer__link md-footer__link--next" aria-label="Next: Tracking">
+          <a href="../face-examples/" class="md-footer__link md-footer__link--next" aria-label="Next: Face Detection &amp; Tracking Examples">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Tracking
+                Face Detection & Tracking Examples
               </div>
             </div>
             <div class="md-footer__button md-icon">

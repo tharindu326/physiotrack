@@ -615,6 +615,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -824,6 +828,62 @@
     
   
     Face & Head Orientation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/face-examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Face Detection & Tracking Examples
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/face-validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Face Detection & Tracking Validation
   
 
     
@@ -4421,10 +4481,12 @@ list or tuple.</p>
 
 
 
-        <p>Face detector.</p>
-<p>Wraps <code>Models.Detection.YOLO.FACE.m_face</code>. See
-<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Detection&lt;/span&gt;" href="#physiotrack.Detection"><code>ValidatedDetector</code></a> for
-constructor arguments.</p>
+        <p>Face detector in the generic detection namespace.</p>
+<p>Wraps <code>Models.Detection.YOLO.FACE.m_face</code> and returns a
+<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Result&lt;/span&gt;" href="../results/#physiotrack.Result"><code>Result</code></a> with <code>task="detect"</code>. Top-level
+<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Face&lt;/span&gt;" href="../face/#physiotrack.Face"><code>Face</code></a> uses the same default checkpoint but returns
+<code>task="face"</code>; prefer it when these boxes feed a facial pipeline. See
+<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Detection&lt;/span&gt;" href="#physiotrack.Detection"><code>ValidatedDetector</code></a> for constructor arguments.</p>
 
         <p>Configure a preset detector.</p>
 

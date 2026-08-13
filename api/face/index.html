@@ -615,6 +615,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -824,6 +828,62 @@
     
   
     Face & Head Orientation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/face-examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Face Detection & Tracking Examples
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/face-validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Face Detection & Tracking Validation
   
 
     
@@ -2329,6 +2389,15 @@
 <h1 id="face-head-orientation">Face &amp; Head Orientation<a class="headerlink" href="#face-head-orientation" title="Permanent link">&para;</a></h1>
 <p>Face detection presets and 6-DoF head-orientation (yaw/pitch/roll) estimation.
 See the <a href="../../guides/face/">Face guide</a>.</p>
+<div class="admonition note">
+<p class="admonition-title"><code>Face()</code> and <code>Detection.Face()</code></p>
+<p>Top-level <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Face&lt;/span&gt;" href="#physiotrack.Face"><code>Face</code></a> is the facial-pipeline entry point and
+returns <code>Result(task="face")</code>. <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Face&lt;/span&gt;" href="../detection/#physiotrack.Detection.Face"><code>Detection.Face</code></a>
+uses the same default face checkpoint through the generic detection namespace
+and returns <code>Result(task="detect")</code>. See the
+<a href="../../guides/face-examples/#api-choice-face-or-detectionface">runnable face examples</a>
+for the practical distinction.</p>
+</div>
 <h2 id="face">Face<a class="headerlink" href="#face" title="Permanent link">&para;</a></h2>
 
 
@@ -2356,6 +2425,9 @@ Calling <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-sy
 returns a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Result&lt;/span&gt;" href="../results/#physiotrack.Result"><code>Result</code></a> with <code>task="face"</code> whose instances
 carry face boxes. Pair it with
 <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;FaceOrientation&lt;/span&gt;" href="#physiotrack.FaceOrientation"><code>FaceOrientation</code></a> to add head pose.</p>
+<p>This is the face-specific entry point and therefore returns <code>task="face"</code>.
+<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Face&lt;/span&gt;" href="../detection/#physiotrack.Detection.Face"><code>Detection.Face</code></a> uses the same default weights
+but belongs to the generic detection namespace and returns <code>task="detect"</code>.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -2491,7 +2563,9 @@ Hugging Face.</p>
 
 <details class="see-also" open>
   <summary>See Also</summary>
-  <p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VRFace&lt;/span&gt;" href="#physiotrack.VRFace"><code>VRFace</code></a>: VR-headset-tuned face detector.
+  <p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Face&lt;/span&gt;" href="../detection/#physiotrack.Detection.Face"><code>Detection.Face</code></a>: the generic-detector entry
+    point using the same default checkpoint.
+<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VRFace&lt;/span&gt;" href="#physiotrack.VRFace"><code>VRFace</code></a>: VR-headset-tuned face detector.
 <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;FaceOrientation&lt;/span&gt;" href="#physiotrack.FaceOrientation"><code>FaceOrientation</code></a>: head pose from face boxes.</p>
 </details>
         <p>Configure a preset detector.</p>

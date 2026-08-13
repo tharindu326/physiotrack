@@ -617,6 +617,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -978,6 +982,62 @@
     
   
     Face & Head Orientation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../face-examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Face Detection & Tracking Examples
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../face-validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Face Detection & Tracking Validation
   
 
     
@@ -2085,11 +2145,11 @@ collection, and rendering is delegated to <a class="autorefs autorefs-internal" 
 </span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>    <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 </span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="p">)</span>
 </span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>
-</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="n">detections</span> <span class="o">=</span> <span class="n">video</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="n">frames</span> <span class="o">=</span> <span class="n">video</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
 </span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>    <span class="n">Path</span><span class="p">(</span><span class="s2">&quot;output/BV_S17_cut1_poses.mp4&quot;</span><span class="p">),</span>      <span class="c1"># annotated video</span>
 </span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>    <span class="n">Path</span><span class="p">(</span><span class="s2">&quot;output/BV_S17_cut1_result.json&quot;</span><span class="p">),</span>    <span class="c1"># per-frame keypoints JSON</span>
 </span><span id="__span-1-17"><a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a><span class="p">)</span>
-</span><span id="__span-1-18"><a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">detections</span><span class="p">)</span><span class="si">}</span><span class="s2"> total detections&quot;</span><span class="p">)</span>
+</span><span id="__span-1-18"><a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">frames</span><span class="p">)</span><span class="si">}</span><span class="s2"> frames; </span><span class="si">{</span><span class="nb">sum</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">frame</span><span class="p">)</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">frame</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">frames</span><span class="p">)</span><span class="si">}</span><span class="s2"> pose instances&quot;</span><span class="p">)</span>
 </span></code></pre></div>
 <div class="admonition tip">
 <p class="admonition-title">The JSON feeds 3D lifting</p>
@@ -2268,7 +2328,7 @@ read their <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc
 </span><span id="__span-3-16"><a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a>
 </span><span id="__span-3-17"><a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a><span class="n">result</span><span class="o">.</span><span class="n">keypoints</span>          <span class="c1"># list[Keypoints], one per person with pose</span>
 </span><span id="__span-3-18"><a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a><span class="n">result</span><span class="o">.</span><span class="n">boxes</span>              <span class="c1"># (M, 4) person boxes</span>
-</span><span id="__span-3-19"><a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a><span class="n">result</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>          <span class="c1"># JSON-friendly dict (task + detections)</span>
+</span><span id="__span-3-19"><a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a><span class="n">result</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>          <span class="c1"># JSON-friendly dict (task + instances)</span>
 </span></code></pre></div>
 <p>A missing landmark returns <code>None</code> from <code>by_name</code> / <code>by_id</code>, and unmapped ids are
 named <code>"unknown_&lt;id&gt;"</code>. See <a href="../../api/results/">Result objects</a> for the full

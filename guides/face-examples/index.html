@@ -12,13 +12,13 @@
         <meta name="author" content="Tharindu Ekanayake">
       
       
-        <link rel="canonical" href="https://tharindu326.github.io/physiotrack/guides/tracking/">
+        <link rel="canonical" href="https://tharindu326.github.io/physiotrack/guides/face-examples/">
       
       
-        <link rel="prev" href="../face-validation/">
+        <link rel="prev" href="../face/">
       
       
-        <link rel="next" href="../video/">
+        <link rel="next" href="../face-validation/">
       
       
         
@@ -29,7 +29,7 @@
     
     
       
-        <title>Tracking - Physiotrack</title>
+        <title>Face Detection & Tracking Examples - Physiotrack</title>
       
     
     
@@ -84,7 +84,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#multi-object-tracking" class="md-skip">
+        <a href="#face-detection-tracking-examples" class="md-skip">
           Skip to content
         </a>
       
@@ -120,7 +120,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Tracking
+              Face Detection & Tracking Examples
             
           </span>
         </div>
@@ -850,10 +850,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../face-examples/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Face Detection & Tracking Examples
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -869,6 +896,106 @@
   
 
       </a>
+      
+        
+
+  
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#detect-faces-in-images" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Detect faces in images
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Detect faces in images">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#detection-output" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Detection output
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#track-faces-in-a-video" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Track faces in a video
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Track faces in a video">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#tracking-output" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tracking output
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-to-interpret-the-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How to interpret the examples
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#api-choice-face-or-detectionface" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        API choice: Face() or Detection.Face()?
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -906,37 +1033,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Tracking
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../tracking/" class="md-nav__link">
         
   
   
@@ -952,94 +1052,6 @@
   
 
       </a>
-      
-        
-
-  
-
-<nav class="md-nav md-nav--secondary" aria-label="On this page">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      On this page
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#quick-start" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Quick start
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#available-backends" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Available backends
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#the-detect-track-loop" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        The detect → track loop
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#working-with-results" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Working with results
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#configuration-groups" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Configuration groups
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#see-also" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        See also
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1949,10 +1961,66 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#quick-start" class="md-nav__link">
+  <a href="#detect-faces-in-images" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Quick start
+        Detect faces in images
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Detect faces in images">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#detection-output" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Detection output
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#track-faces-in-a-video" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Track faces in a video
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Track faces in a video">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#tracking-output" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tracking output
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-to-interpret-the-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How to interpret the examples
       
     </span>
   </a>
@@ -1960,54 +2028,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#available-backends" class="md-nav__link">
+  <a href="#api-choice-face-or-detectionface" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Available backends
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#the-detect-track-loop" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        The detect → track loop
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#working-with-results" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Working with results
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#configuration-groups" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Configuration groups
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#see-also" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        See also
+        API choice: Face() or Detection.Face()?
       
     </span>
   </a>
@@ -2034,244 +2058,206 @@
   
 
 
-<h1 id="multi-object-tracking">Multi-object Tracking<a class="headerlink" href="#multi-object-tracking" title="Permanent link">&para;</a></h1>
-<p>Tracking turns per-frame detection boxes into <strong>persistent tracks</strong> — each subject
-keeps the same integer <code>id</code> across frames, so you can follow a person through a
-clip, draw movement trails, or lock onto a single subject. Physiotrack wraps four
-interchangeable tracking backends behind one API: you feed a frame plus that
-frame's detections and get back a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;TrackResult&lt;/span&gt;" href="../../api/results/#physiotrack.TrackResult"><code>TrackResult</code></a> whose
-instances carry stable ids.</p>
-<p>Tracking is detection-driven: run a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Detection&lt;/span&gt;" href="../../api/detection/#physiotrack.Detection"><code>Detection</code></a> model
-first, then pass its boxes to the tracker. For a fully wired video pipeline
-(detect → pose → track → overlay) see the <a href="../video/">Video Pipeline guide</a>.</p>
-<h2 id="quick-start">Quick start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h2>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">cv2</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="kn">import</span><span class="w"> </span><span class="nn">physiotrack</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pt</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">det</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">Detection</span><span class="o">.</span><span class="n">Person</span><span class="p">(</span><span class="n">device</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="n">tracker</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">Tracker</span><span class="p">(</span><span class="n">pt</span><span class="o">.</span><span class="n">TrackerConfig</span><span class="p">(</span><span class="n">tracker</span><span class="o">=</span><span class="s2">&quot;ocsort&quot;</span><span class="p">,</span> <span class="n">classes</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="n">cap</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">VideoCapture</span><span class="p">(</span><span class="s2">&quot;clip.mp4&quot;</span><span class="p">)</span>
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    <span class="n">ok</span><span class="p">,</span> <span class="n">frame</span> <span class="o">=</span> <span class="n">cap</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>            <span class="c1"># BGR frame (H, W, 3)</span>
-</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">ok</span><span class="p">:</span>
-</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>        <span class="k">break</span>
-</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>
-</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>    <span class="c1"># Build the (N, 6) detection array: [x1, y1, x2, y2, conf, cls]</span>
-</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>    <span class="n">result</span> <span class="o">=</span> <span class="n">det</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">frame</span><span class="p">)</span>
-</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>    <span class="n">detections</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
-</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>        <span class="p">[[</span><span class="o">*</span><span class="n">inst</span><span class="o">.</span><span class="n">box</span><span class="p">,</span> <span class="n">inst</span><span class="o">.</span><span class="n">confidence</span><span class="p">,</span> <span class="n">inst</span><span class="o">.</span><span class="n">cls</span><span class="p">]</span> <span class="k">for</span> <span class="n">inst</span> <span class="ow">in</span> <span class="n">result</span><span class="p">],</span>
-</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>        <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span>
-</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>    <span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span>
-</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>
-</span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>    <span class="n">track_result</span> <span class="o">=</span> <span class="n">tracker</span><span class="o">.</span><span class="n">track</span><span class="p">(</span><span class="n">frame</span><span class="p">,</span> <span class="n">detections</span><span class="p">)</span>   <span class="c1"># -&gt; pt.TrackResult</span>
-</span><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">track_result</span><span class="o">.</span><span class="n">ids</span><span class="p">)</span>                            <span class="c1"># e.g. [1, 2, 5]</span>
-</span><span id="__span-0-23"><a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>
-</span><span id="__span-0-24"><a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>    <span class="n">annotated</span> <span class="o">=</span> <span class="n">track_result</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>                    <span class="c1"># tracker overlay (BGR)</span>
-</span><span id="__span-0-25"><a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>    <span class="n">cv2</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="s2">&quot;tracks&quot;</span><span class="p">,</span> <span class="n">annotated</span><span class="p">)</span>
-</span><span id="__span-0-26"><a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a>    <span class="k">if</span> <span class="n">cv2</span><span class="o">.</span><span class="n">waitKey</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="o">&amp;</span> <span class="mh">0xFF</span> <span class="o">==</span> <span class="nb">ord</span><span class="p">(</span><span class="s2">&quot;q&quot;</span><span class="p">):</span>
-</span><span id="__span-0-27"><a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a>        <span class="k">break</span>
-</span><span id="__span-0-28"><a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a><span class="n">cap</span><span class="o">.</span><span class="n">release</span><span class="p">()</span>
-</span></code></pre></div>
-<div class="admonition warning">
-<p class="admonition-title"><code>track()</code> expects an <code>(N, 6)</code> NumPy array</p>
-<p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;track&lt;/span&gt;" href="../../api/tracking/#physiotrack.Tracker.track"><code>Tracker.track</code></a> filters detections by class with
-<code>detections[:, 5]</code>, so it needs a NumPy array shaped <code>(N, 6)</code> —
-<code>[x1, y1, x2, y2, conf, cls]</code> — <strong>not</strong> a <code>dict</code>. Do not pass
-<code>det.predict(frame).to_dict()</code> (that returns a dict). Build the array from the
-<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Result&lt;/span&gt;" href="../../api/results/#physiotrack.Result"><code>Result</code></a> instances as shown above.</p>
-</div>
-<h2 id="available-backends">Available backends<a class="headerlink" href="#available-backends" title="Permanent link">&para;</a></h2>
-<p>The backend is chosen by
-<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;TrackerConfig&lt;/span&gt;" href="../../api/tracking/#physiotrack.TrackerConfig"><code>TrackerConfig.tracker_type</code></a> (case-insensitive; you
-can also pass the friendly alias <code>tracker=</code>). OC-SORT is the default.</p>
+<h1 id="face-detection-tracking-examples">Face Detection &amp; Tracking Examples<a class="headerlink" href="#face-detection-tracking-examples" title="Permanent link">&para;</a></h1>
+<p>PhysioTrack includes two runnable, self-contained examples with small synthetic
+inputs. They are designed to answer three practical questions: does the model run,
+what did it return, and how can those results be inspected outside Python?</p>
 <table>
 <thead>
 <tr>
-<th><code>tracker_type</code></th>
-<th>Backend</th>
-<th>Appearance model</th>
-<th>Notes</th>
+<th>Example</th>
+<th>Input</th>
+<th>Main outputs</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>"ocsort"</code></td>
-<td>OC-SORT</td>
-<td>none</td>
-<td><strong>Default.</strong> Observation-centric SORT; fast, motion-only.</td>
+<td><a href="https://github.com/tharindu326/physiotrack/tree/main/examples/face_detection"><code>examples/face_detection</code></a></td>
+<td>four scene images</td>
+<td>annotated PNGs, per-image JSON, <code>summary.csv</code>, <code>run.json</code></td>
 </tr>
 <tr>
-<td><code>"bytetrack"</code></td>
-<td>ByteTrack</td>
-<td>none</td>
-<td>IOU + high/low score association; robust to low-confidence boxes.</td>
-</tr>
-<tr>
-<td><code>"strongsort"</code></td>
-<td>StrongSORT</td>
-<td>OSNet ReID</td>
-<td>Kalman motion <strong>plus</strong> appearance re-identification (runs a neural net on <code>device</code>).</td>
-</tr>
-<tr>
-<td><code>"boosttrack"</code></td>
-<td>BoostTrack</td>
-<td>none</td>
-<td>IOU / Mahalanobis / shape similarity with detection-confidence boosting.</td>
+<td><a href="https://github.com/tharindu326/physiotrack/tree/main/examples/face_tracking"><code>examples/face_tracking</code></a></td>
+<td>one 10-second clip</td>
+<td>annotated MP4, per-frame JSON, track CSV</td>
 </tr>
 </tbody>
 </table>
-<div class="tabbed-set tabbed-alternate" data-tabs="1:4"><input checked="checked" id="oc-sort-default" name="__tabbed_1" type="radio" /><input id="bytetrack" name="__tabbed_1" type="radio" /><input id="strongsort" name="__tabbed_1" type="radio" /><input id="boosttrack" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="oc-sort-default">OC-SORT (default)</label><label for="bytetrack">ByteTrack</label><label for="strongsort">StrongSORT</label><label for="boosttrack">BoostTrack</label></div>
-<div class="tabbed-content">
-<div class="tabbed-block">
-<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">cfg</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">TrackerConfig</span><span class="p">(</span><span class="n">tracker</span><span class="o">=</span><span class="s2">&quot;ocsort&quot;</span><span class="p">,</span> <span class="n">classes</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">tracker</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">Tracker</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span>
-</span></code></pre></div>
-</div>
-<div class="tabbed-block">
-<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">cfg</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">TrackerConfig</span><span class="p">(</span><span class="n">tracker</span><span class="o">=</span><span class="s2">&quot;bytetrack&quot;</span><span class="p">,</span> <span class="n">classes</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">tracker</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">Tracker</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span>
-</span></code></pre></div>
-</div>
-<div class="tabbed-block">
-<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># Appearance ReID; set device=&quot;cuda&quot; for the OSNet network.</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">cfg</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">TrackerConfig</span><span class="p">(</span><span class="n">tracker</span><span class="o">=</span><span class="s2">&quot;strongsort&quot;</span><span class="p">,</span> <span class="n">classes</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">device</span><span class="o">=</span><span class="s2">&quot;cuda&quot;</span><span class="p">)</span>
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">tracker</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">Tracker</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span>
-</span></code></pre></div>
-</div>
-<div class="tabbed-block">
-<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">cfg</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">TrackerConfig</span><span class="p">(</span><span class="n">tracker</span><span class="o">=</span><span class="s2">&quot;boosttrack&quot;</span><span class="p">,</span> <span class="n">classes</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="n">tracker</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">Tracker</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span>
-</span></code></pre></div>
-</div>
-</div>
-</div>
+<p>The generated <code>results/</code> directories are ignored by Git. Run the scripts locally,
+inspect their outputs, and commit only deliberate documentation assets—not an entire
+inference run.</p>
 <div class="admonition info">
-<p class="admonition-title">Only the selected backend's hyper-parameters are used</p>
-<p>Every backend has its own set of fields on the config (all prefixed with the
-backend name). The others remain settable but are ignored at runtime, so it is
-safe to keep a single <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;TrackerConfig&lt;/span&gt;" href="../../api/tracking/#physiotrack.TrackerConfig"><code>TrackerConfig</code></a> around and
-just flip <code>tracker_type</code>.</p>
+<p class="admonition-title">Synthetic example assets</p>
+<p>The contributor confirms that the bundled visuals were generated through Google
+Gemini on August 13, 2026, with their people and scene imagery created using Nano
+Banana 2 (Gemini 3.1 Flash Image). They depict no real living people and are
+included for research, evaluation, testing, and documentation. The media is
+dedicated under CC0 1.0 Universal for any copyright and related rights held by
+the contributor; code and documentation remain GPL-3.0-or-later.
+See each example's <code>README.md</code> and <code>data/MEDIA.yml</code> for the complete notice,
+model scope, SynthID status, and checksums.</p>
 </div>
-<h2 id="the-detect-track-loop">The detect → track loop<a class="headerlink" href="#the-detect-track-loop" title="Permanent link">&para;</a></h2>
-<p>Call <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;track&lt;/span&gt;" href="../../api/tracking/#physiotrack.Tracker.track"><code>track</code></a> <strong>once per frame, in order</strong>:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">track_result</span> <span class="o">=</span> <span class="n">tracker</span><span class="o">.</span><span class="n">track</span><span class="p">(</span><span class="n">frame</span><span class="p">,</span> <span class="n">detections</span><span class="p">)</span>
+<h2 id="detect-faces-in-images">Detect faces in images<a class="headerlink" href="#detect-faces-in-images" title="Permanent link">&para;</a></h2>
+<p>From the repository root, after installing PhysioTrack:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>python<span class="w"> </span>examples/face_detection/detect_faces.py
 </span></code></pre></div>
+<p>This processes the bundled selfie, point-of-view, crowd, and VR scenes on CPU. The
+model is constructed once and reused for every image. Use CUDA, a different model
+size, or your own input like this:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>python<span class="w"> </span>examples/face_detection/detect_faces.py<span class="w"> </span>--device<span class="w"> </span>cuda
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>python<span class="w"> </span>examples/face_detection/detect_faces.py<span class="w"> </span>--model<span class="w"> </span>nano<span class="w"> </span>--input<span class="w"> </span>path/to/images
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>python<span class="w"> </span>examples/face_detection/detect_faces.py<span class="w"> </span>--input<span class="w"> </span>path/to/one_image.jpg
+</span></code></pre></div>
+<p>Each annotated image has normal face boxes and confidence labels plus a top-left
+panel containing:</p>
 <ul>
-<li><code>frame</code> — the current BGR frame <code>(H, W, 3)</code>. Used by appearance-based backends
-  (StrongSORT) and for rendering the overlay.</li>
-<li><code>detections</code> — an <code>(N, 6)</code> array, rows <code>[x1, y1, x2, y2, conf, cls]</code>. Rows whose
-  <code>cls</code> is not in <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;TrackerConfig&lt;/span&gt;" href="../../api/tracking/#physiotrack.TrackerConfig"><code>TrackerConfig.classes</code></a> are dropped
-  before tracking (default <code>classes=[0]</code>, the COCO "person" class).</li>
+<li><code>Faces detected</code>: the number of <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Instance&lt;/span&gt;" href="../../api/results/#physiotrack.Instance"><code>Instance</code></a> objects in
+  this image's <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Result&lt;/span&gt;" href="../../api/results/#physiotrack.Result"><code>Result</code></a>;</li>
+<li><code>Detector</code>: the exact checkpoint filename, such as <code>yolov11m-face.pt</code>;</li>
+<li><code>Device</code> and elapsed inference time for this call.</li>
 </ul>
-<div class="admonition tip">
-<p class="admonition-title">A Tracker is stateful — one instance per video stream</p>
-<p>The tracker holds Kalman state, track history, id counters and (optionally)
-the locked subject between calls. Create <strong>one</strong>
-<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Tracker&lt;/span&gt;" href="../../api/tracking/#physiotrack.Tracker"><code>Tracker</code></a> per video and feed it frames in order. Reusing
-a tracker across unrelated clips will carry stale state; construct a fresh one
-for each stream.</p>
-</div>
-<h2 id="working-with-results">Working with results<a class="headerlink" href="#working-with-results" title="Permanent link">&para;</a></h2>
-<p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;track&lt;/span&gt;" href="../../api/tracking/#physiotrack.Tracker.track"><code>track</code></a> returns a
-<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;TrackResult&lt;/span&gt;" href="../../api/results/#physiotrack.TrackResult"><code>TrackResult</code></a> that behaves like a sequence of tracked
-<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Instance&lt;/span&gt;" href="../../api/results/#physiotrack.Instance"><code>Instance</code></a> objects:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">track_result</span> <span class="o">=</span> <span class="n">tracker</span><span class="o">.</span><span class="n">track</span><span class="p">(</span><span class="n">frame</span><span class="p">,</span> <span class="n">detections</span><span class="p">)</span>
-</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>
-</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="n">track_result</span><span class="o">.</span><span class="n">ids</span>            <span class="c1"># list[int] — persistent ids this frame, e.g. [1, 2, 5]</span>
-</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="n">track_result</span><span class="o">.</span><span class="n">boxes</span>          <span class="c1"># np.ndarray (M, 4) — [x1, y1, x2, y2] rows</span>
-</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="nb">len</span><span class="p">(</span><span class="n">track_result</span><span class="p">)</span>           <span class="c1"># number of active tracks</span>
-</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>
-</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="k">for</span> <span class="n">inst</span> <span class="ow">in</span> <span class="n">track_result</span><span class="p">:</span>   <span class="c1"># iterate instances</span>
-</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">inst</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">inst</span><span class="o">.</span><span class="n">box</span><span class="p">,</span> <span class="n">inst</span><span class="o">.</span><span class="n">cls</span><span class="p">,</span> <span class="n">inst</span><span class="o">.</span><span class="n">confidence</span><span class="p">)</span>
-</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>
-</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="n">annotated</span> <span class="o">=</span> <span class="n">track_result</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>          <span class="c1"># tracker&#39;s own rich overlay (or draw yourself)</span>
-</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a><span class="n">data</span> <span class="o">=</span> <span class="n">track_result</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>            <span class="c1"># {&quot;task&quot;: &quot;track&quot;, &quot;instances&quot;: [...]} — JSON-friendly</span>
+<h3 id="detection-output">Detection output<a class="headerlink" href="#detection-output" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>examples/face_detection/results/
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>├── annotated/&lt;scene&gt;/&lt;image&gt;.png
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>├── predictions/&lt;scene&gt;/&lt;image&gt;.json
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>├── summary.csv
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>└── run.json
 </span></code></pre></div>
-<p><code>plot()</code> with no argument returns the tracker's own <code>rendered</code> overlay (boxes,
-labels, trails, locked-subject box). Pass a <code>frame</code> to draw simple <code>ID &lt;n&gt;</code> boxes on a
-copy of your own frame instead: <code>track_result.plot(frame, color=(0, 255, 0))</code>. See
-<a href="../../api/results/">Result objects</a> for the full result API.</p>
-<h2 id="configuration-groups">Configuration groups<a class="headerlink" href="#configuration-groups" title="Permanent link">&para;</a></h2>
-<p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;TrackerConfig&lt;/span&gt;" href="../../api/tracking/#physiotrack.TrackerConfig"><code>TrackerConfig</code></a> carries ~46 fields. They fall into a
-few groups; a summary follows — see the full <a href="../../api/tracking/">Tracking API</a>
-for every field and default.</p>
+<p><code>summary.csv</code> has one row per input image:</p>
 <table>
 <thead>
 <tr>
-<th>Group</th>
-<th>Representative fields</th>
-<th>What it controls</th>
+<th>Field</th>
+<th>Meaning</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>General</td>
-<td><code>tracker_type</code>, <code>classes</code>, <code>device</code>, <code>trail_length</code></td>
-<td>Backend choice, which classes to track, compute device, history length.</td>
+<td><code>image</code>, <code>scene</code></td>
+<td>relative input path and its first directory (for example <code>crowd</code>)</td>
 </tr>
 <tr>
-<td>Overlay / trails</td>
-<td><code>show_detection_boxes</code>, <code>show_original_tracks</code>, <code>show_locked_subject</code>, <code>show_tracking_tail</code>, <code>show_all_trails</code>, <code>tail_opacity</code>, <code>colors</code></td>
-<td>Which boxes/labels/trails the built-in overlay draws and in what colours.</td>
+<td><code>width</code>, <code>height</code></td>
+<td>decoded image dimensions in pixels</td>
 </tr>
 <tr>
-<td>Subject lock</td>
-<td><code>enable_subject_lock</code>, <code>required_consecutive_frames</code>, <code>inconsistent_motion_threshold</code>, <code>subject_reinit_iou_threshold</code></td>
-<td>The single-subject isolation heuristic (see below).</td>
+<td><code>faces_detected</code></td>
+<td>number of boxes retained after confidence filtering and NMS</td>
 </tr>
 <tr>
-<td>ByteTrack</td>
-<td><code>bytetrack_track_thresh</code>, <code>bytetrack_match_thresh</code>, <code>bytetrack_track_buffer</code>, <code>bytetrack_frame_rate</code></td>
-<td>ByteTrack association thresholds and buffering.</td>
+<td><code>mean_confidence</code>, <code>minimum_confidence</code></td>
+<td>summaries of the retained face confidences; blank when none were found</td>
 </tr>
 <tr>
-<td>StrongSORT</td>
-<td><code>strongsort_reid_weights</code>, <code>strongsort_max_dist</code>, <code>strongsort_max_age</code>, <code>strongsort_ema_alpha</code>, …</td>
-<td>ReID weights + motion/appearance matching.</td>
+<td><code>inference_ms</code></td>
+<td>one end-to-end <code>detector.predict(image)</code> call; model setup is excluded</td>
 </tr>
 <tr>
-<td>OC-SORT</td>
-<td><code>ocsort_det_thresh</code>, <code>ocsort_max_age</code>, <code>ocsort_min_hits</code>, <code>ocsort_iou_thresh</code>, <code>ocsort_inertia</code>, <code>ocsort_use_byte</code>, …</td>
-<td>OC-SORT association and lifetime.</td>
+<td><code>model</code>, <code>device_requested</code></td>
+<td>checkpoint filename and requested compute device</td>
 </tr>
 <tr>
-<td>BoostTrack</td>
-<td><code>boosttrack_det_thresh</code>, <code>boosttrack_lambda_iou</code>, <code>boosttrack_lambda_mhd</code>, <code>boosttrack_lambda_shape</code>, <code>boosttrack_max_age</code>, …</td>
-<td>BoostTrack similarity weights and boosting.</td>
+<td><code>status</code>, <code>error</code></td>
+<td><code>ok</code>, or a readable exception while other images continue processing</td>
 </tr>
 </tbody>
 </table>
-<p>Settings can be passed as constructor kwargs or set as attributes afterwards (both
-may be mixed); an unknown keyword raises <code>TypeError</code>, guarding against typos:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">cfg</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">TrackerConfig</span><span class="p">(</span><span class="n">tracker</span><span class="o">=</span><span class="s2">&quot;ocsort&quot;</span><span class="p">,</span> <span class="n">classes</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>  <span class="c1"># constructor kwargs</span>
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="n">cfg</span><span class="o">.</span><span class="n">debug_mode</span> <span class="o">=</span> <span class="kc">True</span>                                   <span class="c1"># attribute assignment</span>
-</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="nb">print</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span>                                              <span class="c1"># inspect resolved settings</span>
+<p>Each per-image JSON is the detailed, typed counterpart:</p>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="p">{</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span><span class="nt">&quot;source&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;image&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;selfie/two_person_selfie.jpg&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;width&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1643</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;height&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2200</span><span class="p">},</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">  </span><span class="nt">&quot;configuration&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;entry_point&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;physiotrack.Face&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;model&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;yolov11m-face.pt&quot;</span><span class="p">},</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">  </span><span class="nt">&quot;timing&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;inference_ms&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">123.4</span><span class="p">},</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">  </span><span class="nt">&quot;result&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">    </span><span class="nt">&quot;task&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;face&quot;</span><span class="p">,</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">    </span><span class="nt">&quot;instances&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w">      </span><span class="p">{</span><span class="nt">&quot;box&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mf">100.0</span><span class="p">,</span><span class="w"> </span><span class="mf">120.0</span><span class="p">,</span><span class="w"> </span><span class="mf">400.0</span><span class="p">,</span><span class="w"> </span><span class="mf">520.0</span><span class="p">],</span><span class="w"> </span><span class="nt">&quot;confidence&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.97</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;cls&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">}</span>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="w">    </span><span class="p">]</span>
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="w">  </span><span class="p">}</span>
+</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="p">}</span>
 </span></code></pre></div>
-<details class="note">
-<summary>Subject lock — following a single subject</summary>
-<p>With <code>enable_subject_lock=True</code> the tracker locks onto one stable subject
-using a stability + IOU heuristic: a track must persist for
-<code>required_consecutive_frames</code> frames to be promoted, is re-matched by IOU
-against <code>subject_reinit_iou_threshold</code>, and is dropped after
-<code>inconsistent_motion_threshold</code> consecutive low-IOU frames (or after enough
-misses). When active, the overlay draws the locked subject in blue with a movement
-trail (<code>show_locked_subject</code> / <code>show_tracking_tail</code>, both on by default), and
-the locked subject is exposed as <code>tracker.locked_subject_id</code> /
-<code>tracker.locked_subject_box</code>. This is what the <code>examples/tracker_aided_pose_video.py</code>
-demo enables so pose is run only on the isolated subject.</p>
-</details>
-<h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
-<ul>
-<li><a href="../../api/tracking/">Tracking API reference</a> — <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Tracker&lt;/span&gt;" href="../../api/tracking/#physiotrack.Tracker"><code>Tracker</code></a>,
-  <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;TrackerConfig&lt;/span&gt;" href="../../api/tracking/#physiotrack.TrackerConfig"><code>TrackerConfig</code></a> and all ~46 config fields.</li>
-<li><a href="../video/">Video Pipeline guide</a> — run detection + tracking + pose end-to-end.</li>
-<li><a href="../detection/">Detection guide</a> — produce the boxes the tracker consumes.</li>
-<li><a href="../../api/results/">Result objects</a> — <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;TrackResult&lt;/span&gt;" href="../../api/results/#physiotrack.TrackResult"><code>TrackResult</code></a>
-  and <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Instance&lt;/span&gt;" href="../../api/results/#physiotrack.Instance"><code>Instance</code></a>.</li>
-<li><a href="../../model-zoo/">Model Zoo</a> — detection weights that feed the tracker.</li>
-</ul>
+<p>The example is the outer experiment record; <code>result</code> is exactly
+<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;to_dict&lt;/span&gt;" href="../../api/results/#physiotrack.Result.to_dict"><code>Result.to_dict()</code></a>. Coordinates are <code>[x1, y1, x2,
+y2]</code> pixels. <code>run.json</code> records the thresholds, warm-up count, model setup time,
+aggregate counts/timing, PhysioTrack/OpenCV/PyTorch versions, CUDA visibility, and
+GPU name so the run can be interpreted later.</p>
+<h2 id="track-faces-in-a-video">Track faces in a video<a class="headerlink" href="#track-faces-in-a-video" title="Permanent link">&para;</a></h2>
+<p>Run the complete bundled clip:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>python<span class="w"> </span>examples/face_tracking/track_faces.py
+</span></code></pre></div>
+<p>Add <code>--show</code> only when a desktop window is available:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>python<span class="w"> </span>examples/face_tracking/track_faces.py<span class="w"> </span>--device<span class="w"> </span>cuda
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>python<span class="w"> </span>examples/face_tracking/track_faces.py<span class="w"> </span>--input<span class="w"> </span>path/to/video.mp4<span class="w"> </span>--show
+</span></code></pre></div>
+<p>This is <strong>tracking by detection</strong>, and it is plain composition of two predictors
+through the core <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Video&lt;/span&gt;" href="../../api/video/#physiotrack.Video"><code>Video</code></a> pipeline — the same pattern as
+<code>examples/pose_video.py</code> and <code>examples/tracker_aided_pose_video.py</code>:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">detector</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">Face</span><span class="p">(</span><span class="n">model</span><span class="o">=...</span><span class="p">,</span> <span class="n">conf</span><span class="o">=...</span><span class="p">,</span> <span class="n">iou</span><span class="o">=...</span><span class="p">,</span> <span class="n">device</span><span class="o">=...</span><span class="p">)</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="n">tracker</span>  <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">Tracker</span><span class="p">(</span><span class="n">pt</span><span class="o">.</span><span class="n">TrackerConfig</span><span class="p">(</span><span class="n">tracker_type</span><span class="o">=</span><span class="s2">&quot;ocsort&quot;</span><span class="p">,</span> <span class="n">classes</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="n">video</span>    <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">Video</span><span class="p">(</span><span class="n">source</span><span class="o">=...</span><span class="p">,</span> <span class="n">detector</span><span class="o">=</span><span class="n">detector</span><span class="p">,</span> <span class="n">tracker</span><span class="o">=</span><span class="n">tracker</span><span class="p">,</span> <span class="n">output_dir</span><span class="o">=...</span><span class="p">)</span>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="n">results</span>  <span class="o">=</span> <span class="n">video</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">output_video</span><span class="p">,</span> <span class="n">output_json</span><span class="p">)</span>
+</span></code></pre></div>
+<p><code>Video</code> runs the face detector per frame, feeds the boxes to the stateful tracker,
+draws IDs and trails, writes the annotated video (H.264 when available, MPEG-4
+otherwise), and returns one <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;FrameResult&lt;/span&gt;" href="../../api/results/#physiotrack.FrameResult"><code>FrameResult</code></a> per frame whose
+instances carry persistent track <code>id</code>s (<code>task="track"</code>). The script then derives a
+per-track CSV from those results in a few lines.</p>
+<p>The face count and active-track count can differ. A new detector box may need a few
+frames before a tracker reports it, and a tracker may temporarily retain an object
+through a missed detection.</p>
+<h3 id="tracking-output">Tracking output<a class="headerlink" href="#tracking-output" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Output</th>
+<th>Contents</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>*_tracked.mp4</code></td>
+<td>boxes, temporary IDs, and trails; source audio is not copied</td>
+</tr>
+<tr>
+<td><code>*_result.json</code></td>
+<td>the serialized <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VideoResults&lt;/span&gt;" href="../../api/results/#physiotrack.VideoResults"><code>VideoResults</code></a> — one record per frame with <code>frame_id</code>, <code>timestamp</code>, and tracked <code>instances</code></td>
+</tr>
+<tr>
+<td><code>*_tracks.csv</code></td>
+<td>one row per active track per frame: time, ID, box, confidence and class</td>
+</tr>
+</tbody>
+</table>
+<p>One JSON frame record has this shape:</p>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="p">{</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">  </span><span class="nt">&quot;frame_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">42</span><span class="p">,</span>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">  </span><span class="nt">&quot;timestamp&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">1.75</span><span class="p">,</span>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="w">  </span><span class="nt">&quot;instances&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="w">    </span><span class="p">{</span><span class="nt">&quot;box&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mf">100.0</span><span class="p">,</span><span class="w"> </span><span class="mf">120.0</span><span class="p">,</span><span class="w"> </span><span class="mf">180.0</span><span class="p">,</span><span class="w"> </span><span class="mf">220.0</span><span class="p">],</span><span class="w"> </span><span class="nt">&quot;confidence&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.94</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;cls&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">}</span>
+</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="w">  </span><span class="p">]</span>
+</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="p">}</span>
+</span></code></pre></div>
+<p>This is the same per-frame schema every <code>Video</code> pipeline produces (see the
+<a href="../video/">Video guide</a>), so the output feeds any tooling that already consumes
+PhysioTrack results.</p>
+<div class="admonition warning">
+<p class="admonition-title">A track ID is not identity recognition</p>
+<p>An ID is a temporary association inside one tracker run. It can change after a
+long occlusion, exit/re-entry, or association error. It is neither a name nor a
+biometric identity and must not be described as face recognition.</p>
+</div>
+<h2 id="how-to-interpret-the-examples">How to interpret the examples<a class="headerlink" href="#how-to-interpret-the-examples" title="Permanent link">&para;</a></h2>
+<p>The bundled media is synthetic and carries no ground-truth boxes or tracks. A missed
+face, extra box, or ID switch is useful qualitative evidence for debugging, but it is
+not enough to calculate accuracy. Use a labelled benchmark and a fixed evaluation
+protocol for claims about precision, recall, average precision, or tracking metrics;
+the <a href="../face-validation/">face validation guide</a> explains the separation.</p>
+<h2 id="api-choice-face-or-detectionface">API choice: <code>Face()</code> or <code>Detection.Face()</code>?<a class="headerlink" href="#api-choice-face-or-detectionface" title="Permanent link">&para;</a></h2>
+<p>The examples intentionally use top-level <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Face&lt;/span&gt;" href="../../api/face/#physiotrack.Face"><code>Face</code></a>. It returns
+<code>Result(task="face")</code> and communicates that the boxes feed a facial pipeline.
+<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Face&lt;/span&gt;" href="../../api/detection/#physiotrack.Detection.Face"><code>Detection.Face</code></a> uses the same default YOLO face
+checkpoint but belongs to the generic detector namespace and returns
+<code>Result(task="detect")</code>. Box coordinates and confidences follow the same contract;
+choose the entry point whose task semantics fit the pipeline.</p>
 
 
 
@@ -2309,7 +2295,7 @@ demo enables so pose is run only on the isolated subject.</p>
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../face-validation/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Face Detection &amp; Tracking Validation">
+          <a href="../face/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Face &amp; Head Orientation">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -2319,20 +2305,20 @@ demo enables so pose is run only on the isolated subject.</p>
                 Previous
               </span>
               <div class="md-ellipsis">
-                Face Detection & Tracking Validation
+                Face & Head Orientation
               </div>
             </div>
           </a>
         
         
           
-          <a href="../video/" class="md-footer__link md-footer__link--next" aria-label="Next: Video Pipeline">
+          <a href="../face-validation/" class="md-footer__link md-footer__link--next" aria-label="Next: Face Detection &amp; Tracking Validation">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Video Pipeline
+                Face Detection & Tracking Validation
               </div>
             </div>
             <div class="md-footer__button md-icon">

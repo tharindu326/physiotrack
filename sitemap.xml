@@ -2,150 +2,158 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://tharindu326.github.io/physiotrack/</loc>
-         <lastmod>2026-07-26</lastmod>
+         <lastmod>2026-08-13</lastmod>
     </url>
     <url>
          <loc>https://tharindu326.github.io/physiotrack/model-zoo/</loc>
-         <lastmod>2026-07-26</lastmod>
+         <lastmod>2026-08-13</lastmod>
     </url>
     <url>
          <loc>https://tharindu326.github.io/physiotrack/api/</loc>
-         <lastmod>2026-07-26</lastmod>
+         <lastmod>2026-08-13</lastmod>
     </url>
     <url>
          <loc>https://tharindu326.github.io/physiotrack/api/core/</loc>
-         <lastmod>2026-07-26</lastmod>
+         <lastmod>2026-08-13</lastmod>
     </url>
     <url>
          <loc>https://tharindu326.github.io/physiotrack/api/depth/</loc>
-         <lastmod>2026-07-26</lastmod>
+         <lastmod>2026-08-13</lastmod>
     </url>
     <url>
          <loc>https://tharindu326.github.io/physiotrack/api/detection/</loc>
-         <lastmod>2026-07-26</lastmod>
+         <lastmod>2026-08-13</lastmod>
     </url>
     <url>
          <loc>https://tharindu326.github.io/physiotrack/api/face/</loc>
-         <lastmod>2026-07-26</lastmod>
+         <lastmod>2026-08-13</lastmod>
     </url>
     <url>
          <loc>https://tharindu326.github.io/physiotrack/api/models/</loc>
-         <lastmod>2026-07-26</lastmod>
+         <lastmod>2026-08-13</lastmod>
     </url>
     <url>
          <loc>https://tharindu326.github.io/physiotrack/api/pose-postprocessing/</loc>
-         <lastmod>2026-07-26</lastmod>
+         <lastmod>2026-08-13</lastmod>
     </url>
     <url>
          <loc>https://tharindu326.github.io/physiotrack/api/pose/</loc>
-         <lastmod>2026-07-26</lastmod>
+         <lastmod>2026-08-13</lastmod>
     </url>
     <url>
          <loc>https://tharindu326.github.io/physiotrack/api/pose3d/</loc>
-         <lastmod>2026-07-26</lastmod>
+         <lastmod>2026-08-13</lastmod>
     </url>
     <url>
          <loc>https://tharindu326.github.io/physiotrack/api/results/</loc>
-         <lastmod>2026-07-26</lastmod>
+         <lastmod>2026-08-13</lastmod>
     </url>
     <url>
          <loc>https://tharindu326.github.io/physiotrack/api/segmentation/</loc>
-         <lastmod>2026-07-26</lastmod>
+         <lastmod>2026-08-13</lastmod>
     </url>
     <url>
          <loc>https://tharindu326.github.io/physiotrack/api/tracking/</loc>
-         <lastmod>2026-07-26</lastmod>
+         <lastmod>2026-08-13</lastmod>
     </url>
     <url>
          <loc>https://tharindu326.github.io/physiotrack/api/utils/</loc>
-         <lastmod>2026-07-26</lastmod>
+         <lastmod>2026-08-13</lastmod>
     </url>
     <url>
          <loc>https://tharindu326.github.io/physiotrack/api/video/</loc>
-         <lastmod>2026-07-26</lastmod>
+         <lastmod>2026-08-13</lastmod>
     </url>
     <url>
          <loc>https://tharindu326.github.io/physiotrack/api/signals/</loc>
-         <lastmod>2026-07-26</lastmod>
+         <lastmod>2026-08-13</lastmod>
     </url>
     <url>
          <loc>https://tharindu326.github.io/physiotrack/api/signals/evaluate/</loc>
-         <lastmod>2026-07-26</lastmod>
+         <lastmod>2026-08-13</lastmod>
     </url>
     <url>
          <loc>https://tharindu326.github.io/physiotrack/api/signals/filters/</loc>
-         <lastmod>2026-07-26</lastmod>
+         <lastmod>2026-08-13</lastmod>
     </url>
     <url>
          <loc>https://tharindu326.github.io/physiotrack/api/signals/motion/</loc>
-         <lastmod>2026-07-26</lastmod>
+         <lastmod>2026-08-13</lastmod>
     </url>
     <url>
          <loc>https://tharindu326.github.io/physiotrack/api/signals/normalize/</loc>
-         <lastmod>2026-07-26</lastmod>
+         <lastmod>2026-08-13</lastmod>
     </url>
     <url>
          <loc>https://tharindu326.github.io/physiotrack/api/signals/plotting/</loc>
-         <lastmod>2026-07-26</lastmod>
+         <lastmod>2026-08-13</lastmod>
     </url>
     <url>
          <loc>https://tharindu326.github.io/physiotrack/api/signals/rppg/</loc>
-         <lastmod>2026-07-26</lastmod>
+         <lastmod>2026-08-13</lastmod>
     </url>
     <url>
          <loc>https://tharindu326.github.io/physiotrack/getting-started/</loc>
-         <lastmod>2026-07-26</lastmod>
+         <lastmod>2026-08-13</lastmod>
     </url>
     <url>
          <loc>https://tharindu326.github.io/physiotrack/getting-started/concepts/</loc>
-         <lastmod>2026-07-26</lastmod>
+         <lastmod>2026-08-13</lastmod>
     </url>
     <url>
          <loc>https://tharindu326.github.io/physiotrack/getting-started/installation/</loc>
-         <lastmod>2026-07-26</lastmod>
+         <lastmod>2026-08-13</lastmod>
     </url>
     <url>
          <loc>https://tharindu326.github.io/physiotrack/getting-started/quickstart/</loc>
-         <lastmod>2026-07-26</lastmod>
+         <lastmod>2026-08-13</lastmod>
     </url>
     <url>
          <loc>https://tharindu326.github.io/physiotrack/guides/</loc>
-         <lastmod>2026-07-26</lastmod>
+         <lastmod>2026-08-13</lastmod>
     </url>
     <url>
          <loc>https://tharindu326.github.io/physiotrack/guides/depth/</loc>
-         <lastmod>2026-07-26</lastmod>
+         <lastmod>2026-08-13</lastmod>
     </url>
     <url>
          <loc>https://tharindu326.github.io/physiotrack/guides/detection/</loc>
-         <lastmod>2026-07-26</lastmod>
+         <lastmod>2026-08-13</lastmod>
+    </url>
+    <url>
+         <loc>https://tharindu326.github.io/physiotrack/guides/face-examples/</loc>
+         <lastmod>2026-08-13</lastmod>
+    </url>
+    <url>
+         <loc>https://tharindu326.github.io/physiotrack/guides/face-validation/</loc>
+         <lastmod>2026-08-13</lastmod>
     </url>
     <url>
          <loc>https://tharindu326.github.io/physiotrack/guides/face/</loc>
-         <lastmod>2026-07-26</lastmod>
+         <lastmod>2026-08-13</lastmod>
     </url>
     <url>
          <loc>https://tharindu326.github.io/physiotrack/guides/pose/</loc>
-         <lastmod>2026-07-26</lastmod>
+         <lastmod>2026-08-13</lastmod>
     </url>
     <url>
          <loc>https://tharindu326.github.io/physiotrack/guides/pose3d/</loc>
-         <lastmod>2026-07-26</lastmod>
+         <lastmod>2026-08-13</lastmod>
     </url>
     <url>
          <loc>https://tharindu326.github.io/physiotrack/guides/segmentation/</loc>
-         <lastmod>2026-07-26</lastmod>
+         <lastmod>2026-08-13</lastmod>
     </url>
     <url>
          <loc>https://tharindu326.github.io/physiotrack/guides/signals/</loc>
-         <lastmod>2026-07-26</lastmod>
+         <lastmod>2026-08-13</lastmod>
     </url>
     <url>
          <loc>https://tharindu326.github.io/physiotrack/guides/tracking/</loc>
-         <lastmod>2026-07-26</lastmod>
+         <lastmod>2026-08-13</lastmod>
     </url>
     <url>
          <loc>https://tharindu326.github.io/physiotrack/guides/video/</loc>
-         <lastmod>2026-07-26</lastmod>
+         <lastmod>2026-08-13</lastmod>
     </url>
 </urlset>
