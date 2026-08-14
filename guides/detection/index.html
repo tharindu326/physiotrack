@@ -780,6 +780,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#vr-objects-and-people" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        VR objects and people
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1999,6 +2010,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#vr-objects-and-people" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        VR objects and people
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2118,14 +2140,14 @@ incompatible model. See the <a href="../../model-zoo/">Model Zoo</a> for every v
 <tr>
 <td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VR&lt;/span&gt;" href="../../api/detection/#physiotrack.Detection.VR"><code>Detection.VR</code></a></td>
 <td>YOLO</td>
-<td>VR objects</td>
-<td>VR-headset object detection.</td>
+<td><code>VR-head</code></td>
+<td>VR-headset boxes; use <code>Segmentation.VRHead</code> when masks are needed.</td>
 </tr>
 <tr>
 <td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VRStudent&lt;/span&gt;" href="../../api/detection/#physiotrack.Detection.VRStudent"><code>Detection.VRStudent</code></a></td>
 <td>YOLO</td>
-<td>VR student</td>
-<td>VR-student detection.</td>
+<td><code>VR-person</code></td>
+<td>Full-person boxes for people wearing a VR headset.</td>
 </tr>
 <tr>
 <td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Custom&lt;/span&gt;" href="../../api/detection/#physiotrack.Detection.Custom"><code>Detection.Custom</code></a></td>
@@ -2162,6 +2184,21 @@ box/confidence structure; the difference is the semantic task label:</p>
 </table>
 <p>The dedicated <a href="../face-examples/">face examples</a> use <code>pt.Face()</code> so serialized output
 clearly identifies a facial task.</p>
+<h3 id="vr-objects-and-people">VR objects and people<a class="headerlink" href="#vr-objects-and-people" title="Permanent link">&para;</a></h3>
+<p>These presets answer different questions. <code>Detection.VR</code> locates the headset region,
+<code>Detection.VRStudent</code> locates the full body of a VR-equipped person, and
+<code>Detection.Person</code> locates people regardless of whether they wear a headset. Run the
+<a href="https://github.com/tharindu326/physiotrack/tree/main/examples/vr_detection">VR detection example</a>
+to compare all three on the same synthetic lab scene.</p>
+<p>Only a medium VR-head checkpoint (<code>yolo11m_VR_head.pt</code>) is currently published.
+Large checkpoints are available for VR-person and generic-person detection. The
+example's <code>--model-size largest</code> mode therefore uses medium for VR-head and large for
+the other two, and reports every exact filename in its panels and JSON output.</p>
+<p><img alt="VR-person and generic-person comparison" src="../../images/comparison_person_vrperson.jpg" /></p>
+<p><em>Focused output from the bundled synthetic scene. The large VR-person checkpoint
+(top) retains two full people using headsets; the large generic-person checkpoint
+(bottom) retains twelve people regardless of headset use. These counts describe
+different detection tasks and are not accuracy scores.</em></p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">physiotrack</span><span class="w"> </span><span class="kn">import</span> <span class="n">Detection</span><span class="p">,</span> <span class="n">Models</span>
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
 </span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="c1"># Custom preset: choose an explicit validated model</span>
@@ -2266,6 +2303,7 @@ pins <code>[0]</code>; for <code>Detection.Custom</code> inspect the model's lab
 </div>
 <h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
+<li><a href="https://github.com/tharindu326/physiotrack/tree/main/examples/vr_detection">VR-head and VR-person example</a> — compare VR regions, VR-equipped people, and all people.</li>
 <li><a href="../../api/detection/"><code>Detection</code> API reference</a> — full class and preset docs.</li>
 <li><a href="../../api/results/">Result objects</a> — <code>boxes</code>, <code>Instance</code>, <code>to_dict</code>, <code>plot</code>.</li>
 <li><a href="../../model-zoo/">Model Zoo</a> — available detection backbones.</li>

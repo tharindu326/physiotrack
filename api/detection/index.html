@@ -6280,10 +6280,13 @@ list or tuple.</p>
 
 
 
-        <p>VR-headset object detector.</p>
-<p>Wraps <code>Models.Detection.YOLO.VR.m_vr</code>. See
-<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Detection&lt;/span&gt;" href="#physiotrack.Detection"><code>ValidatedDetector</code></a> for
-constructor arguments.</p>
+        <p>VR-head detector.</p>
+<p>Wraps <code>Models.Detection.YOLO.VR.m_vr</code>. The checkpoint also predicts
+segmentation masks, but this detection entry point intentionally returns
+only the VR-head boxes. This is currently the only published VR-head
+checkpoint; there is no large variant. Use <code>Segmentation.VRHead</code> when masks
+are needed. See <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Detection&lt;/span&gt;" href="#physiotrack.Detection"><code>ValidatedDetector</code></a> for constructor
+arguments.</p>
 
         <p>Configure a preset detector.</p>
 
