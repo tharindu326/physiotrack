@@ -222,7 +222,7 @@ class Pose3D:
         Models.validate_pose3d_model(model)
     
         self.verbose = verbose
-        self.minfo = Models._get_model_info(model)
+        self.minfo = Models.info(model)
         self.pose3d_framework = self.minfo['backend']
         logger.log(logging.INFO if verbose else logging.DEBUG,
                    'Initiating %s %s for 3D pose estimation', self.pose3d_framework, model.name)
@@ -361,7 +361,7 @@ class Pose3D:
             view=canonical_view,
             meta=ResultMeta(
                 fps=fps,
-                model=self.minfo['path'] if 'path' in self.minfo else self.model.name,
+                model=self.minfo['path'],
                 device=str(self.device),
                 units={"poses": "pixels" if self.pixel else "relative"},
             ),

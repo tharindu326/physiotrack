@@ -41,7 +41,8 @@ if TYPE_CHECKING:
     from .capture import Video
     from .depth import Depth
     from .detect import Detection
-    from .face import Face, FaceOrientation, VRFace
+    from .face import (Face, FaceExpression, FaceLandmarks, FaceOrientation, FaceQuality,
+                       FaceRegions, GazeEstimator, VRFace)
     from .modules._3DCPNet.inference import (apply_3dpcnet_transform,
                                              reverse_3dpcnet_transform)
     from .pose import Pose
@@ -71,6 +72,11 @@ _LAZY_ATTRS = {
     "Face": ".face",
     "VRFace": ".face",
     "FaceOrientation": ".face",
+    "FaceLandmarks": ".face",
+    "FaceExpression": ".face",
+    "GazeEstimator": ".face",
+    "FaceQuality": ".face",
+    "FaceRegions": ".face",
     # tracking
     "Tracker": ".trackers",
     "TrackerConfig": ".trackers",
@@ -121,7 +127,8 @@ __all__ = [
     "__version__",
     # predictors
     "Detection", "Pose", "Pose3D", "Segmentation", "Depth",
-    "Face", "VRFace", "FaceOrientation",
+    "Face", "VRFace", "FaceOrientation", "FaceLandmarks", "FaceExpression",
+    "GazeEstimator", "FaceQuality", "FaceRegions",
     # tracking
     "Tracker", "TrackerConfig",
     # orchestrator

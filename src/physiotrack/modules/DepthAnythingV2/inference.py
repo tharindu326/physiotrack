@@ -14,6 +14,7 @@ from collections import deque
 from .dpt import DepthAnythingV2
 
 from ..._logging import get_logger
+from ...core.device import torch_device
 from ..._paths import weights_dir
 
 logger = get_logger(__name__)
@@ -54,15 +55,8 @@ class DepthAnythingV2Inference:
                 f"And place it in: {os.path.abspath(model_dir)}/"
             )
 
-        # Set device
-        if isinstance(device, int):
-            self.device = f'cuda:{device}' if torch.cuda.is_available() else 'cpu'
-        elif device == 'cuda':
-            self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        elif device == 'mps':
-            self.device = 'mps' if torch.backends.mps.is_available() else 'cpu'
-        else:
-            self.device = device
+        # Honour the requested device exactly (no silent CPU fallback).
+        self.device = torch_device(device)
 
         self.encoder = model_config['encoder']
         self.input_size = input_size

@@ -27,7 +27,7 @@
 
 **Physiotrack** is an open-source Python toolkit for contactless human understanding. It integrates
 state-of-the-art computer-vision models (YOLO11, RT-DETR, ViTPose, Sapiens, Depth-Anything-V2,
-ZipDepth, MotionBERT, 6DRepNet360, SegFace) into a **single, unified API** that extracts actionable, theory-linked
+ZipDepth, MotionBERT, 6DRepNet360, SegFace, MediaPipe Face Mesh, ETH-XGaze) into a **single, unified API** that extracts actionable, theory-linked
 signals from ordinary **RGB video**, for healthcare, education, XR, and operator-support
 systems. Developed at the **Center for Machine Vision and Signal Processing (CMVS), University of Oulu**.
 
@@ -113,7 +113,7 @@ flowchart TB
     %% ====== TIER 1: enabling tools (general-purpose CV) ======
     subgraph TOOLS["🧰 General-purpose perception · enabling tools"]
         direction LR
-        DET["🔍 <b>Detection</b> → boxes<br/><i>Person · Face · VR · VRStudent · Custom</i><br/>YOLO11 · RT-DETR"]
+        DET["🔍 <b>Detection</b> → boxes<br/><i>Person · VR · VRStudent · Custom</i><br/>YOLO11 · RT-DETR"]
         TRK["🎯 <b>Tracking</b> → persistent IDs<br/>OC-SORT · ByteTrack<br/>StrongSORT · BoostTrack"]
         SEG["🎭 <b>Segmentation</b> → masks / class map<br/>YOLO11-seg · Sapiens-Goliath<br/>VR-head"]
         DEP["🌊 <b>Depth</b> · monocular<br/>Depth-Anything-V2 (S/B/L) · ZipDepth<br/><i>relative depth</i>"]
@@ -127,6 +127,7 @@ flowchart TB
         P3D["🧊 <b>3D Pose</b> · offline lift<br/>MotionBERT · DDHPose<br/><i>→ H36M-17</i>"]
         CAN["📐 <b>Canonicalization</b> · viewpoint-invariant<br/>3DPCNet (S2/S3/TC48) · GEOMETRIC<br/><i>front · back · left_side · right_side</i>"]
         FSEG["🧩 <b>Face parsing</b><br/>SegFace · Swin-Base<br/><i>19 CelebAMask-HQ classes</i>"]
+        FMESH["🕸️ <b>Face mesh</b> · 478 points<br/>MediaPipe Face Landmarker<br/><i>eyes · iris · lips</i>"]
     end
 
     %% ====== TIER 3: human-state signals (the payload) ======
@@ -135,7 +136,8 @@ flowchart TB
         PPG["❤️ <b>rPPG → HR · HRV · RR</b> · physiological<br/>POS · CHROM · LGI · OMIT<br/><i>RR intervals · Lipponen-Tarvainen · Task-Force HRV</i>"]
         ANG["📐 <b>Joint angles &amp; ROM</b> · goniometry<br/>8 interior angles + clinical ROM<br/><i>flexion · extension · abd · add</i><br/><i>angle panel + ROM skeleton</i>"]
         MOT["🏃 <b>Motion features</b><br/>velocity · accel · trajectories<br/><i>centroids · filters · metrics</i>"]
-        FORI["👁️ <b>Head orientation</b> · gaze<br/>6DRepNet360 · CMVS-FO-VR<br/><i>yaw · pitch · roll</i>"]
+        FORI["👁️ <b>Face analysis</b> · head · gaze · expression<br/>6DRepNet360 · ETH-XGaze · EmotiEffLib<br/><i>yaw/pitch/roll · 3D gaze · 8 expressions</i>"]
+        FSIG["😉 <b>Face signals</b> · behavioral<br/>eye &amp; mouth aspect ratio · iris<br/><i>blinks · blink rate · mouth motion</i>"]
         RAD["🗺️ <b>Floor map / radar</b> · location<br/>4-corner homography<br/><i>bird's-eye trajectories</i>"]
     end
 
@@ -149,7 +151,7 @@ flowchart TB
     end
 
     %% ------------- Model registry -------------
-    REG[["🗂️ <b>Models registry</b> · Models.&lt;Task&gt;.&lt;Backend&gt;.&lt;Variant&gt;<br/>YOLO11/12 · RT-DETR · ViTPose · Sapiens · SegFace<br/>Depth-Anything-V2 · ZipDepth · MotionBERT · DDHPose · 3DPCNet · 6DRepNet360<br/><i>51 pretrained variants (52 selectable) · auto-download from Hugging Face</i>"]]
+    REG[["🗂️ <b>Models registry</b> · Models.&lt;Task&gt;.&lt;Backend&gt;.&lt;Variant&gt;<br/>YOLO11/12 · RT-DETR · ViTPose · Sapiens · SegFace<br/>Depth-Anything-V2 · ZipDepth · MotionBERT · DDHPose · 3DPCNet · 6DRepNet360<br/><i>59 pretrained variants (60 selectable) · auto-download on first use</i>"]]
 
     %% ---------------- Flow ----------------
     I1 --> CAP
@@ -164,6 +166,9 @@ flowchart TB
     DET -.boxes.-> SEG
     POSE --> P3D --> CAN
     FDET --> FORI
+    FDET --> FMESH
+    FMESH --> FORI
+    FMESH --> FSIG
     FDET -.boxes.-> FSEG
     TRK --> RAD
     POSE --> ANG
@@ -184,6 +189,7 @@ flowchart TB
     ANG --> RES
     MOT --> RES
     FORI --> RES
+    FSIG --> RES
     RAD --> RES
     RES --> VID
     RES --> JSON
@@ -203,8 +209,8 @@ flowchart TB
 
     class I1,I2,I3,I4 input;
     class DET,TRK,SEG,DEP,FDET tools;
-    class POSE,P3D,CAN,FSEG human;
-    class PPG,ANG,MOT,FORI,RAD signal;
+    class POSE,P3D,CAN,FSEG,FMESH human;
+    class PPG,ANG,MOT,FORI,FSIG,RAD signal;
     class RES,VID,JSON,RTP out;
     class CAP orch;
     class REG reg;
@@ -212,9 +218,9 @@ flowchart TB
 
 **Reading the diagram:** read it as *pixels → tools → human structure → signals*.
 **🧰 Enabling tools** (detection, tracking, segmentation, depth, face detection) localize and parse the
-image; **🧍 human structure** (2D/3D pose, canonicalization, face parsing) turns those into
-body-specific estimates; **📡 human-state signals** (rPPG HR/RR, **joint angles & clinical ROM**,
-motion, head orientation/gaze, location) are the interpretable payload. Each box lists its backend
+image; **🧍 human structure** (2D/3D pose, canonicalization, face parsing, face mesh) turns those
+into body-specific estimates; **📡 human-state signals** (rPPG HR/RR, **joint angles & clinical ROM**,
+motion, head orientation, gaze, expression, blinks, location) are the interpretable payload. Each box lists its backend
 options/variants (italics = key options or output format), selected through the
 [`Models` registry](#model-registry). Solid arrows are per-frame data flow; dotted arrows show
 detection boxes feeding pose/segmentation, skin regions feeding rPPG, canonical pose feeding the
@@ -237,7 +243,8 @@ stream is used.
 | **Segmentation** | Pixel-level instance masks | YOLO-Seg, Sapiens, VR-Head |
 | **Face parsing** | Face-part segmentation (19 classes) | SegFace (Swin-Base) |
 | **Depth** | Monocular dense depth estimation | Depth-Anything-V2 (s/b/l), ZipDepth (base/npu) |
-| **Face** | Face detection + 3D head orientation | YOLO-Face, 6DRepNet360, CMVS-FO-VR |
+| **Face** | Face detection, then per-face stages: head orientation, 478-point face mesh, expression (+ valence/arousal), 3D gaze, image quality, visible face parts | YOLO-Face, 6DRepNet360, CMVS-FO-VR, MediaPipe Face Landmarker, EmotiEffLib, ETH-XGaze / MPIIFaceGaze / MPIIGaze, SegFace |
+| **Face signals** | Eye / mouth aspect ratio and iris position per frame; blinks, blink rate, mouth movement and windowed statistics per tracked face | Soukupová & Čech EAR, validated on MPEBlink and FELT / RAVDESS |
 | **Signals** | rPPG heart rate, HRV, respiration + motion features | POS, CHROM, LGI, OMIT; RR intervals; Lipponen-Tarvainen artefact correction; Task-Force HRV |
 | **Joint angles & ROM** | 8 anatomical joint angles + clinical range-of-motion (flexion/extension/abduction/adduction) as rows in the left-side angle panel, plus a clean full-room **skeleton canvas** | goniometry from pose |
 | **Views** | Bird's-eye floor map, ego-video, depth & angle/ROM overlays | n/a |
@@ -352,6 +359,8 @@ Runnable face examples with bundled synthetic media:
 python examples/face_detection/detect_faces.py
 python examples/face_detection/compare_cpu_gpu.py  # requires CUDA
 python examples/face_tracking/track_faces.py
+python examples/face_analysis/analyze_image.py    # needs pip install "physiotrack[face]"
+python examples/face_analysis/analyze_video.py
 python examples/vr_detection/detect_vr_people.py
 ```
 
@@ -370,12 +379,15 @@ points from the top-level `physiotrack` package (or a named subsystem); you neve
 into internal module paths:
 
 ```text
-physiotrack ─┬─ Detection.Person() / .Face() / .VR() / .VRStudent() / .Custom()
+physiotrack ─┬─ Detection.Person() / .VR() / .VRStudent() / .Custom()
              ├─ Pose.Person() / .VRStudent() / .Custom()
              ├─ Pose3D(...) · canonicalize_pose(...) · PoseCanonicalizer
              ├─ Segmentation.Person() / .VRHead() / .BodyPart() / .Face() / .Custom()
              ├─ Depth.DepthAnythingV2Small() / Base() / Large() / .ZipDepth() / .ZipDepthNPU() / .Custom()
-             ├─ Face · VRFace · FaceOrientation
+             ├─ Face · VRFace                           # face detectors
+             ├─ FaceOrientation · FaceLandmarks · FaceExpression · GazeEstimator ·
+             │  FaceQuality · FaceRegions
+             │                                          # face stages: stage(frame, faces)
              ├─ Tracker(config=TrackerConfig(...))
              ├─ Video(...)                              # end-to-end pipeline orchestrator
              ├─ Models.<Task>.<Backend>.<Variant>       # model registry (auto-download)
@@ -386,6 +398,9 @@ physiotrack.signals ─┬─ compute (plotter-free, use directly):
                      │    joint_angles() · compute_rom_angles() · motion features · respiration_from_motion()
                      │    rPPG: POS/CHROM/LGI/OMIT · HeartRateEstimator · bvp_to_hr · bvp_snr
                      │    pulse analysis: bvp_to_rri · correct_rr_artifacts · compute_hrv · respiration_from_pulse/rri
+                     │    face: eye_aspect_ratio · mouth_aspect_ratio · iris_position ·
+                     │          detect_blinks · blink_rate · mouth_movement ·
+                     │          face_feature_sequence · face_window_summary
                      │    filters · agreement metrics (Pearson, RMSE, DTW, hrv_errors, …)
                      └─ overlays (optional, wrap the compute above):
                           JointAnglePlotter · RPPGPlotter · HeartRatePlotter · HRVPlotter · RespirationPlotter · KeypointMotionPlotter · RealTimePlotter
@@ -422,7 +437,7 @@ Three rules make the whole library predictable:
 ```python
 from physiotrack import Detection, Models
 
-det = Detection.Person()                       # also .Face() .VR() .VRStudent()
+det = Detection.Person()                       # also .VR() .VRStudent()
 result = det.predict(image)
 print(result.boxes)                            # (N, 4)
 for inst in result:
@@ -485,6 +500,7 @@ canonical = canonicalize_pose(                                 # learned 3DPCNet
 <summary><b>Segmentation, Depth, Face</b></summary>
 
 ```python
+import physiotrack as pt
 from physiotrack import Segmentation, Depth, VRFace, FaceOrientation, Models
 
 seg = Segmentation.Person()
@@ -501,11 +517,16 @@ depth = Depth.DepthAnythingV2Base()            # or Depth.ZipDepth() — lightwe
 d = depth.predict(image)
 raw, colored = d.depth, d.plot(colormap="inferno")
 
-face = VRFace()
-boxes = face.predict(image).boxes
-orient = FaceOrientation(model=Models.Pose3D.FaceOrientation.VR)
-for inst in orient.predict(image, boxes):
-    print(inst.orientation)                    # {"yaw": .., "pitch": .., "roll": ..}
+faces = VRFace()(image)                        # face boxes, Result(task="face")
+faces = FaceOrientation(model=Models.Face.Orientation.VR)(image, faces)
+for face in faces:
+    print(face.orientation)                    # {"yaw": .., "pitch": .., "roll": ..}
+
+# More face stages (pip install "physiotrack[face]"); each adds one field per face.
+faces = pt.FaceLandmarks()(image, faces)       # .keypoints: 478-point face mesh
+faces = pt.FaceExpression()(image, faces)      # .expression: label, confidence, scores
+faces = pt.GazeEstimator()(image, faces)       # .gaze: 3D direction, yaw, pitch
+pt.signals.eye_aspect_ratio(faces[0])          # {'left': .., 'right': .., 'mean': ..}
 ```
 </details>
 
@@ -613,7 +634,8 @@ data = video.run(output_video="out.mp4", output_json="out.json")
 ```
 
 The `Video` orchestrator composes any subset of the pipeline. Besides `detector=`, `pose=` and
-`tracker=` it accepts `segmenter=`, `depth=`, `face=`, `face_orientation=`, `floor_map=` (radar view),
+`tracker=` it accepts `segmenter=`, `depth=`, `face=` and `face_stages=` (per-face analysis, with each
+face tied to its tracked person), `floor_map=` (radar view),
 `ego_video=`, `plot_keypoint=` (keypoint-motion plot), and the kinematics overlays
 `plot_angles=True` (interior joint-angle panel, left), `rom=` (clinical ROM on a right-side skeleton
 panel — `True` for the default hip set or a list of movements), and `rom_render=False` (compute ROM
@@ -655,7 +677,9 @@ Models.Depth.DepthAnythingV2.vitb           # Depth-Anything-V2 base
 Models.Depth.ZipDepth.base                  # ZipDepth (lightweight monocular depth)
 Models.Pose3D.MotionBERT.mb_ft_h36m         # MotionBERT 3D lifter
 Models.Pose3D.Canonicalizer.Models._3DPCNetS2   # 3DPCNet pose canonicalizer
-Models.Pose3D.FaceOrientation.VR            # CMVS-FO-VR head-orientation
+Models.Face.Orientation.VR                  # CMVS-FO-VR head-orientation
+Models.Face.Landmarks.face_landmarker       # MediaPipe 478-point face mesh
+Models.Face.Gaze.eth_xgaze_resnet18         # ETH-XGaze 3D gaze
 ```
 
 ### Pose framework comparison
@@ -695,11 +719,11 @@ The pose canonicalizer maps an arbitrary-viewpoint 3D pose to a **viewpoint-inva
 | depth | `DepthResult` | `.depth`, `.normalized()`, `.plot(colormap=...)` |
 | track | `TrackResult` | `.instances`, `.ids`, `.boxes`, `.plot(frame)` |
 | 3D lift (`Pose3D`) | `Pose3DResult` | `.poses` `(N,17,3)`, `.by_name(joint)`, `.fps`, `.view`, indexable/iterable by frame |
-| `Video.run()` | `VideoResults` of `FrameResult` | per frame: `.meta`, `.vitals`, `.hr`, `.snr`, iterates its `Instance`s; `.to_json()` |
+| `Video.run()` | `VideoResults` of `FrameResult` | per frame: `.meta`, `.vitals`, `.hr`, `.snr`, `.faces`, iterates its `Instance`s; `.to_json()` |
 
 Each `Instance` exposes `.id`, `.box`, `.confidence`, `.cls` / `.cls_name`, `.keypoints`
-(a `Keypoints` collection with `.by_name()` / `.by_id()`), `.mask`, and `.orientation` as
-applicable. `Keypoints` also offers the array views `.xy`, `.xyz`, and `.conf`.
+(a `Keypoints` collection with `.by_name()` / `.by_id()`), `.mask`, and — on faces —
+`.orientation`, `.expression`, `.gaze` and `.quality`, as applicable. `Keypoints` also offers the array views `.xy`, `.xyz`, and `.conf`.
 
 Every result carries a `.meta` ([`ResultMeta`](#result-objects)) recording where it came
 from — frame index, timestamp, source frame rate, model, device — and `to_dict()` /
@@ -764,12 +788,12 @@ src/physiotrack/
 ├── pose/           # Pose 2D, Pose3D, canonicalizer, evaluation
 ├── segment/        # Segmentation
 ├── depth/          # Depth estimation
-├── face/           # Face detection + orientation
+├── face/           # Face detection + face stages (orientation, mesh, expression, gaze, quality)
 ├── trackers/       # OC-SORT, ByteTrack, StrongSORT, BoostTrack
-├── signals/        # rPPG (POS/CHROM/LGI/OMIT) + RR intervals/HRV/respiration, motion (joint angles, ROM), filters, plotting
+├── signals/        # rPPG (POS/CHROM/LGI/OMIT) + RR intervals/HRV/respiration, motion (joint angles, ROM), face (EAR, blinks), filters, plotting
 ├── core/           # inference loop, radar/floor view, ego view, depth view
 ├── modules/        # Neural backends (ViTPose, Sapiens, YOLO, DepthAnythingV2, ZipDepth,
-│                   #   MotionBERT, DDHPose, 3DCPNet, 6DRepNet360, SegFace)
+│                   #   MotionBERT, DDHPose, 3DCPNet, 6DRepNet360, SegFace, EmotiEffLib, Gaze)
 ├── results.py      # Unified Result / DepthResult / TrackResult / Instance / Keypoints
 └── models.py       # Models registry + Hugging Face auto-download
 ```

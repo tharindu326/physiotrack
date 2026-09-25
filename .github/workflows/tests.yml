@@ -38,6 +38,11 @@ jobs:
           python-version: ${{ matrix.python-version }}
           cache: pip
 
+      - name: Install MediaPipe's system libraries
+        # The mediapipe Linux wheel links libEGL/libGLESv2 even when it runs on the CPU;
+        # the runner image does not ship them, so FaceLandmarks fails to load without.
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libegl1 libgles2
+
       - name: Install CPU-only PyTorch
         # The default PyPI wheels pull the full CUDA stack, which is unnecessary on
         # CI runners and far slower to install. Resolve torch from the CPU index
@@ -46,14 +51,27 @@ jobs:
           python -m pip install --upgrade pip
           pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
 
-      - name: Install physiotrack with test extras
-        run: pip install -e ".[test]"
+      - name: Install physiotrack with test and face extras
+        run: pip install -e ".[test,face]"
+
+      - name: Cache model weights
+        # The face-stage tests run the real (small) landmark, expression and gaze
+        # models; caching PHYSIOTRACK_HOME downloads them once per key, not per run.
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/physiotrack
+          key: physiotrack-weights-${{ hashFiles('src/physiotrack/models.py') }}
 
       - name: Verify the NeuroKit2 reference implementation is present
         # The HRV and artefact-correction tests cross-check against NeuroKit2 behind
         # importorskip. If it were missing they would skip silently and the suite
         # would pass while validating nothing. Fail loudly instead.
         run: python -c "import neurokit2; print('neurokit2', neurokit2.__version__)"
+
+      - name: Verify the face extra and OpenCV import together
+        # mediapipe declares opencv-contrib-python while ultralytics declares
+        # opencv-python; both install into cv2/. Prove the combination imports.
+        run: python -c "import cv2, mediapipe, onnxruntime, safetensors; print('cv2', cv2.__version__, 'mediapipe', mediapipe.__version__)"
 
       - name: Run tests
         run: pytest -q --cov=physiotrack --cov-report=term-missing --cov-report=xml

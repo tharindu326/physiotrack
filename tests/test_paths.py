@@ -5,6 +5,7 @@ may land inside the installed package. Writing into ``site-packages`` breaks
 read-only and containerised installs, defeats Docker layer caching, and stops two
 environments sharing one multi-gigabyte download.
 """
+import hashlib
 import os
 from pathlib import Path
 
@@ -154,3 +155,43 @@ def test_no_module_derives_its_own_weights_path():
     # _paths.py owns the legacy location for migration purposes.
     offenders = [o for o in offenders if o != "_paths.py"]
     assert offenders == [], f"weights path derived outside _paths.py: {offenders}"
+
+
+class TestFaceRegistry:
+    def test_face_task_is_listed_and_validated(self):
+        assert "Face.Landmarks.face_landmarker" in Models.list(task="face")
+        assert Models.info(Models.Face.Orientation.VR)["task"] == "Face"
+        Models.validate_face_model(Models.Face.Gaze.eth_xgaze_resnet18, "Gaze")
+        with pytest.raises(ValueError, match="Valid models"):
+            Models.validate_face_model(Models.Face.Gaze.eth_xgaze_resnet18, "Landmarks")
+
+    def test_every_third_party_face_weight_has_a_pinned_verified_source(self):
+        for group in ("Landmarks", "Expression", "Gaze"):
+            for member in getattr(Models.Face, group):
+                url, sha256 = Models._FACE_SOURCES[member.value]
+                assert url.startswith("https://") and "latest" not in url
+                assert len(sha256) == 64
+
+    def test_a_checksum_mismatch_is_refused_and_leaves_nothing(self, isolated_home,
+                                                               monkeypatch):
+        import requests
+
+        class Response:
+            headers = {"content-length": "5"}
+
+            def raise_for_status(self):
+                pass
+
+            def iter_content(self, chunk_size):
+                yield b"bytes"
+
+        monkeypatch.setattr(requests, "get", lambda *a, **k: Response())
+        target = isolated_home / "weights"
+        with pytest.raises(IOError, match="Checksum mismatch"):
+            Models._download_file("https://example.invalid/w", "w.bin", target,
+                                  sha256="0" * 64)
+        assert list(target.iterdir()) == []
+        good = hashlib.sha256(b"bytes").hexdigest()
+        path = Models._download_file("https://example.invalid/w", "w.bin", target,
+                                     sha256=good)
+        assert Path(path).read_bytes() == b"bytes"

@@ -2,8 +2,8 @@
 
 This example runs the general-purpose [`physiotrack.Face`](../../docs/guides/face.md)
 detector over the bundled selfie, point-of-view, crowd, and VR scenes. Every saved
-image includes a corner panel with the number of faces, the exact model weights, the
-requested device, and inference time.
+image includes a corner panel with the number of faces, the exact model weights and
+the requested device.
 
 From the repository root:
 
@@ -16,14 +16,14 @@ CPU is the default. To use the first CUDA GPU or process your own input:
 ```bash
 python examples/face_detection/detect_faces.py --device cuda
 python examples/face_detection/detect_faces.py --input path/to/photo.jpg
-python examples/face_detection/detect_faces.py --input path/to/image_folder --model nano
+python examples/face_detection/detect_faces.py --input path/to/image_folder --model n_face
 ```
 
 To compare repeated inference with the same model and input on CPU and CUDA:
 
 ```bash
 python examples/face_detection/compare_cpu_gpu.py
-python examples/face_detection/compare_cpu_gpu.py --model nano --repeats 20
+python examples/face_detection/compare_cpu_gpu.py --model n_face --repeats 20
 ```
 
 The comparison requires a CUDA-enabled PyTorch installation. It warms up each
@@ -44,16 +44,15 @@ The default output is `examples/face_detection/results/`:
 ```text
 results/
 ├── annotated/       # PNG copies with face boxes, confidences, count, and model
-├── predictions/     # one detailed JSON record per input image
+├── predictions/     # the Result of each image, as JSON (Result.to_json)
 ├── summary.csv      # one compact comparison row per image
-└── run.json         # run-wide configuration, timing, versions, and hardware
+└── run.json         # model, device, thresholds, counts and mean inference time
 ```
 
-`summary.csv` is convenient for a spreadsheet: it records the scene, dimensions,
-face count, confidence summary, latency, model, device, and processing status. Each
-prediction JSON preserves the same information in more detail and puts the
-PhysioTrack serialization under `result`; its `instances` list contains one
-`box`, `confidence`, `cls`, and `cls_name` record per detected face.
+`summary.csv` is convenient for a spreadsheet: it records the image, its dimensions,
+the face count and a confidence summary. Each prediction JSON is the image's
+serialized `Result` and reloads with `pt.Result.from_dict`; its `instances` list holds
+one `box`, `confidence`, `cls` and `cls_name` record per detected face.
 
 See the [documentation walkthrough](../../docs/guides/face-examples.md) for the
 complete schemas and an explanation of how to interpret the output.

@@ -284,3 +284,21 @@ class TestVisibilityGuards:
         with_hidden = attach_stack(frame, [Hidden(), Panel(value=200)], "top_left", 10)
         without = attach_stack(frame, [Panel(value=200)], "top_left", 10)
         assert np.array_equal(with_hidden, without)
+
+
+class TestInfoPanel:
+    def test_draws_only_in_the_requested_corner_and_copies(self):
+        from physiotrack.core.overlay import draw_info_panel
+
+        image = np.full((480, 640, 3), 200, np.uint8)
+        annotated = draw_info_panel(image, ["Faces detected: 2", "Detector: test.pt"])
+        assert annotated.shape == image.shape
+        assert not np.array_equal(annotated[:60, :200], image[:60, :200])
+        assert np.array_equal(annotated[-20:, -20:], image[-20:, -20:])
+        assert (image == 200).all()                      # input untouched
+
+        corner = draw_info_panel(image, ["x"], corner="bottom_right")
+        assert np.array_equal(corner[:20, :20], image[:20, :20])
+        assert not np.array_equal(corner[-20:, -20:], image[-20:, -20:])
+        assert np.array_equal(draw_info_panel(image, []), image)
+

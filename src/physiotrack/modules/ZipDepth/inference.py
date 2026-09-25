@@ -20,6 +20,7 @@ import torch.nn.functional as F
 from .models import create_model
 
 from ..._logging import get_logger
+from ...core.device import torch_device
 from ..._paths import weights_dir
 
 logger = get_logger(__name__)
@@ -87,15 +88,8 @@ class ZipDepthInference:
                 f"And place it in: {os.path.abspath(model_dir)}/"
             )
 
-        # Resolve device (mirrors DepthAnythingV2Inference behavior)
-        if isinstance(device, int):
-            self.device = f'cuda:{device}' if torch.cuda.is_available() else 'cpu'
-        elif device == 'cuda':
-            self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        elif device == 'mps':
-            self.device = 'mps' if torch.backends.mps.is_available() else 'cpu'
-        else:
-            self.device = device
+        # Honour the requested device exactly (no silent CPU fallback).
+        self.device = torch_device(device)
         self._is_cuda = self.device.startswith('cuda')
 
         self.variant = model_config['variant']

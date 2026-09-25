@@ -1,12 +1,12 @@
 import logging
 
 from ..models import Models
-from ..modules import Segmentor, SapiensSegmentation, draw_segmentation_map
+from ..modules import Segmentor, SapiensSegmentation
 from ..results import Result, Instance
-import os
 import numpy as np
 
 from .._logging import get_logger
+from ..core.boxes import clip_box
 from ..core.predictor import PredictorMixin
 
 logger = get_logger(__name__)
@@ -80,7 +80,7 @@ class SegmentationBase(PredictorMixin):
 
         model_path = Models.resolve(model)
 
-        self.minfo = Models._get_model_info(model)
+        self.minfo = Models.info(model)
         self.segmentation_framework = self.minfo['backend']
         logger.log(logging.INFO if verbose else logging.DEBUG,
                    'Initiating %s %s for segmentation', self.segmentation_framework, model.name)
@@ -329,8 +329,8 @@ class Segmentation:
             ```
 
         See Also:
-            [`Detection.Face`][physiotrack.Detection.Face]: the auto-detector used
-                when ``boxes`` is omitted.
+            [`Face`][physiotrack.Face]: the auto-detector used when ``boxes`` is
+                omitted.
         """
         default_model = Models.Segmentation.SegFace.Face.swinb_celeba_512
 
@@ -347,7 +347,7 @@ class Segmentation:
                 face_detector (optional): A pre-built face detector to reuse for
                     auto-detection when ``predict`` is called without ``boxes``.
                     Defaults to ``None`` (lazily builds a
-                    [`Detection.Face`][physiotrack.Detection.Face]).
+                    [`Face`][physiotrack.Face]).
                 face_conf (float, optional): Confidence threshold in ``[0.0, 1.0]``
                     for the auto-built face detector. Defaults to ``0.25``.
                 face_iou (float, optional): NMS/IoU threshold in ``[0.0, 1.0]``
@@ -364,8 +364,8 @@ class Segmentation:
 
         def _ensure_detector(self):
             if self._face_detector is None:
-                from ..detect import Detection
-                self._face_detector = Detection.Face(
+                from ..face.detect import Face
+                self._face_detector = Face(
                     conf=self._face_conf, iou=self._face_iou, device=self.device)
             return self._face_detector
 
@@ -378,11 +378,10 @@ class Segmentation:
             seg_map = np.zeros((h, w), dtype=np.int32)
             instances = []
             for box in (boxes if boxes is not None else []):
-                x1, y1, x2, y2 = (int(v) for v in box[:4])
-                x1, y1 = max(0, x1), max(0, y1)
-                x2, y2 = min(w, x2), min(h, y2)
-                if x2 <= x1 or y2 <= y1:
+                clipped = clip_box(box, frame.shape)
+                if clipped is None:
                     continue
+                x1, y1, x2, y2 = clipped
                 parsing = self.segmentor.infer(frame[y1:y2, x1:x2])
                 fg = parsing > 0
                 seg_map[y1:y2, x1:x2][fg] = parsing[fg]

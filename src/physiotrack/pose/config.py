@@ -105,18 +105,18 @@ COCO_WHOLEBODY = {
                             "37": "face_jaw_14",
                             "38": "face_jaw_15",
                             "39": "face_jaw_16",
-                            # Left Eyebrow (5 points): 40-44
-                            "40": "face_left_eyebrow_0",
-                            "41": "face_left_eyebrow_1",
-                            "42": "face_left_eyebrow_2",
-                            "43": "face_left_eyebrow_3",
-                            "44": "face_left_eyebrow_4",
-                            # Right Eyebrow (5 points): 45-49
-                            "45": "face_right_eyebrow_0",
-                            "46": "face_right_eyebrow_1",
-                            "47": "face_right_eyebrow_2",
-                            "48": "face_right_eyebrow_3",
-                            "49": "face_right_eyebrow_4",
+                            # Right Eyebrow (5 points): 40-44 (subject's right, iBUG 17-21)
+                            "40": "face_right_eyebrow_0",
+                            "41": "face_right_eyebrow_1",
+                            "42": "face_right_eyebrow_2",
+                            "43": "face_right_eyebrow_3",
+                            "44": "face_right_eyebrow_4",
+                            # Left Eyebrow (5 points): 45-49 (subject's left, iBUG 22-26)
+                            "45": "face_left_eyebrow_0",
+                            "46": "face_left_eyebrow_1",
+                            "47": "face_left_eyebrow_2",
+                            "48": "face_left_eyebrow_3",
+                            "49": "face_left_eyebrow_4",
                             # Nose (9 points): 50-58
                             "50": "face_nose_bridge_0",
                             "51": "face_nose_bridge_1",
@@ -127,20 +127,20 @@ COCO_WHOLEBODY = {
                             "56": "face_nose_tip_2",
                             "57": "face_nose_tip_3",
                             "58": "face_nose_tip_4",
-                            # Left Eye (6 points): 59-64
-                            "59": "face_left_eye_0",
-                            "60": "face_left_eye_1",
-                            "61": "face_left_eye_2",
-                            "62": "face_left_eye_3",
-                            "63": "face_left_eye_4",
-                            "64": "face_left_eye_5",
-                            # Right Eye (6 points): 65-70
-                            "65": "face_right_eye_0",
-                            "66": "face_right_eye_1",
-                            "67": "face_right_eye_2",
-                            "68": "face_right_eye_3",
-                            "69": "face_right_eye_4",
-                            "70": "face_right_eye_5",
+                            # Right Eye (6 points): 59-64 (subject's right, iBUG 36-41)
+                            "59": "face_right_eye_0",
+                            "60": "face_right_eye_1",
+                            "61": "face_right_eye_2",
+                            "62": "face_right_eye_3",
+                            "63": "face_right_eye_4",
+                            "64": "face_right_eye_5",
+                            # Left Eye (6 points): 65-70 (subject's left, iBUG 42-47)
+                            "65": "face_left_eye_0",
+                            "66": "face_left_eye_1",
+                            "67": "face_left_eye_2",
+                            "68": "face_left_eye_3",
+                            "69": "face_left_eye_4",
+                            "70": "face_left_eye_5",
                             # Mouth Outer (12 points): 71-82
                             "71": "face_mouth_outer_0",
                             "72": "face_mouth_outer_1",
@@ -218,6 +218,51 @@ COCO_WHOLEBODY = {
 
 COCO = dict(islice(COCO_WHOLEBODY.items(), 17))
 
+
+# MediaPipe Face Mesh (Face Landmarker): 468 surface points + 10 iris points. Sides
+# are the subject's own, matching MediaPipe's naming (landmark 33 is the right eye).
+# Only the points the library measures get a semantic name; the rest are
+# ``facemesh_<id>``. See physiotrack.signals.face for the measurement tables.
+_FACEMESH_SEMANTIC = {
+    1: "nose_tip", 10: "forehead", 152: "chin",
+    33: "right_eye_outer", 133: "right_eye_inner",
+    160: "right_eye_upper_outer", 158: "right_eye_upper_inner",
+    144: "right_eye_lower_outer", 153: "right_eye_lower_inner",
+    263: "left_eye_outer", 362: "left_eye_inner",
+    387: "left_eye_upper_outer", 385: "left_eye_upper_inner",
+    373: "left_eye_lower_outer", 380: "left_eye_lower_inner",
+    468: "right_iris_center", 469: "right_iris_1", 470: "right_iris_2",
+    471: "right_iris_3", 472: "right_iris_4",
+    473: "left_iris_center", 474: "left_iris_1", 475: "left_iris_2",
+    476: "left_iris_3", 477: "left_iris_4",
+    61: "mouth_right_corner", 291: "mouth_left_corner",
+    0: "upper_lip_outer", 17: "lower_lip_outer",
+    13: "upper_lip_inner", 14: "lower_lip_inner",
+}
+FACEMESH = {str(i): _FACEMESH_SEMANTIC.get(i, f"facemesh_{i}") for i in range(478)}
+
+# Face contours (lips, eyes, eyebrows, face oval) plus both iris rings, as
+# (start, end) landmark-id pairs. Copied from MediaPipe's FaceLandmarksConnections
+# (Apache-2.0); used to draw FACEMESH keypoints.
+FACEMESH_CONTOURS = (
+    (61, 146), (146, 91), (91, 181), (181, 84), (84, 17), (17, 314), (314, 405), (405, 321),
+    (321, 375), (375, 291), (61, 185), (185, 40), (40, 39), (39, 37), (37, 0), (0, 267),
+    (267, 269), (269, 270), (270, 409), (409, 291), (78, 95), (95, 88), (88, 178), (178, 87),
+    (87, 14), (14, 317), (317, 402), (402, 318), (318, 324), (324, 308), (78, 191), (191, 80),
+    (80, 81), (81, 82), (82, 13), (13, 312), (312, 311), (311, 310), (310, 415), (415, 308),
+    (263, 249), (249, 390), (390, 373), (373, 374), (374, 380), (380, 381), (381, 382), (382, 362),
+    (263, 466), (466, 388), (388, 387), (387, 386), (386, 385), (385, 384), (384, 398), (398, 362),
+    (276, 283), (283, 282), (282, 295), (295, 285), (300, 293), (293, 334), (334, 296), (296, 336),
+    (33, 7), (7, 163), (163, 144), (144, 145), (145, 153), (153, 154), (154, 155), (155, 133),
+    (33, 246), (246, 161), (161, 160), (160, 159), (159, 158), (158, 157), (157, 173), (173, 133),
+    (46, 53), (53, 52), (52, 65), (65, 55), (70, 63), (63, 105), (105, 66), (66, 107),
+    (10, 338), (338, 297), (297, 332), (332, 284), (284, 251), (251, 389), (389, 356), (356, 454),
+    (454, 323), (323, 361), (361, 288), (288, 397), (397, 365), (365, 379), (379, 378), (378, 400),
+    (400, 377), (377, 152), (152, 148), (148, 176), (176, 149), (149, 150), (150, 136), (136, 172),
+    (172, 58), (58, 132), (132, 93), (93, 234), (234, 127), (127, 162), (162, 21), (21, 54),
+    (54, 103), (103, 67), (67, 109), (109, 10), (474, 475), (475, 476), (476, 477), (477, 474),
+    (469, 470), (470, 471), (471, 472), (472, 469),
+)
 
 COCO_WHOLEBODY_NAMES = {v: k for k, v in COCO_WHOLEBODY.items()}
 COCO_NAMES = {v: k for k, v in COCO.items()}

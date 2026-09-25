@@ -26,30 +26,20 @@ python examples/vr_detection/detect_vr_people.py --detectors vr_person person
 ### Select model sizes
 
 Medium checkpoints are used by default. Large checkpoints are published for the
-VR-person and generic-person detectors, but **not for VR-head**:
+VR-person and generic-person detectors, but **not for VR-head**, so `largest` uses the
+largest checkpoint published for each detector:
 
 ```bash
-# Large VR-person and generic-person checkpoints (strictly large)
-python examples/vr_detection/detect_vr_people.py \
-  --model-size large --detectors vr_person person
-
-# Compare all three using the largest checkpoint published for each task
-# (medium VR-head, large VR-person, large generic person)
+# medium VR-head, large VR-person, large generic person
 python examples/vr_detection/detect_vr_people.py --model-size largest
 ```
-
-Requesting `--model-size large` while `vr_head` is selected stops with an explanatory
-error instead of silently substituting `yolo11m_VR_head.pt`. A true large VR-head
-run requires a separately trained and published large checkpoint; the framework
-cannot turn the medium checkpoint into a large architecture at inference time.
 
 The script writes one annotated PNG per detector, a vertically stacked
 `comparison.png`, and `summary.json` under `examples/vr_detection/results/`. When both
 person views are selected, it also writes the compact documentation preview
-`comparison_person_vrperson.jpg`. The JSON records the actual class counts,
-thresholds, model weights, device, timing, and the complete serialized `Result` for
-each detector. It also records the selected model size policy, while every image
-panel displays the exact checkpoint filename used.
+`comparison_person_vrperson.jpg`. The JSON records, per detector, the registry path
+of the model, the class counts and the complete serialized `Result`; every image panel
+shows the checkpoint filename and the detector's inference time.
 
 ![VR-person and generic-person comparison](../../docs/images/comparison_person_vrperson.jpg)
 

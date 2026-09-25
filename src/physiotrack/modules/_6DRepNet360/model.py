@@ -78,39 +78,23 @@ class SixDRepNet360(nn.Module):
         return out
 
 
-def load_model(snapshot_path=None, device='cpu'):
-    """
-    Load a pretrained SixDRepNet360 model.
-    
+def load_model(weights_path, device='cpu'):
+    """Load a pretrained SixDRepNet360 model.
+
     Args:
-        snapshot_path: Path to model weights. If None, downloads pretrained weights.
-        device: Device to load the model on ('cpu', 'cuda', etc.)
-    
+        weights_path (str): Path to the checkpoint, as resolved by
+            ``Models.resolve``.
+        device (str): Device to load the model on (``"cpu"``, ``"cuda:0"``, ...).
+
     Returns:
-        model: Loaded SixDRepNet360 model in eval mode
+        SixDRepNet360: The model in eval mode.
     """
-    from torch.hub import load_state_dict_from_url
-    
     model = SixDRepNet360(torchvision.models.resnet.Bottleneck, [3, 4, 6, 3], 6)
-    
-    # Load weights
-    if snapshot_path is None or snapshot_path == '':
-        # Download pretrained weights
-        saved_state_dict = load_state_dict_from_url(
-            "https://cloud.ovgu.de/s/TewGC9TDLGgKkmS/download/6DRepNet360_Full-Rotation_300W_LP+Panoptic.pth",
-            map_location=device
-        )
-    else:
-        saved_state_dict = torch.load(snapshot_path, map_location=device)
-    
-    # Handle different state dict formats
-    if 'model_state_dict' in saved_state_dict:
-        model.load_state_dict(saved_state_dict['model_state_dict'])
-    else:
-        model.load_state_dict(saved_state_dict)
-    
+    checkpoint = torch.load(weights_path, map_location=device)
+    # The registry holds both formats: the upstream 6DRepNet360 release is a bare
+    # state dict, the VR fine-tune (CMVS-FO-VR) a training checkpoint.
+    state = checkpoint['model_state_dict'] if 'model_state_dict' in checkpoint else checkpoint
+    model.load_state_dict(state)
     model.to(device)
     model.eval()
-    
     return model
-

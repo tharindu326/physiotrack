@@ -2,7 +2,7 @@
 
 [`Video`][physiotrack.Video] is the high-level orchestrator that runs the **full
 inference pipeline** over a clip, camera device or RTSP stream. You attach the
-predictors you want — detection, pose, tracking, segmentation, face orientation,
+predictors you want — detection, pose, tracking, segmentation, face analysis,
 depth — and it drives them frame-by-frame (optionally in batches), composites every
 enabled model's output onto each frame, writes an annotated MP4, and returns the
 per-frame results as structured data.
@@ -17,8 +17,8 @@ complete multi-model pipeline. Nothing runs until you call
 
 The per-batch pipeline order is:
 
-**detection → pose → tracking → segmentation → face orientation → depth →
-overlay / compositing**
+**detection → tracking → pose → segmentation → faces (detection, subject ids, face
+stages) → depth → overlay / compositing**
 
 You attach models by passing already-constructed predictor instances to the
 constructor; any left as `None` are simply skipped. On top of the model overlays,
@@ -89,7 +89,7 @@ All are keyword-only constructor arguments; see the full
 
 | Group | Arguments | What it controls |
 | --- | --- | --- |
-| Models | `detector`, `pose`, `segmenter`, `tracker`, `face`, `face_orientation`, `depth`, `ego_video` | Which predictors run; `None` skips a stage. `detector` / `segmenter` accept a list. |
+| Models | `detector`, `pose`, `segmenter`, `tracker`, `face`, `face_stages`, `depth`, `ego_video` | Which predictors run; `None` skips a stage. `detector` / `segmenter` accept a list. |
 | Source / output | `source`, `output_dir`, `fps` | Input (file / RTSP / camera index), output directory, target processing frame rate (subsampling). |
 | Geometry | `resize`, `rotate`, `orient` | `resize=(w, h)`; `rotate` = 90° CW; `orient` = explicit `0/90/180/270` fix for phone clips. |
 | Radar / floor map | `floor_map`, `floor_map_background`, `floor_map_rotation` | Four `(x, y)` floor corners enable the top-down radar view (needs `tracker` + `pose`). |
@@ -118,7 +118,8 @@ Physiological panels are opt-in and each has a clear signal source:
   segmentation mask, never a raw face box). Defaults to `None`, which builds a SegFace
   [`FaceSkinExtractor`][physiotrack.signals.FaceSkinExtractor] (it finds faces itself, so
   **no face detector is needed**). Override with a custom mask provider — a callable
-  `roi(frame) -> mask` or an object with `skin_mask(frame) -> mask` (e.g. your own
+  `roi(frame) -> mask` or an object with `skin_mask(frame, boxes=None) -> mask`, which
+  receives the frame's face boxes when the pipeline finds faces (e.g. your own
   face-neck segmentation model). Pass a `FaceSkinExtractor(device=...)` to control its
   device.
 
@@ -156,6 +157,30 @@ video = pt.Video(
 video.run(output_video="out.mp4")
 ```
 
+### Faces
+
+`face_stages=[...]` runs [face stages](face.md) on every face, in order. The faces come
+from a `face` detector (`pt.Face()` / `pt.VRFace()`), or — when `detector` is itself a
+face detector — they are the tracked subjects.
+
+```python
+video = pt.Video(
+    source="session.mp4",
+    detector=pt.Detection.Person(), tracker=pt.Tracker(),
+    face=pt.VRFace(),                                         # faces of tracked people
+    face_stages=[pt.FaceOrientation(model=pt.Models.Face.Orientation.VR),
+                 pt.FaceLandmarks()],
+)
+results = video.run()
+blinks = pt.signals.detect_blinks(results, detection_id=1)   # person 1's blinks
+```
+
+With a tracker, a face takes the track id of the person box that contains most of it
+(one face per person), so face signals follow a person across frames; without one, face
+ids are `None`. Faces are detected on the clean frames, drawn onto the output, and
+returned as [`FrameResult.faces`][physiotrack.FrameResult]. When rPPG is on, its skin
+segmentation reuses these face boxes instead of detecting faces again.
+
 !!! tip "Batching and tracking"
     `batch_size` sets how many frames each pipeline step processes together (values
     below `1` are clamped to `1`). Tracking always runs **frame-by-frame**
@@ -180,15 +205,17 @@ results = video.run(
 
 Each `FrameResult` is iterable over its typed `Instance` objects and carries metadata.
 Its serialized dictionary always has `frame_id` (int), `timestamp` (float seconds),
-and `instances` (list), plus optional pipeline fields:
+`task` and `instances` (list), plus optional pipeline fields:
 
 | Key | Present when | Contents |
 | --- | --- | --- |
 | `frame_id` | always | Frame index (int). |
 | `timestamp` | always | Seconds from start (float). |
+| `task` | always | `"pose"`, `"track"` or `"detect"` — which stage the instances come from. |
 | `instances` | always | Per-subject fields from the richest attached stage: pose instances with keypoints, else tracked instances with persistent `id`s, else bare detections. Empty when no detection, tracking, or pose stage is attached. |
 | `track_box` | a tracker is attached and has a locked box | The tracked subject box `[x1, y1, x2, y2]`. |
-| `face_orientation` | face + face-orientation are attached | List of head-pose dicts (`bbox`, `pose` = yaw/pitch/roll). |
+| `faces` | a face source (`face=` or a face `detector`) is attached | The frame's faces as a `task="face"` result: each face's `id`, `box` and the fields its face stages added. Face meshes are included with `include_arrays=True`. |
+| `vitals` | rPPG / HRV / respiration are on | `hr`, `snr`, `hrv`, `respiration`. |
 
 You can also pass a `progress_callback(frame_id, total_frames, pose_results)` to
 `run()` for live progress reporting.
