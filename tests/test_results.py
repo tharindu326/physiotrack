@@ -8,6 +8,7 @@ entirely, and had no way back at all, so a written JSON file could not be reload
 """
 
 import json
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -252,3 +253,42 @@ def test_wholebody_face_points_use_the_subjects_sides():
     assert COCO_WHOLEBODY["65"] == "face_left_eye_0"
     assert COCO_WHOLEBODY["40"] == "face_right_eyebrow_0"
     assert COCO_WHOLEBODY["2"] == "right_eye"
+
+
+# --- Video: detectors ------------------------------------------------------------
+
+_CLIP = (Path(__file__).resolve().parents[1]
+         / "examples" / "face_tracking" / "data" / "students_face_tracking.mp4")
+
+
+class _Rows:
+    def __init__(self, rows):
+        self.data = self
+        self._rows = rows
+
+    def cpu(self):
+        return self
+
+    def numpy(self):
+        return self._rows
+
+
+class _YoloResult:
+    def __init__(self, rows):
+        self.boxes = _Rows(rows)
+
+
+class _PersonDetector:
+    """Two fixed person boxes per frame; no detect_batch, so Video's per-frame path runs."""
+    rows = np.array([[40, 40, 120, 200, 0.9, 0], [200, 60, 280, 220, 0.8, 0]], np.float32)
+
+    def detect(self, frame, **kwargs):
+        return [_YoloResult(self.rows)], frame
+
+
+def test_every_detector_contributes_detections():
+    # Each detector in a list runs; the first one used to shadow the others.
+    video = pt.Video(source=_CLIP, detector=[_PersonDetector(), _PersonDetector()])
+    frame = np.zeros((240, 320, 3), np.uint8)
+    (_, detections), = video.process_batch_detections([frame])
+    assert len(detections) == 2 and all(len(d) == 2 for d in detections)

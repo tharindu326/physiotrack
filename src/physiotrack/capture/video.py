@@ -58,8 +58,9 @@ class Video:
             stem, RTSP host, or ``"CAM_device_<n>"``); used to name outputs/logs.
         total_frames (int | None): Frame count for seekable files, else ``None``
             (streams / cameras).
-        video_fps (int): Native frames-per-second of the source (falls back to
-            ``30`` when it cannot be read).
+        video_fps (float): Native frames-per-second of the source, e.g. ``29.97``
+            (falls back to ``30.0`` when it cannot be read). Timestamps, the output
+            video and the vitals all use this exact rate.
         width (int): Effective output frame width in pixels (already accounts for
             ``orient`` 90/270 dimension swap).
         height (int): Effective output frame height in pixels.
@@ -362,9 +363,9 @@ class Video:
         if plot_keypoint is not None:
             # Get video FPS for the plotter
             cap_temp = cv2.VideoCapture(source)
-            video_fps = int(cap_temp.get(cv2.CAP_PROP_FPS))
+            video_fps = float(cap_temp.get(cv2.CAP_PROP_FPS))
             if not video_fps > 0:
-                video_fps = 30
+                video_fps = 30.0
             cap_temp.release()
             
             if plot_keypoint_name is None:
@@ -636,9 +637,11 @@ class Video:
 
         self._setup_source_info()
 
-        self.video_fps = int(self.cap.get(cv2.CAP_PROP_FPS))
+        # Keep the exact rate (29.97, not 29): timestamps and every per-second measure
+        # derive from it. Only the subsampling cycle in run() rounds it.
+        self.video_fps = float(self.cap.get(cv2.CAP_PROP_FPS))
         if not self.video_fps > 0:
-            self.video_fps = 30  # Default FPS
+            self.video_fps = 30.0  # Default FPS
             if self.verbose:
                 logger.info(f'Using default FPS: {self.video_fps}')
         self.width = int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -648,12 +651,13 @@ class Video:
 
     def _setup_source_info(self):
         """Setup source identifier and total frames based on video path type."""
-        if isinstance(self.video_path, str):
-            path_prefix = ''.join(letter for letter in str(self.video_path).split(':')[0] if letter.isalnum())
+        if isinstance(self.video_path, (str, Path)):
+            source = str(self.video_path)
+            path_prefix = ''.join(letter for letter in source.split(':')[0] if letter.isalnum())
             if path_prefix == 'rtsp':
                 if self.verbose:
-                    logger.info(f'Start processing RTSP stream {self.video_path}')
-                source_name = ".".join(self.video_path.split('@')[-1].split('.')[:-1]).replace(':', '-').replace('/', '_')
+                    logger.info(f'Start processing RTSP stream {source}')
+                source_name = ".".join(source.split('@')[-1].split('.')[:-1]).replace(':', '-').replace('/', '_')
                 self.source_identifier = f'{source_name}'
                 self.total_frames = None
             else:
@@ -730,10 +734,10 @@ class Video:
     def process_batch_detections(self, frames_batch: List[np.ndarray]) -> List[Tuple[np.ndarray, np.ndarray]]:
         """Run all configured detectors over a batch of frames.
 
-        Uses the detector's batched API (``detect_batch``) when available, else
-        falls back to per-frame ``detect`` calls, drawing each detector's boxes in
-        its own palette color. With no detectors configured, returns the frames
-        unchanged with empty detection lists.
+        Each detector runs once over the whole batch (``detect_batch``) when it
+        supports it, else frame by frame, and draws its boxes in its own palette
+        colour -- labelled with the detector index when several are configured. With no
+        detectors configured, returns copies of the frames with empty detection lists.
 
         Args:
             frames_batch (list[np.ndarray]): BGR frames of shape ``(H, W, 3)``.
@@ -745,63 +749,32 @@ class Video:
                 one ``(N, 6)`` array per detector, each row
                 ``(x1, y1, x2, y2, conf, cls)``.
         """
-        batch_results = []
-        
-        if len(self.detectors) == 0:
-            # No detectors, return empty results for each frame
-            for frame in frames_batch:
-                batch_results.append((frame, []))
-            return batch_results
-        
-        # Prefer batched detection if available
-        if len(self.detectors) > 0 and hasattr(self.detectors[0], 'detect_batch'):
-            det = self.detectors[0]
-            det_outputs = det.detect_batch(frames_batch)
-            batch_results = []
-            color_names = list(COLORS.keys())
-            for frame, (results, detected_frame) in zip(frames_batch, det_outputs):
-                detections = results[0].boxes.data.cpu().numpy()  # match single-frame schema
-                combined_frame = frame.copy()
-                color = tuple(COLORS[color_names[0]])
-                for det_box in (detections[:, :4].astype(int) if detections.size else []):
-                    x1, y1, x2, y2 = det_box
-                    cv2.rectangle(combined_frame, (int(x1), int(y1)), (int(x2), int(y2)), color, 2)
-                batch_results.append((combined_frame, [detections]))
-            return batch_results
+        per_detector = []
+        for detector in self.detectors:
+            if hasattr(detector, 'detect_batch'):
+                outputs = [results[0] for results, _ in detector.detect_batch(frames_batch)]
+            else:
+                outputs = [detector.detect(frame)[0][0] for frame in frames_batch]
+            per_detector.append([r.boxes.data.cpu().numpy() for r in outputs])
 
-        # Process each frame in batch (fallback)
-        for frame in frames_batch:
-            all_detections = []
+        color_names = list(COLORS.keys())
+        batch_results = []
+        for frame_index, frame in enumerate(frames_batch):
             combined_frame = frame.copy()
-            
-            # Use predefined colors from COLORS palette
-            color_names = list(COLORS.keys())
-            
-            for idx, detector in enumerate(self.detectors):
-                # YOLO can handle single frame or batch - we pass single for now
-                # TODO: Update to pass batch directly when YOLO batch inference is confirmed
-                results, detected_frame = detector.detect(frame)
-                detections = results[0].boxes.data.cpu().numpy()  # (x1, y1, x2, y2, conf, cls)
-                
-                # Get color for this detector
-                color_name = color_names[idx % len(color_names)]
-                color = tuple(COLORS[color_name])
-                
-                # Draw boxes with unique color for this detector
-                for det in detections:
-                    x1, y1, x2, y2, conf, cls = det
+            all_detections = []
+            for det_index, detections_per_frame in enumerate(per_detector):
+                detections = detections_per_frame[frame_index]
+                color = tuple(COLORS[color_names[det_index % len(color_names)]])
+                for x1, y1, x2, y2, conf, cls in detections:
                     cv2.rectangle(combined_frame, (int(x1), int(y1)), (int(x2), int(y2)), color, 2)
-                    # Add label with detector index
-                    label = f"D{idx}-C{int(cls)}: {conf:.2f}"
-                    draw_label(combined_frame, (int(x1), int(y1) - 20), label,
-                               size=18, color=color, bold=True)
-                
+                    if len(per_detector) > 1:
+                        draw_label(combined_frame, (int(x1), int(y1) - 20),
+                                   f"D{det_index}-C{int(cls)}: {conf:.2f}",
+                                   size=18, color=color, bold=True)
                 all_detections.append(detections)
-            
             batch_results.append((combined_frame, all_detections))
-        
         return batch_results
-    
+
     def process_batch_pose(self, frames_batch: List[np.ndarray], boxes_batch: List[np.ndarray]) -> List[Tuple[np.ndarray, Any]]:
         """Run the pose estimator over a batch of frames and draw keypoints.
 
@@ -1158,7 +1131,8 @@ class Video:
         if self.total_frames and self.verbose:
             pbar = tqdm(total=self.total_frames, desc=f'Processing {self.source_identifier}')
         
-        selected_frame_ids = self.select_frames(self.video_fps, self.required_fps)
+        frames_per_cycle = int(round(self.video_fps))  # one source-second, in frames
+        selected_frame_ids = self.select_frames(frames_per_cycle, self.required_fps)
         out_writer = None
         if output_video:
             if self.frame_resize:
@@ -1228,7 +1202,7 @@ class Video:
                     })
                 
                 frame_count += 1
-                frame_filter_count = frame_filter_count + 1 if frame_filter_count < self.video_fps else 1
+                frame_filter_count = frame_filter_count + 1 if frame_filter_count < frames_per_cycle else 1
                 
                 # Check if batch is full
                 if len(frame_batch) == self.batch_size:
