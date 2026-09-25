@@ -15,6 +15,7 @@ import torch
 import torch.nn.functional as F
 
 from .models import SegFaceCeleb
+from ...core.device import torch_device
 
 # CelebAMask-HQ 19-class label set (index order matches the trained head).
 CELEBA_CLASSES = [
@@ -40,7 +41,7 @@ class SegFaceInference:
 
     def __init__(self, checkpoint_path, input_resolution=512, device="cpu"):
         self.input_resolution = int(input_resolution)
-        self.device = torch.device(device if torch.cuda.is_available() or "cuda" not in str(device) else "cpu")
+        self.device = torch.device(torch_device(device))
 
         self.model = SegFaceCeleb(self.input_resolution, "swin_base")
         ckpt = torch.load(checkpoint_path, map_location="cpu", weights_only=False)

@@ -12,7 +12,7 @@ single-versus-batch is decided. Predictors keep their own inference internals.
 """
 import os
 from pathlib import Path
-from typing import Any, List, Optional, Sequence, Tuple, Union
+from typing import Any, List, Sequence, Tuple, Union
 
 import numpy as np
 
@@ -135,17 +135,19 @@ class PredictorMixin:
             f"{type(self).__name__} must implement predict()."
         )
 
-    def __call__(self, source, **kwargs):
+    def __call__(self, source, *args, **kwargs):
         """Alias for :meth:`predict`, so ``model(frame)`` works like ``model.predict(frame)``.
 
         Args:
             source (str | os.PathLike | np.ndarray | Sequence): See :meth:`predict`.
+            *args (Any): Forwarded to :meth:`predict` -- e.g. the face boxes of a face
+                stage, ``stage(frame, faces)``.
             **kwargs (Any): Forwarded to :meth:`predict`.
 
         Returns:
             Result | list[Result]: See :meth:`predict`.
         """
-        return self.predict(source, **kwargs)
+        return self.predict(source, *args, **kwargs)
 
     @staticmethod
     def _as_frames(source: Any) -> Tuple[List[np.ndarray], bool]:

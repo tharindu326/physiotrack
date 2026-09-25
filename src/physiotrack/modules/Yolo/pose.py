@@ -7,6 +7,7 @@ import cv2
 import numpy as np
 import time
 from ..._paths import weights_dir
+from ...core.boxes import box_iou
 
 
 class YoloPose:
@@ -28,19 +29,6 @@ class YoloPose:
         # FPS monitoring
         self.inference_times = deque(maxlen=100) 
         
-    def compute_iou(self, boxA, boxB):
-        xA = max(boxA[0], boxB[0])
-        yA = max(boxA[1], boxB[1])
-        xB = min(boxA[2], boxB[2])
-        yB = min(boxA[3], boxB[3])
-
-        interArea = max(0, xB - xA) * max(0, yB - yA)
-        boxAArea = (boxA[2] - boxA[0]) * (boxA[3] - boxA[1])
-        boxBArea = (boxB[2] - boxB[0]) * (boxB[3] - boxB[1])
-        
-        iou = interArea / float(boxAArea + boxBArea - interArea)
-        return iou
-    
     def inference(self, frame, boxes=None, **kwargs):
         """
         YOLO-pose inference with flexibility for extra prediction parameters.
@@ -49,8 +37,6 @@ class YoloPose:
         processed_boxes = []
         processed_confidence = []
         processed_class_id = []
-        names = []
-        keypoints = []
         start = time.perf_counter()
         frame_data = {"detections": []}
 
@@ -96,7 +82,7 @@ class YoloPose:
                     max_iou = -1
                     best_index = -1
                     for i, det_box in enumerate(detected_boxes):
-                        iou = self.compute_iou(det_box, target_box)
+                        iou = box_iou(det_box, target_box)[0, 0]
                         if iou > max_iou:
                             max_iou = iou
                             best_index = i

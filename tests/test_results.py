@@ -198,3 +198,47 @@ def test_as_frame_records_rejects_unsupported_elements():
 
     with pytest.raises(TypeError, match="FrameResult"):
         as_frame_records([object()])
+
+
+# --- box geometry ---------------------------------------------------------------------
+
+def test_box_iou_matches_hand_computed_overlaps():
+    from physiotrack.core.boxes import box_iou
+
+    iou = box_iou([[0, 0, 10, 10], [0, 0, 0, 5]], [[5, 0, 15, 10], [0, 0, 10, 10]])
+    assert iou.shape == (2, 2)
+    assert iou[0] == pytest.approx([50 / 150, 1.0])
+    assert iou[1].tolist() == [0.0, 0.0]           # a zero-area box overlaps nothing
+    assert box_iou(np.empty((0, 4)), [[0, 0, 1, 1]]).shape == (0, 1)
+
+
+def test_crop_square_pads_at_the_border_and_maps_back():
+    from physiotrack.core.boxes import crop_square
+
+    frame = np.arange(100 * 120, dtype=np.uint16).reshape(100, 120)
+    crop, (left, top), side = crop_square(frame, [0, 10, 20, 50], scale=1.5)
+    assert crop.shape == (60, 60) and side == 60
+    assert (left, top) == (-20, 0)
+    assert (crop[:, :20] == 0).all()                 # padding outside the frame
+    # A crop pixel maps back with frame_xy = offset + crop_xy.
+    assert crop[30, 25] == frame[top + 30, left + 25]
+    with pytest.raises(ValueError, match="without area"):
+        crop_square(frame, [5, 5, 5, 9])
+
+
+def test_clip_box_rounds_and_clips():
+    from physiotrack.core.boxes import clip_box
+
+    assert clip_box([-3.4, 2.6, 50.2, 9.0], (8, 40)) == (0, 3, 40, 8)
+    assert clip_box([50, 50, 60, 60], (8, 40)) is None
+
+
+def test_assign_ids_matches_faces_to_containing_subjects_one_to_one():
+    from physiotrack.core.boxes import assign_ids
+
+    subjects = [[0, 0, 100, 200], [150, 0, 250, 200]]
+    faces = [[160, 10, 200, 50], [20, 10, 60, 50], [400, 400, 420, 420]]
+    assert assign_ids(faces, subjects, [11, 22]) == [22, 11, None]
+    # Two faces in one person box: only the better-covered face gets the id.
+    assert assign_ids([[10, 10, 40, 40], [90, 10, 130, 40]], [[0, 0, 100, 100]], [5]) == [5, None]
+    assert assign_ids(np.empty((0, 4)), subjects, [11, 22]) == []

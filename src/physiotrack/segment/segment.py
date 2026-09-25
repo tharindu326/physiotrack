@@ -1,12 +1,12 @@
 import logging
 
 from ..models import Models
-from ..modules import Segmentor, SapiensSegmentation, draw_segmentation_map
+from ..modules import Segmentor, SapiensSegmentation
 from ..results import Result, Instance
-import os
 import numpy as np
 
 from .._logging import get_logger
+from ..core.boxes import clip_box
 from ..core.predictor import PredictorMixin
 
 logger = get_logger(__name__)
@@ -378,11 +378,10 @@ class Segmentation:
             seg_map = np.zeros((h, w), dtype=np.int32)
             instances = []
             for box in (boxes if boxes is not None else []):
-                x1, y1, x2, y2 = (int(v) for v in box[:4])
-                x1, y1 = max(0, x1), max(0, y1)
-                x2, y2 = min(w, x2), min(h, y2)
-                if x2 <= x1 or y2 <= y1:
+                clipped = clip_box(box, frame.shape)
+                if clipped is None:
                     continue
+                x1, y1, x2, y2 = clipped
                 parsing = self.segmentor.infer(frame[y1:y2, x1:x2])
                 fg = parsing > 0
                 seg_map[y1:y2, x1:x2][fg] = parsing[fg]
