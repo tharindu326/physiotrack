@@ -992,7 +992,7 @@
   <span class="md-ellipsis">
     
   
-    Face & Head Orientation
+    Face Analysis
   
 
     
@@ -1728,6 +1728,8 @@
       
         
       
+        
+      
     
     
     
@@ -1825,6 +1827,34 @@
     
   
     Motion & Features
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/signals/face/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Face Signals
   
 
     
@@ -2146,12 +2176,12 @@ and arrays have shape <code>(N, 17, 3)</code> — <code>N</code> frames, 17 join
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">View</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">CanonicalView</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="c1"># 1. 2D pass</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="n">results</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">Video</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s2">&quot;clip.mp4&quot;</span><span class="p">,</span> <span class="n">pose</span><span class="o">=</span><span class="n">pt</span><span class="o">.</span><span class="n">Pose</span><span class="o">.</span><span class="n">Person</span><span class="p">())</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="n">results</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">Video</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s2">"clip.mp4"</span><span class="p">,</span> <span class="n">pose</span><span class="o">=</span><span class="n">pt</span><span class="o">.</span><span class="n">Pose</span><span class="o">.</span><span class="n">Person</span><span class="p">())</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
 </span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>
 </span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="c1"># 2. lift to 3D</span>
 </span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="n">pose3d</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">Pose3D</span><span class="p">(</span>
 </span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    <span class="n">model</span><span class="o">=</span><span class="n">pt</span><span class="o">.</span><span class="n">Models</span><span class="o">.</span><span class="n">Pose3D</span><span class="o">.</span><span class="n">MotionBERT</span><span class="o">.</span><span class="n">mb_ft_h36m_global_lite</span><span class="p">,</span>
-</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    <span class="n">device</span><span class="o">=</span><span class="s2">&quot;cuda&quot;</span><span class="p">,</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    <span class="n">device</span><span class="o">=</span><span class="s2">"cuda"</span><span class="p">,</span>
 </span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="p">)</span>
 </span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="n">poses</span> <span class="o">=</span> <span class="n">pose3d</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span>
 </span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>    <span class="n">results</span><span class="p">,</span>
@@ -2160,7 +2190,7 @@ and arrays have shape <code>(N, 17, 3)</code> — <code>N</code> frames, 17 join
 </span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="p">)</span>
 </span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>
 </span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="n">poses</span><span class="o">.</span><span class="n">poses</span><span class="o">.</span><span class="n">shape</span>                  <span class="c1"># (N, 17, 3)</span>
-</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a><span class="n">poses</span><span class="o">.</span><span class="n">by_name</span><span class="p">(</span><span class="s2">&quot;left_wrist&quot;</span><span class="p">)</span>        <span class="c1"># (N, 3) trajectory of one joint</span>
+</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a><span class="n">poses</span><span class="o">.</span><span class="n">by_name</span><span class="p">(</span><span class="s2">"left_wrist"</span><span class="p">)</span>        <span class="c1"># (N, 3) trajectory of one joint</span>
 </span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a><span class="n">poses</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span>                     <span class="c1"># (17, 3) one frame</span>
 </span></code></pre></div>
 <p><code>predict</code> also accepts a plain <code>(N, 17, 2)</code> / <code>(N, 17, 3)</code> COCO-17 array, so a
@@ -2186,13 +2216,13 @@ keypoints alongside the result — and, with <code>out_path</code>, writes the r
 <code>.npy</code> array, and a <code>*_with_3d_keypoints.json</code>:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">pose3d</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">Pose3D</span><span class="p">(</span>
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    <span class="n">model</span><span class="o">=</span><span class="n">pt</span><span class="o">.</span><span class="n">Models</span><span class="o">.</span><span class="n">Pose3D</span><span class="o">.</span><span class="n">MotionBERT</span><span class="o">.</span><span class="n">mb_ft_h36m_global_lite</span><span class="p">,</span>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="n">device</span><span class="o">=</span><span class="s2">&quot;cuda&quot;</span><span class="p">,</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="n">device</span><span class="o">=</span><span class="s2">"cuda"</span><span class="p">,</span>
 </span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    <span class="n">render_video</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>     <span class="c1"># write a 3D .mp4 when out_path is set</span>
 </span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    <span class="n">save_npy</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>         <span class="c1"># write the raw (N,17,3) array as .npy</span>
 </span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="p">)</span>
 </span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="n">frames_data</span><span class="p">,</span> <span class="n">poses</span> <span class="o">=</span> <span class="n">pose3d</span><span class="o">.</span><span class="n">predict_json</span><span class="p">(</span>
-</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>    <span class="s2">&quot;output/clip_result.json&quot;</span><span class="p">,</span> <span class="s2">&quot;clip.mp4&quot;</span><span class="p">,</span>
-</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>    <span class="n">out_path</span><span class="o">=</span><span class="s2">&quot;output/&quot;</span><span class="p">,</span> <span class="n">canonical_view</span><span class="o">=</span><span class="n">View</span><span class="o">.</span><span class="n">FRONT</span><span class="p">,</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>    <span class="s2">"output/clip_result.json"</span><span class="p">,</span> <span class="s2">"clip.mp4"</span><span class="p">,</span>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>    <span class="n">out_path</span><span class="o">=</span><span class="s2">"output/"</span><span class="p">,</span> <span class="n">canonical_view</span><span class="o">=</span><span class="n">View</span><span class="o">.</span><span class="n">FRONT</span><span class="p">,</span>
 </span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="p">)</span>
 </span></code></pre></div>
 <h2 id="available-models">Available models<a class="headerlink" href="#available-models" title="Permanent link">&para;</a></h2>
@@ -2236,7 +2266,7 @@ keypoints alongside the result — and, with <code>out_path</code>, writes the r
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
 </span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">pose3d</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">Pose3D</span><span class="p">(</span>
 </span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>    <span class="n">model</span><span class="o">=</span><span class="n">pt</span><span class="o">.</span><span class="n">Models</span><span class="o">.</span><span class="n">Pose3D</span><span class="o">.</span><span class="n">MotionBERT</span><span class="o">.</span><span class="n">mb_ft_h36m_global_lite</span><span class="p">,</span>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    <span class="n">device</span><span class="o">=</span><span class="s2">&quot;cuda&quot;</span><span class="p">,</span> <span class="n">clip_len</span><span class="o">=</span><span class="mi">243</span><span class="p">,</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    <span class="n">device</span><span class="o">=</span><span class="s2">"cuda"</span><span class="p">,</span> <span class="n">clip_len</span><span class="o">=</span><span class="mi">243</span><span class="p">,</span>
 </span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="p">)</span>
 </span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="n">poses</span> <span class="o">=</span> <span class="n">pose3d</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">results</span><span class="p">,</span> <span class="n">fps</span><span class="o">=</span><span class="mi">30</span><span class="p">)</span>
 </span></code></pre></div>
@@ -2246,7 +2276,7 @@ keypoints alongside the result — and, with <code>out_path</code>, writes the r
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
 </span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">pose3d</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">Pose3D</span><span class="p">(</span>
 </span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>    <span class="n">model</span><span class="o">=</span><span class="n">pt</span><span class="o">.</span><span class="n">Models</span><span class="o">.</span><span class="n">Pose3D</span><span class="o">.</span><span class="n">DDH</span><span class="o">.</span><span class="n">best</span><span class="p">,</span>
-</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>    <span class="n">device</span><span class="o">=</span><span class="s2">&quot;cuda&quot;</span><span class="p">,</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>    <span class="n">device</span><span class="o">=</span><span class="s2">"cuda"</span><span class="p">,</span>
 </span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>    <span class="n">num_proposals</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">sampling_timesteps</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
 </span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="p">)</span>
 </span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="c1"># DDHPose normalises pixel coordinates, so it needs the source frame size.</span>
@@ -2304,14 +2334,14 @@ right method based on <code>model</code>:</p>
 </span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>
 </span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="c1"># Geometric — any of the four views</span>
 </span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="n">front</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">canonicalize_pose</span><span class="p">(</span><span class="n">poses</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">Canon</span><span class="o">.</span><span class="n">Models</span><span class="o">.</span><span class="n">GEOMETRIC</span><span class="p">,</span> <span class="n">view</span><span class="o">=</span><span class="n">Canon</span><span class="o">.</span><span class="n">View</span><span class="o">.</span><span class="n">FRONT</span><span class="p">)</span>
-</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="n">left</span>  <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">canonicalize_pose</span><span class="p">(</span><span class="n">poses</span><span class="p">,</span> <span class="n">view</span><span class="o">=</span><span class="s2">&quot;left_side&quot;</span><span class="p">)</span>   <span class="c1"># GEOMETRIC + string view</span>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="n">left</span>  <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">canonicalize_pose</span><span class="p">(</span><span class="n">poses</span><span class="p">,</span> <span class="n">view</span><span class="o">=</span><span class="s2">"left_side"</span><span class="p">)</span>   <span class="c1"># GEOMETRIC + string view</span>
 </span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>
 </span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="c1"># Learned 3DPCNet (auto-downloads weights; front only)</span>
-</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="n">dpcnet</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">canonicalize_pose</span><span class="p">(</span><span class="n">poses</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">Canon</span><span class="o">.</span><span class="n">Models</span><span class="o">.</span><span class="n">_3DPCNetS2</span><span class="p">,</span> <span class="n">view</span><span class="o">=</span><span class="s2">&quot;front&quot;</span><span class="p">)</span>
+</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="n">dpcnet</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">canonicalize_pose</span><span class="p">(</span><span class="n">poses</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">Canon</span><span class="o">.</span><span class="n">Models</span><span class="o">.</span><span class="n">_3DPCNetS2</span><span class="p">,</span> <span class="n">view</span><span class="o">=</span><span class="s2">"front"</span><span class="p">)</span>
 </span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a>
 </span><span id="__span-4-14"><a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a><span class="c1"># Also get the rotation matrices (N, 3, 3)</span>
 </span><span id="__span-4-15"><a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a><span class="n">canonical</span><span class="p">,</span> <span class="n">rotation</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">canonicalize_pose</span><span class="p">(</span>
-</span><span id="__span-4-16"><a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a>    <span class="n">poses</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">Canon</span><span class="o">.</span><span class="n">Models</span><span class="o">.</span><span class="n">GEOMETRIC</span><span class="p">,</span> <span class="n">view</span><span class="o">=</span><span class="s2">&quot;front&quot;</span><span class="p">,</span> <span class="n">return_rotation</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+</span><span id="__span-4-16"><a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a>    <span class="n">poses</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">Canon</span><span class="o">.</span><span class="n">Models</span><span class="o">.</span><span class="n">GEOMETRIC</span><span class="p">,</span> <span class="n">view</span><span class="o">=</span><span class="s2">"front"</span><span class="p">,</span> <span class="n">return_rotation</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 </span><span id="__span-4-17"><a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a><span class="p">)</span>
 </span></code></pre></div>
 <p>You can canonicalize three ways:</p>
@@ -2334,14 +2364,14 @@ right method based on <code>model</code>:</p>
 <div class="tabbed-block">
 <div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c1"># From a saved .npy array</span>
 </span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="n">canonical</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">PoseCanonicalizer</span><span class="o">.</span><span class="n">process_npy_file</span><span class="p">(</span>
-</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>    <span class="s2">&quot;output/X3D.npy&quot;</span><span class="p">,</span> <span class="n">output_path</span><span class="o">=</span><span class="s2">&quot;output/X3D_canonical.npy&quot;</span><span class="p">,</span>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>    <span class="s2">"output/X3D.npy"</span><span class="p">,</span> <span class="n">output_path</span><span class="o">=</span><span class="s2">"output/X3D_canonical.npy"</span><span class="p">,</span>
 </span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>    <span class="n">view</span><span class="o">=</span><span class="n">Canon</span><span class="o">.</span><span class="n">View</span><span class="o">.</span><span class="n">FRONT</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">Canon</span><span class="o">.</span><span class="n">Models</span><span class="o">.</span><span class="n">GEOMETRIC</span><span class="p">,</span>
 </span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="p">)</span>
 </span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>
 </span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="c1"># Or from a detection-results JSON with keypoints_3d</span>
 </span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="n">data</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">PoseCanonicalizer</span><span class="o">.</span><span class="n">process_json_file</span><span class="p">(</span>
-</span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a>    <span class="s2">&quot;output/..._with_3d_keypoints.json&quot;</span><span class="p">,</span> <span class="n">output_path</span><span class="o">=</span><span class="s2">&quot;output/canonical.json&quot;</span><span class="p">,</span>
-</span><span id="__span-7-10"><a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a>    <span class="n">view</span><span class="o">=</span><span class="s2">&quot;front&quot;</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">Canon</span><span class="o">.</span><span class="n">Models</span><span class="o">.</span><span class="n">GEOMETRIC</span><span class="p">,</span>
+</span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a>    <span class="s2">"output/..._with_3d_keypoints.json"</span><span class="p">,</span> <span class="n">output_path</span><span class="o">=</span><span class="s2">"output/canonical.json"</span><span class="p">,</span>
+</span><span id="__span-7-10"><a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a>    <span class="n">view</span><span class="o">=</span><span class="s2">"front"</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">Canon</span><span class="o">.</span><span class="n">Models</span><span class="o">.</span><span class="n">GEOMETRIC</span><span class="p">,</span>
 </span><span id="__span-7-11"><a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a><span class="p">)</span>
 </span></code></pre></div>
 </div>
@@ -2392,18 +2422,18 @@ default <code>apply_transform=True</code> converts standard-format input for you
 </span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="n">gts</span>   <span class="o">=</span> <span class="o">...</span>   <span class="c1"># (N, 17, 3) ground-truth 3D poses</span>
 </span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>
 </span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="n">metrics</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">evaluate_pose_predictions</span><span class="p">(</span><span class="n">preds</span><span class="p">,</span> <span class="n">gts</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="mf">1000.0</span><span class="p">)</span>  <span class="c1"># meters -&gt; mm</span>
-</span><span id="__span-8-7"><a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;MPJPE </span><span class="si">{</span><span class="n">metrics</span><span class="p">[</span><span class="s1">&#39;mpjpe&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> mm, PA-MPJPE </span><span class="si">{</span><span class="n">metrics</span><span class="p">[</span><span class="s1">&#39;pampjpe&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> mm&quot;</span><span class="p">)</span>
+</span><span id="__span-8-7"><a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"MPJPE </span><span class="si">{</span><span class="n">metrics</span><span class="p">[</span><span class="s1">'mpjpe'</span><span class="p">]</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> mm, PA-MPJPE </span><span class="si">{</span><span class="n">metrics</span><span class="p">[</span><span class="s1">'pampjpe'</span><span class="p">]</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> mm"</span><span class="p">)</span>
 </span><span id="__span-8-8"><a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a>
 </span><span id="__span-8-9"><a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a><span class="c1"># Canonicalization quality, incl. rotation error</span>
 </span><span id="__span-8-10"><a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a><span class="n">canonical</span><span class="p">,</span> <span class="n">rotation</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">canonicalize_pose</span><span class="p">(</span>
 </span><span id="__span-8-11"><a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a>    <span class="n">preds</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">pt</span><span class="o">.</span><span class="n">Models</span><span class="o">.</span><span class="n">Pose3D</span><span class="o">.</span><span class="n">Canonicalizer</span><span class="o">.</span><span class="n">Models</span><span class="o">.</span><span class="n">GEOMETRIC</span><span class="p">,</span>
-</span><span id="__span-8-12"><a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a>    <span class="n">view</span><span class="o">=</span><span class="s2">&quot;front&quot;</span><span class="p">,</span> <span class="n">return_rotation</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+</span><span id="__span-8-12"><a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a>    <span class="n">view</span><span class="o">=</span><span class="s2">"front"</span><span class="p">,</span> <span class="n">return_rotation</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 </span><span id="__span-8-13"><a id="__codelineno-8-13" name="__codelineno-8-13" href="#__codelineno-8-13"></a><span class="p">)</span>
 </span><span id="__span-8-14"><a id="__codelineno-8-14" name="__codelineno-8-14" href="#__codelineno-8-14"></a><span class="n">scores</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">evaluate_canonicalization</span><span class="p">(</span>
 </span><span id="__span-8-15"><a id="__codelineno-8-15" name="__codelineno-8-15" href="#__codelineno-8-15"></a>    <span class="n">canonical</span><span class="p">,</span> <span class="n">gt_canonical</span><span class="p">,</span>
 </span><span id="__span-8-16"><a id="__codelineno-8-16" name="__codelineno-8-16" href="#__codelineno-8-16"></a>    <span class="n">pred_rotation</span><span class="o">=</span><span class="n">rotation</span><span class="p">,</span> <span class="n">gt_rotation</span><span class="o">=</span><span class="n">gt_rotation</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="mf">1000.0</span><span class="p">,</span>
 </span><span id="__span-8-17"><a id="__codelineno-8-17" name="__codelineno-8-17" href="#__codelineno-8-17"></a><span class="p">)</span>
-</span><span id="__span-8-18"><a id="__codelineno-8-18" name="__codelineno-8-18" href="#__codelineno-8-18"></a><span class="nb">print</span><span class="p">(</span><span class="n">scores</span><span class="p">[</span><span class="s2">&quot;mpjpe&quot;</span><span class="p">],</span> <span class="n">scores</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;rotation_error_deg&quot;</span><span class="p">))</span>
+</span><span id="__span-8-18"><a id="__codelineno-8-18" name="__codelineno-8-18" href="#__codelineno-8-18"></a><span class="nb">print</span><span class="p">(</span><span class="n">scores</span><span class="p">[</span><span class="s2">"mpjpe"</span><span class="p">],</span> <span class="n">scores</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"rotation_error_deg"</span><span class="p">))</span>
 </span></code></pre></div>
 <div class="admonition tip">
 <p class="admonition-title">MPJPE vs PA-MPJPE</p>

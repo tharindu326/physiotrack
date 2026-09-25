@@ -29,7 +29,7 @@
     
     
       
-        <title>Face & Head Orientation - Physiotrack</title>
+        <title>Face Analysis - Physiotrack</title>
       
     
     
@@ -84,7 +84,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#face-head-orientation" class="md-skip">
+        <a href="#face-analysis" class="md-skip">
           Skip to content
         </a>
       
@@ -120,7 +120,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Face & Head Orientation
+              Face Analysis
             
           </span>
         </div>
@@ -841,7 +841,7 @@
   <span class="md-ellipsis">
     
   
-    Face & Head Orientation
+    Face Analysis
   
 
     
@@ -859,7 +859,7 @@
   <span class="md-ellipsis">
     
   
-    Face & Head Orientation
+    Face Analysis
   
 
     
@@ -921,10 +921,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#head-pose-estimator" class="md-nav__link">
+  <a href="#face-stage-models" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Head-pose estimator
+        Face-stage models
       
     </span>
   </a>
@@ -960,10 +960,21 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#drawing-the-pose-axis" class="md-nav__link">
+  <a href="#faces-in-a-video" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Drawing the pose axis
+        Faces in a video
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#facial-regions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Facial regions
       
     </span>
   </a>
@@ -987,10 +998,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#runnable-detection-and-tracking-examples" class="md-nav__link">
+  <a href="#runnable-examples" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Runnable detection and tracking examples
+        Runnable examples
       
     </span>
   </a>
@@ -1739,6 +1750,8 @@
       
         
       
+        
+      
     
     
     
@@ -1836,6 +1849,34 @@
     
   
     Motion & Features
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/signals/face/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Face Signals
   
 
     
@@ -2039,10 +2080,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#head-pose-estimator" class="md-nav__link">
+  <a href="#face-stage-models" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Head-pose estimator
+        Face-stage models
       
     </span>
   </a>
@@ -2078,10 +2119,21 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#drawing-the-pose-axis" class="md-nav__link">
+  <a href="#faces-in-a-video" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Drawing the pose axis
+        Faces in a video
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#facial-regions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Facial regions
       
     </span>
   </a>
@@ -2105,10 +2157,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#runnable-detection-and-tracking-examples" class="md-nav__link">
+  <a href="#runnable-examples" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Runnable detection and tracking examples
+        Runnable examples
       
     </span>
   </a>
@@ -2146,33 +2198,86 @@
   
 
 
-<h1 id="face-head-orientation">Face &amp; Head Orientation<a class="headerlink" href="#face-head-orientation" title="Permanent link">&para;</a></h1>
-<p>Detect faces and estimate each face's 3D <strong>head pose</strong> — yaw, pitch, and roll.
-Physiotrack pairs a lightweight face detector (<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Face&lt;/span&gt;" href="../../api/face/#physiotrack.Face"><code>Face</code></a> or the
-VR-tuned <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VRFace&lt;/span&gt;" href="../../api/face/#physiotrack.VRFace"><code>VRFace</code></a>) with a head-pose estimator
-(<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;FaceOrientation&lt;/span&gt;" href="../../api/face/#physiotrack.FaceOrientation"><code>FaceOrientation</code></a>, 6DRepNet360). Use it for gaze
-proxies, attention/engagement analysis, or head-motion tracking — including
-subjects wearing head-mounted displays.</p>
-<p>Detection returns a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Result&lt;/span&gt;" href="../../api/results/#physiotrack.Result"><code>Result</code></a> with <code>task="face"</code> whose
-instances carry face boxes; orientation adds an <code>orientation</code> dict per
-<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Instance&lt;/span&gt;" href="../../api/results/#physiotrack.Instance"><code>Instance</code></a>, and <code>result.plot()</code> draws the pose axes.</p>
+<h1 id="face-analysis">Face Analysis<a class="headerlink" href="#face-analysis" title="Permanent link">&para;</a></h1>
+<p>Find faces and analyse each one: head orientation, a 478-point face mesh, facial
+expression, 3D gaze and image quality. From the face mesh the
+<a href="../signals/#face-signals">signals</a> functions measure the eyes, mouth and iris, and over
+a video they turn those measures into blinks, blink rate and mouth movement.</p>
+<p>Face analysis is built from two kinds of object:</p>
+<ul>
+<li><strong>Face detectors</strong> — <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Face&lt;/span&gt;" href="../../api/face/#physiotrack.Face"><code>Face</code></a> and the VR-tuned
+  <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VRFace&lt;/span&gt;" href="../../api/face/#physiotrack.VRFace"><code>VRFace</code></a> — return a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Result&lt;/span&gt;" href="../../api/results/#physiotrack.Result"><code>Result</code></a> with
+  <code>task="face"</code> whose instances are face boxes.</li>
+<li><strong>Face stages</strong> each add one property to every face they are given, and return the
+  same faces with that field filled in. They chain, and the same objects plug into
+  <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Video&lt;/span&gt;" href="../../api/video/#physiotrack.Video"><code>Video</code></a> as <code>face_stages=[...]</code>.</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Stage</th>
+<th>Adds</th>
+<th>Model</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;FaceOrientation&lt;/span&gt;" href="../../api/face/#physiotrack.FaceOrientation"><code>FaceOrientation</code></a></td>
+<td><code>orientation</code> — yaw / pitch / roll (deg)</td>
+<td>6DRepNet360</td>
+</tr>
+<tr>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;FaceLandmarks&lt;/span&gt;" href="../../api/face/#physiotrack.FaceLandmarks"><code>FaceLandmarks</code></a></td>
+<td><code>keypoints</code> — 478-point <code>"FACEMESH"</code></td>
+<td>MediaPipe Face Landmarker</td>
+</tr>
+<tr>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;FaceExpression&lt;/span&gt;" href="../../api/face/#physiotrack.FaceExpression"><code>FaceExpression</code></a></td>
+<td><code>expression</code> — AffectNet category (+ valence / arousal)</td>
+<td>EmotiEffLib EfficientNets</td>
+</tr>
+<tr>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;GazeEstimator&lt;/span&gt;" href="../../api/face/#physiotrack.GazeEstimator"><code>GazeEstimator</code></a></td>
+<td><code>gaze</code> — 3D direction + angles</td>
+<td>ETH-XGaze / MPIIFaceGaze / MPIIGaze</td>
+</tr>
+<tr>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;FaceQuality&lt;/span&gt;" href="../../api/face/#physiotrack.FaceQuality"><code>FaceQuality</code></a></td>
+<td><code>quality</code> — brightness, sharpness, size</td>
+<td>none</td>
+</tr>
+<tr>
+<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;FaceRegions&lt;/span&gt;" href="../../api/face/#physiotrack.FaceRegions"><code>FaceRegions</code></a></td>
+<td><code>regions</code> — visible face parts per box (skin, eyes, ...)</td>
+<td>SegFace</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition info">
+<p class="admonition-title">Install the face extra</p>
+<p>Detection, orientation and quality need nothing beyond the base install.
+<code>FaceLandmarks</code>, <code>FaceExpression</code> and <code>GazeEstimator</code> need
+<code>pip install "physiotrack[face]"</code>, which adds MediaPipe, ONNX Runtime and
+safetensors.</p>
+</div>
 <h2 id="quick-start">Quick start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h2>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">cv2</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">physiotrack</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pt</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">physiotrack</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pt</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">physiotrack.core.predictor</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_image</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">face_detector</span>   <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">VRFace</span><span class="p">(</span><span class="n">device</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">face_orientation</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">FaceOrientation</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="n">pt</span><span class="o">.</span><span class="n">Models</span><span class="o">.</span><span class="n">Pose3D</span><span class="o">.</span><span class="n">FaceOrientation</span><span class="o">.</span><span class="n">VR</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="n">img</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">imread</span><span class="p">(</span><span class="s2">&quot;kinect_s1_v1_frame1.png&quot;</span><span class="p">)</span>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="c1"># Detect faces, then estimate head pose from the boxes</span>
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="n">boxes</span>  <span class="o">=</span> <span class="n">face_detector</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">img</span><span class="p">)</span><span class="o">.</span><span class="n">boxes</span>          <span class="c1"># (N, 4) ndarray</span>
-</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="n">result</span> <span class="o">=</span> <span class="n">face_orientation</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">img</span><span class="p">,</span> <span class="n">boxes</span><span class="p">)</span>       <span class="c1"># Result(task=&quot;face&quot;)</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">image</span> <span class="o">=</span> <span class="n">load_image</span><span class="p">(</span><span class="s2">"photo.jpg"</span><span class="p">)</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="n">faces</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">Face</span><span class="p">()(</span><span class="n">image</span><span class="p">)</span>                          <span class="c1"># Result(task="face"): face boxes</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="n">faces</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">FaceOrientation</span><span class="p">()(</span><span class="n">image</span><span class="p">,</span> <span class="n">faces</span><span class="p">)</span>        <span class="c1"># + orientation</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="n">faces</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">FaceLandmarks</span><span class="p">()(</span><span class="n">image</span><span class="p">,</span> <span class="n">faces</span><span class="p">)</span>          <span class="c1"># + 478-point face mesh</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="n">faces</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">FaceExpression</span><span class="p">()(</span><span class="n">image</span><span class="p">,</span> <span class="n">faces</span><span class="p">)</span>         <span class="c1"># + expression</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="n">faces</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">GazeEstimator</span><span class="p">()(</span><span class="n">image</span><span class="p">,</span> <span class="n">faces</span><span class="p">)</span>          <span class="c1"># + gaze (needs the mesh)</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="n">faces</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">FaceQuality</span><span class="p">()(</span><span class="n">image</span><span class="p">,</span> <span class="n">faces</span><span class="p">)</span>            <span class="c1"># + quality</span>
 </span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>
-</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="k">for</span> <span class="n">inst</span> <span class="ow">in</span> <span class="n">result</span><span class="p">:</span>
-</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">inst</span><span class="o">.</span><span class="n">orientation</span><span class="p">)</span>                         <span class="c1"># {&quot;yaw&quot;:.., &quot;pitch&quot;:.., &quot;roll&quot;:..}</span>
-</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>
-</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="n">cv2</span><span class="o">.</span><span class="n">imwrite</span><span class="p">(</span><span class="s2">&quot;face_orientation_output.png&quot;</span><span class="p">,</span> <span class="n">result</span><span class="o">.</span><span class="n">plot</span><span class="p">())</span>   <span class="c1"># draws pose axes</span>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="k">for</span> <span class="n">face</span> <span class="ow">in</span> <span class="n">faces</span><span class="p">:</span>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">face</span><span class="o">.</span><span class="n">orientation</span><span class="p">,</span> <span class="n">face</span><span class="o">.</span><span class="n">expression</span><span class="p">[</span><span class="s2">"label"</span><span class="p">],</span> <span class="n">face</span><span class="o">.</span><span class="n">gaze</span><span class="p">[</span><span class="s2">"yaw"</span><span class="p">])</span>
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">pt</span><span class="o">.</span><span class="n">signals</span><span class="o">.</span><span class="n">eye_aspect_ratio</span><span class="p">(</span><span class="n">face</span><span class="p">))</span>      <span class="c1"># {'left': .., 'right': .., 'mean': ..}</span>
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>
+</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="n">faces</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s2">"faces.png"</span><span class="p">)</span>                           <span class="c1"># boxes, head axes, mesh, gaze, labels</span>
 </span></code></pre></div>
 <h2 id="available-presets">Available presets<a class="headerlink" href="#available-presets" title="Permanent link">&para;</a></h2>
 <h3 id="face-detectors">Face detectors<a class="headerlink" href="#face-detectors" title="Permanent link">&para;</a></h3>
@@ -2188,7 +2293,7 @@ instances carry face boxes; orientation adds an <code>orientation</code> dict pe
 <tr>
 <td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Face&lt;/span&gt;" href="../../api/face/#physiotrack.Face"><code>Face</code></a></td>
 <td><code>Models.Detection.YOLO.FACE.m_face</code></td>
-<td>General-purpose YOLO face detector.</td>
+<td>General-purpose YOLO face detector (<code>n_face</code>, <code>m_face</code>, <code>l_face</code>).</td>
 </tr>
 <tr>
 <td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VRFace&lt;/span&gt;" href="../../api/face/#physiotrack.VRFace"><code>VRFace</code></a></td>
@@ -2198,135 +2303,239 @@ instances carry face boxes; orientation adds an <code>orientation</code> dict pe
 </tbody>
 </table>
 <p>Both take the standard detector arguments (<code>conf=0.25</code>, <code>iou=0.45</code>, <code>classes</code>,
-<code>device</code>, <code>verbose</code>), return a <code>Result</code> with <code>task="face"</code>, and can be called
-directly (<code>face(img)</code>) as an alias for <code>predict</code>.</p>
-<h3 id="head-pose-estimator">Head-pose estimator<a class="headerlink" href="#head-pose-estimator" title="Permanent link">&para;</a></h3>
+<code>device</code>, <code>verbose</code>).</p>
+<h3 id="face-stage-models">Face-stage models<a class="headerlink" href="#face-stage-models" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
 <th>Model enum</th>
+<th>Stage</th>
 <th>Description</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>Models.Pose3D.FaceOrientation.default</code></td>
-<td>General 6DRepNet360 (300W-LP + Panoptic). Used when <code>model=None</code>.</td>
+<td><code>Models.Face.Orientation.default</code></td>
+<td><code>FaceOrientation</code></td>
+<td>6DRepNet360 (300W-LP + Panoptic).</td>
 </tr>
 <tr>
-<td><code>Models.Pose3D.FaceOrientation.VR</code></td>
-<td>VR-tuned variant for headset-wearing subjects.</td>
+<td><code>Models.Face.Orientation.VR</code></td>
+<td><code>FaceOrientation</code></td>
+<td>VR-tuned variant for headset wearers.</td>
+</tr>
+<tr>
+<td><code>Models.Face.Landmarks.face_landmarker</code></td>
+<td><code>FaceLandmarks</code></td>
+<td>MediaPipe Face Landmarker, 468 + 10 iris points.</td>
+</tr>
+<tr>
+<td><code>Models.Face.Expression.enet_b0_8_best_afew</code></td>
+<td><code>FaceExpression</code></td>
+<td>EfficientNet-B0, 8 categories, fine-tuned on AFEW (default).</td>
+</tr>
+<tr>
+<td><code>Models.Face.Expression.enet_b0_8_best_vgaf</code></td>
+<td><code>FaceExpression</code></td>
+<td>EfficientNet-B0, 8 categories, fine-tuned on VGAF.</td>
+</tr>
+<tr>
+<td><code>Models.Face.Expression.enet_b0_8_va_mtl</code></td>
+<td><code>FaceExpression</code></td>
+<td>EfficientNet-B0, 8 categories plus valence and arousal.</td>
+</tr>
+<tr>
+<td><code>Models.Face.Expression.enet_b2_8</code> / <code>enet_b2_7</code></td>
+<td><code>FaceExpression</code></td>
+<td>EfficientNet-B2, 8 or 7 (no Contempt) categories.</td>
+</tr>
+<tr>
+<td><code>Models.Face.Gaze.eth_xgaze_resnet18</code></td>
+<td><code>GazeEstimator</code></td>
+<td>Full face, ETH-XGaze; robust to large head rotations (default).</td>
+</tr>
+<tr>
+<td><code>Models.Face.Gaze.mpiifacegaze_resnet_simple</code></td>
+<td><code>GazeEstimator</code></td>
+<td>Full face, MPIIFaceGaze.</td>
+</tr>
+<tr>
+<td><code>Models.Face.Gaze.mpiigaze_resnet_preact</code></td>
+<td><code>GazeEstimator</code></td>
+<td>Each eye, MPIIGaze; the face's gaze is the mean of its eyes.</td>
+</tr>
+<tr>
+<td><code>Models.Segmentation.SegFace.Face.swinb_celeba_512</code></td>
+<td><code>FaceRegions</code></td>
+<td>SegFace face parsing, 19 CelebAMask-HQ classes.</td>
 </tr>
 </tbody>
 </table>
-<p>See the <a href="../../model-zoo/">Model Zoo</a> for weights and downloads.</p>
+<p>All weights download into the model cache on first use; the third-party ones come from
+their publishers at a pinned revision and are verified by SHA-256. See the
+<a href="../../model-zoo/">Model Zoo</a>.</p>
+<div class="admonition warning">
+<p class="admonition-title">Non-commercial weights</p>
+<p>The expression weights are trained on AffectNet and the gaze weights on ETH-XGaze,
+MPIIGaze and MPIIFaceGaze, whose licences allow research use only. See
+<code>THIRD_PARTY_LICENSES.md</code>.</p>
+</div>
 <h2 id="key-options">Key options<a class="headerlink" href="#key-options" title="Permanent link">&para;</a></h2>
-<p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;FaceOrientation&lt;/span&gt;" href="../../api/face/#physiotrack.FaceOrientation"><code>FaceOrientation</code></a> constructor:</p>
+<p>Every stage is called the same way:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">stage</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">faces</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>      <span class="c1"># or stage(source, faces)</span>
+</span></code></pre></div>
+<ul>
+<li><code>source</code> is a BGR image, an image path, or a list of either (a batch).</li>
+<li><code>faces</code> is what to analyse: a face <code>Result</code> (from a detector or an earlier stage), a
+  tracker's <code>TrackResult</code>, or <code>(N, 4)</code> boxes. For a batch, pass one entry per image.
+  <code>None</code> treats the whole image as one face.</li>
+<li>The output keeps the input faces in order — their <code>id</code>, <code>box</code> and every field an
+  earlier stage filled in — and adds this stage's field. A face the model could not
+  analyse (e.g. no mesh found) keeps its instance with the field <code>None</code>.</li>
+</ul>
 <table>
 <thead>
 <tr>
-<th>Argument</th>
-<th>Default</th>
-<th>Purpose</th>
+<th>Stage</th>
+<th>Constructor options</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>model</code></td>
-<td><code>None</code> → <code>FaceOrientation.default</code></td>
-<td>Orientation model variant.</td>
+<td><code>FaceOrientation</code></td>
+<td><code>model</code>, <code>device</code></td>
 </tr>
 <tr>
-<td><code>device</code></td>
-<td><code>'cpu'</code></td>
-<td><code>'cpu'</code>, <code>'cuda'</code>, or a device id like <code>0</code>.</td>
+<td><code>FaceLandmarks</code></td>
+<td><code>model</code> (MediaPipe runs on the CPU)</td>
 </tr>
 <tr>
-<td><code>verbose</code></td>
-<td><code>False</code></td>
-<td>Print progress / download notes.</td>
+<td><code>FaceExpression</code></td>
+<td><code>model</code>, <code>device</code> (CUDA needs <code>onnxruntime-gpu</code>)</td>
+</tr>
+<tr>
+<td><code>GazeEstimator</code></td>
+<td><code>model</code>, <code>device</code>, <code>camera_matrix=None</code>, <code>dist_coeffs=None</code></td>
+</tr>
+<tr>
+<td><code>FaceQuality</code></td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>FaceRegions</code></td>
+<td><code>model</code>, <code>device</code></td>
 </tr>
 </tbody>
 </table>
-<p><code>predict(source, bboxes=None)</code> takes a BGR frame <code>(H, W, 3)</code>, a path to an image
-file, or a list of either, plus face boxes <code>(N, 4)</code> as <code>[x1, y1, x2, y2]</code>. If
-<code>bboxes</code> is omitted the <strong>whole image is treated as a single face</strong>, so pass boxes
-from a detector for multi-face frames. Pass a list of frames (and a matching list of
-box arrays) for batch inference; the return is then a list of results, one per frame.
-Calling the instance (<code>orient(frame, boxes)</code>) is an alias for <code>predict</code>.</p>
+<p>Each stage analyses a face on a fixed, validated crop: 1.2x the box for orientation,
+1.25x for landmarks (square, padded at the frame border), the box itself for
+expression, quality and regions. A face whose box lies outside the frame is skipped.</p>
+<p>A stage that needs another's output says so: <code>GazeEstimator</code> requires the face mesh,
+so it must come after <code>FaceLandmarks</code>, and raises a clear error otherwise.</p>
 <div class="admonition note">
-<p class="admonition-title">The <code>orientation</code> dict</p>
-<p>Each returned <code>Instance</code> has <code>inst.orientation</code> = <code>{"yaw", "pitch", "roll"}</code>
-in <strong>degrees</strong>. Other instance fields follow the shared
-<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Instance&lt;/span&gt;" href="../../api/results/#physiotrack.Instance"><code>Instance</code></a> contract — <code>inst.box</code> holds the face box.</p>
+<p class="admonition-title">Units and conventions</p>
+<ul>
+<li><code>orientation</code> — yaw, pitch, roll in degrees, as drawn by the head axes.</li>
+<li><code>gaze["vector"]</code> — unit direction in camera coordinates (x right, y down,
+  z forward; looking at the camera is <code>[0, 0, -1]</code>). <code>gaze["yaw"]</code> is positive
+  towards the image right and <code>gaze["pitch"]</code> positive downwards, in degrees.
+  These are camera-frame gaze angles, not head angles.</li>
+<li><code>expression</code> — <code>{"label", "confidence", "scores"}</code> with probabilities over
+  <code>Anger, Contempt, Disgust, Fear, Happiness, Neutral, Sadness, Surprise</code>. The
+  categories describe the visible facial configuration, not what a person feels.</li>
+<li><code>quality</code> — <code>brightness</code> in <code>[0, 1]</code>, <code>sharpness</code> as the Laplacian variance of
+  the crop resized to 112 × 112 px, <code>area_ratio</code> of face box to frame.</li>
+<li>Face-mesh keypoints carry <code>confidence=None</code>: MediaPipe reports none.</li>
+</ul>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Gaze needs the camera</p>
+<p>Gaze estimation fits a 3D head to the face mesh, which depends on the camera's
+focal length. Without <code>camera_matrix</code> a pinhole camera with focal length equal to
+the image width is assumed; pass calibrated intrinsics, and <code>dist_coeffs</code> for a
+lens with distortion, for better accuracy.</p>
 </div>
 <h2 id="working-with-results">Working with results<a class="headerlink" href="#working-with-results" title="Permanent link">&para;</a></h2>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">result</span> <span class="o">=</span> <span class="n">face_orientation</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">img</span><span class="p">,</span> <span class="n">boxes</span><span class="p">)</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="k">for</span> <span class="n">inst</span> <span class="ow">in</span> <span class="n">result</span><span class="p">:</span>                 <span class="c1"># each face is an Instance</span>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    <span class="n">yaw</span>   <span class="o">=</span> <span class="n">inst</span><span class="o">.</span><span class="n">orientation</span><span class="p">[</span><span class="s2">&quot;yaw&quot;</span><span class="p">]</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    <span class="n">pitch</span> <span class="o">=</span> <span class="n">inst</span><span class="o">.</span><span class="n">orientation</span><span class="p">[</span><span class="s2">&quot;pitch&quot;</span><span class="p">]</span>
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    <span class="n">roll</span>  <span class="o">=</span> <span class="n">inst</span><span class="o">.</span><span class="n">orientation</span><span class="p">[</span><span class="s2">&quot;roll&quot;</span><span class="p">]</span>
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>    <span class="n">x1</span><span class="p">,</span> <span class="n">y1</span><span class="p">,</span> <span class="n">x2</span><span class="p">,</span> <span class="n">y2</span> <span class="o">=</span> <span class="n">inst</span><span class="o">.</span><span class="n">box</span>       <span class="c1"># (4,) face box</span>
-</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>
-</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="n">result</span><span class="o">.</span><span class="n">boxes</span>        <span class="c1"># (N, 4) all face boxes</span>
-</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="n">result</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>    <span class="c1"># JSON-friendly dict; orientation stays under &quot;orientation&quot;</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">face</span> <span class="o">=</span> <span class="n">faces</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">face</span><span class="o">.</span><span class="n">box</span>                               <span class="c1"># (4,) face box</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">face</span><span class="o">.</span><span class="n">orientation</span><span class="p">[</span><span class="s2">"yaw"</span><span class="p">]</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">mesh</span> <span class="o">=</span> <span class="n">face</span><span class="o">.</span><span class="n">keypoints</span>                  <span class="c1"># Keypoints, architecture "FACEMESH"</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="n">mesh</span><span class="o">.</span><span class="n">by_name</span><span class="p">(</span><span class="s2">"left_iris_center"</span><span class="p">)</span>       <span class="c1"># named points: eyes, iris, lips, nose tip, chin</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="n">mesh</span><span class="o">.</span><span class="n">xy</span>                                <span class="c1"># (478, 2) pixel coordinates</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="n">faces</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>                        <span class="c1"># face meshes flagged, omitted (large)</span>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="n">faces</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(</span><span class="n">include_arrays</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>     <span class="c1"># ... or included</span>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="n">pt</span><span class="o">.</span><span class="n">Result</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>              <span class="c1"># back to objects</span>
 </span></code></pre></div>
-<p>See <a href="../../api/results/">Result objects</a> for the full container API.</p>
-<h3 id="drawing-the-pose-axis">Drawing the pose axis<a class="headerlink" href="#drawing-the-pose-axis" title="Permanent link">&para;</a></h3>
-<p><code>result.plot()</code> renders the yaw/pitch/roll axes automatically. For manual control
-you can call the drawing helpers directly:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">physiotrack.face</span><span class="w"> </span><span class="kn">import</span> <span class="n">draw_axis</span><span class="p">,</span> <span class="n">plot_pose_cube</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">vis</span> <span class="o">=</span> <span class="n">img</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="k">for</span> <span class="n">inst</span> <span class="ow">in</span> <span class="n">result</span><span class="p">:</span>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    <span class="n">pose</span> <span class="o">=</span> <span class="n">inst</span><span class="o">.</span><span class="n">orientation</span>
-</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>    <span class="n">x1</span><span class="p">,</span> <span class="n">y1</span><span class="p">,</span> <span class="n">x2</span><span class="p">,</span> <span class="n">y2</span> <span class="o">=</span> <span class="n">inst</span><span class="o">.</span><span class="n">box</span>
-</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>    <span class="n">cx</span><span class="p">,</span> <span class="n">cy</span> <span class="o">=</span> <span class="nb">int</span><span class="p">((</span><span class="n">x1</span> <span class="o">+</span> <span class="n">x2</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span><span class="p">),</span> <span class="nb">int</span><span class="p">((</span><span class="n">y1</span> <span class="o">+</span> <span class="n">y2</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span>
-</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>    <span class="n">size</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">x2</span> <span class="o">-</span> <span class="n">x1</span><span class="p">,</span> <span class="n">y2</span> <span class="o">-</span> <span class="n">y1</span><span class="p">)</span> <span class="o">*</span> <span class="mf">0.6</span>
-</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>
-</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>    <span class="n">vis</span> <span class="o">=</span> <span class="n">draw_axis</span><span class="p">(</span><span class="n">vis</span><span class="p">,</span> <span class="n">yaw</span><span class="o">=</span><span class="n">pose</span><span class="p">[</span><span class="s2">&quot;yaw&quot;</span><span class="p">],</span> <span class="n">pitch</span><span class="o">=</span><span class="n">pose</span><span class="p">[</span><span class="s2">&quot;pitch&quot;</span><span class="p">],</span> <span class="n">roll</span><span class="o">=</span><span class="n">pose</span><span class="p">[</span><span class="s2">&quot;roll&quot;</span><span class="p">],</span>
-</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>                    <span class="n">tdx</span><span class="o">=</span><span class="n">cx</span><span class="p">,</span> <span class="n">tdy</span><span class="o">=</span><span class="n">cy</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="n">size</span><span class="p">)</span>
-</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>    <span class="c1"># or plot_pose_cube(...) for a projected cube instead of axes</span>
-</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>
-</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a><span class="n">cv2</span><span class="o">.</span><span class="n">imwrite</span><span class="p">(</span><span class="s2">&quot;face_orientation_output_manual.png&quot;</span><span class="p">,</span> <span class="n">vis</span><span class="p">)</span>
+<p>Face-mesh points use MediaPipe's numbering and the subject's own left and right. Only
+the points the library measures have semantic names; the rest are <code>facemesh_&lt;id&gt;</code>.</p>
+<h3 id="faces-in-a-video">Faces in a video<a class="headerlink" href="#faces-in-a-video" title="Permanent link">&para;</a></h3>
+<p>Pass the stages to <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Video&lt;/span&gt;" href="../../api/video/#physiotrack.Video"><code>Video</code></a>. Faces come from one of two places:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># 1. Faces of tracked people: each face gets the track id of its person.</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">video</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">Video</span><span class="p">(</span><span class="s2">"clip.mp4"</span><span class="p">,</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>                 <span class="n">detector</span><span class="o">=</span><span class="n">pt</span><span class="o">.</span><span class="n">Detection</span><span class="o">.</span><span class="n">Person</span><span class="p">(),</span> <span class="n">tracker</span><span class="o">=</span><span class="n">pt</span><span class="o">.</span><span class="n">Tracker</span><span class="p">(),</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>                 <span class="n">pose</span><span class="o">=...</span><span class="p">,</span> <span class="n">face</span><span class="o">=</span><span class="n">pt</span><span class="o">.</span><span class="n">Face</span><span class="p">(),</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>                 <span class="n">face_stages</span><span class="o">=</span><span class="p">[</span><span class="n">pt</span><span class="o">.</span><span class="n">FaceOrientation</span><span class="p">(),</span> <span class="n">pt</span><span class="o">.</span><span class="n">FaceLandmarks</span><span class="p">()])</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="c1"># 2. The faces themselves are the tracked subjects.</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="n">video</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">Video</span><span class="p">(</span><span class="s2">"clip.mp4"</span><span class="p">,</span> <span class="n">detector</span><span class="o">=</span><span class="n">pt</span><span class="o">.</span><span class="n">Face</span><span class="p">(),</span> <span class="n">tracker</span><span class="o">=</span><span class="n">pt</span><span class="o">.</span><span class="n">Tracker</span><span class="p">(),</span>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>                 <span class="n">face_stages</span><span class="o">=</span><span class="p">[</span><span class="n">pt</span><span class="o">.</span><span class="n">FaceLandmarks</span><span class="p">(),</span> <span class="n">pt</span><span class="o">.</span><span class="n">FaceExpression</span><span class="p">()])</span>
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>
+</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="n">results</span> <span class="o">=</span> <span class="n">video</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="n">results</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">faces</span>                        <span class="c1"># Result(task="face") of frame 0</span>
 </span></code></pre></div>
+<p>A face is matched to the person box that contains most of it, one face per person.
+Without a tracker, face <code>id</code>s are <code>None</code>. The faces are drawn onto the output video
+and saved under <code>"faces"</code> in its JSON.</p>
+<p>Then use the face signals on the <code>VideoResults</code>:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">df</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">signals</span><span class="o">.</span><span class="n">face_feature_sequence</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>          <span class="c1"># one row per face per frame</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="n">blinks</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">signals</span><span class="o">.</span><span class="n">detect_blinks</span><span class="p">(</span><span class="n">results</span><span class="p">,</span> <span class="n">detection_id</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">rate</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">signals</span><span class="o">.</span><span class="n">blink_rate</span><span class="p">(</span><span class="n">results</span><span class="p">,</span> <span class="n">detection_id</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>    <span class="c1"># blinks / min</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="n">mouth</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">signals</span><span class="o">.</span><span class="n">mouth_movement</span><span class="p">(</span><span class="n">results</span><span class="p">,</span> <span class="n">detection_id</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="n">windows</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">signals</span><span class="o">.</span><span class="n">face_window_summary</span><span class="p">(</span><span class="n">results</span><span class="p">,</span> <span class="n">window</span><span class="o">=</span><span class="mf">5.0</span><span class="p">)</span>   <span class="c1"># per-face 5-s stats</span>
+</span></code></pre></div>
+<p>See <a href="../signals/#face-signals">Face signals</a> for the definitions.</p>
+<h3 id="facial-regions">Facial regions<a class="headerlink" href="#facial-regions" title="Permanent link">&para;</a></h3>
+<p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;FaceRegions&lt;/span&gt;" href="../../api/face/#physiotrack.FaceRegions"><code>FaceRegions</code></a> parses each face with SegFace and reports the
+share of its box per face part — how much is visible skin, hair, glasses, a hat:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">faces</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">FaceRegions</span><span class="p">()(</span><span class="n">image</span><span class="p">,</span> <span class="n">faces</span><span class="p">)</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="n">faces</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">regions</span><span class="p">[</span><span class="s2">"fractions"</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"skin"</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>  <span class="c1"># share of the box that is skin</span>
+</span></code></pre></div>
+<p>For the frame-level parsing and its colour overlay, use
+<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Segmentation&lt;/span&gt;" href="../../api/segmentation/#physiotrack.Segmentation"><code>Segmentation.Face</code></a>.</p>
 <h2 id="recipes-tips">Recipes &amp; tips<a class="headerlink" href="#recipes-tips" title="Permanent link">&para;</a></h2>
 <div class="admonition tip">
-<p class="admonition-title">Reuse detector boxes</p>
-<p>Detect once, orient many: pass the detector's <code>.boxes</code> straight into
-<code>face_orientation.predict(img, boxes)</code> rather than re-running detection.</p>
+<p class="admonition-title">Detect once, analyse many</p>
+<p>Pass one detector result through every stage rather than re-detecting. In a
+<code>Video</code>, the rPPG skin segmentation also reuses the face boxes.</p>
 </div>
 <div class="admonition warning">
-<p class="admonition-title">First run downloads weights</p>
-<p>On first use the face and orientation weights auto-download (from Hugging
-Face, with a 6DRepNet source fallback for the orientation model).</p>
+<p class="admonition-title">Small or turned faces</p>
+<p>The face mesh needs a reasonably frontal face of about 50 px or more. Smaller or
+strongly turned faces often get <code>keypoints=None</code>, and so no eye, mouth, iris or
+gaze measures.</p>
 </div>
-<div class="admonition info">
-<p class="admonition-title">Face parsing / skin segmentation lives elsewhere</p>
-<p>Per-pixel face <strong>parsing</strong> (skin, eyes, lips, etc.) and skin-based
-physiological signals such as rPPG heart rate are covered in the
-<a href="../signals/">Signals guide</a>, not here.</p>
+<div class="admonition tip">
+<p class="admonition-title">Release MediaPipe early</p>
+<p>A <code>FaceLandmarks</code> stage releases its MediaPipe landmarker automatically when it is
+garbage-collected or the program exits; call <code>landmarks.close()</code> to free it sooner.</p>
 </div>
-<h2 id="runnable-detection-and-tracking-examples">Runnable detection and tracking examples<a class="headerlink" href="#runnable-detection-and-tracking-examples" title="Permanent link">&para;</a></h2>
-<p>The repository includes synthetic media and command-line examples that run without
-editing file paths. The image example saves annotated PNGs, per-image JSON, a CSV
-summary and run metadata. The video example runs face detection and tracking
-through the core <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Video&lt;/span&gt;" href="../../api/video/#physiotrack.Video"><code>Video</code></a> pipeline and saves an annotated MP4,
-per-frame JSON, and a per-track CSV.</p>
-<p>See <a href="../face-examples/">Face Detection &amp; Tracking Examples</a> for commands, output
-schemas, and interpretation. These are qualitative teaching examples; use the
-<a href="../face-validation/">Face Detection &amp; Tracking Validation</a> guide before making
-accuracy claims.</p>
+<h2 id="runnable-examples">Runnable examples<a class="headerlink" href="#runnable-examples" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="https://github.com/tharindu326/physiotrack/tree/main/examples/face_analysis"><code>examples/face_analysis/</code></a>
+  — every stage on an image, and a video run with per-face blinks and mouth movement.</li>
+<li><a href="../face-examples/">Face Detection &amp; Tracking Examples</a> — detection, CPU vs GPU,
+  tracking, and their output schemas.</li>
+<li><a href="../face-validation/">Face Detection &amp; Tracking Validation</a> — datasets, manifests and
+  reporting boundaries.</li>
+</ul>
 <h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
-<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Face&lt;/span&gt;" href="../../api/face/#physiotrack.Face"><code>Face</code></a> · <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VRFace&lt;/span&gt;" href="../../api/face/#physiotrack.VRFace"><code>VRFace</code></a> · <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;FaceOrientation&lt;/span&gt;" href="../../api/face/#physiotrack.FaceOrientation"><code>FaceOrientation</code></a> — API reference.</li>
-<li><a href="../../api/face/">Face API page</a> — full parameter tables.</li>
-<li><a href="../../api/results/">Result objects</a> — <code>Result</code>, <code>Instance</code>, the <code>orientation</code> dict.</li>
-<li><a href="../signals/">Signals guide</a> — face parsing and rPPG heart rate.</li>
-<li><a href="../../model-zoo/">Model Zoo</a> — face detector and head-pose weights.</li>
-<li><a href="../face-examples/">Face examples</a> — runnable image/video demos and output schemas.</li>
-<li><a href="../face-validation/">Face validation</a> — datasets, manifests, and reporting boundaries.</li>
+<li><a href="../../api/face/">Face API reference</a> — every stage's parameters.</li>
+<li><a href="../signals/#face-signals">Face signals</a> — eye and mouth measures, blinks.</li>
+<li><a href="../../api/results/">Result objects</a> — <code>Instance</code> fields and serialization.</li>
+<li><a href="../video/">Video pipeline</a> — <code>face=</code> and <code>face_stages=</code>.</li>
+<li><a href="../../model-zoo/">Model Zoo</a> — weights and licences.</li>
 </ul>
 
 

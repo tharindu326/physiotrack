@@ -827,7 +827,7 @@
   <span class="md-ellipsis">
     
   
-    Face & Head Orientation
+    Face Analysis
   
 
     
@@ -1189,6 +1189,17 @@
     <span class="md-ellipsis">
       
         Segmentation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#face" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Face
       
     </span>
   </a>
@@ -1773,6 +1784,8 @@
       
         
       
+        
+      
     
     
     
@@ -1870,6 +1883,34 @@
     
   
     Motion & Features
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/signals/face/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Face Signals
   
 
     
@@ -2178,6 +2219,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#face" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Face
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#model-formats" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2229,10 +2281,11 @@ and where the weights come from.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>Models.&lt;Task&gt;.&lt;Backend&gt;.&lt;Enum&gt;.&lt;member&gt;
 </span></code></pre></div>
 <ul>
-<li><strong>Task</strong> — what the model does: <code>Detection</code>, <code>Pose</code>, <code>Pose3D</code>, <code>Depth</code>, <code>Segmentation</code>.</li>
+<li><strong>Task</strong> — what the model does: <code>Detection</code>, <code>Pose</code>, <code>Pose3D</code>, <code>Depth</code>,
+  <code>Segmentation</code>, <code>Face</code>.</li>
 <li><strong>Backend</strong> — the architecture/family: <code>YOLO</code>, <code>RTDETR</code>, <code>Sapiens</code>, <code>ViTPose</code>,
-  <code>MotionBERT</code>, <code>DDH</code>, <code>FaceOrientation</code>, <code>Canonicalizer</code>, <code>DepthAnythingV2</code>,
-  <code>ZipDepth</code>, <code>SegFace</code>.</li>
+  <code>MotionBERT</code>, <code>DDH</code>, <code>Canonicalizer</code>, <code>DepthAnythingV2</code>, <code>ZipDepth</code>, <code>SegFace</code>; for
+  <code>Face</code>, the stage (<code>Orientation</code>, <code>Landmarks</code>, <code>Expression</code>, <code>Gaze</code>).</li>
 <li><strong>Enum</strong> — a group of interchangeable checkpoints, usually by dataset or size
   (e.g. <code>Detection.YOLO.PERSON</code>, <code>Pose.ViTPose.WholeBody</code>).</li>
 <li><strong>member</strong> — one checkpoint. Its <code>.value</code> is the <strong>weight filename</strong> on disk;
@@ -2243,15 +2296,15 @@ and where the weights come from.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">physiotrack</span><span class="w"> </span><span class="kn">import</span> <span class="n">Models</span>
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
 </span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">m</span> <span class="o">=</span> <span class="n">Models</span><span class="o">.</span><span class="n">Pose</span><span class="o">.</span><span class="n">ViTPose</span><span class="o">.</span><span class="n">WholeBody</span><span class="o">.</span><span class="n">s_wholebody</span>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="nb">print</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>    <span class="c1"># &#39;s_wholebody&#39;</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="nb">print</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>   <span class="c1"># &#39;vitpose-s-wholebody.pth&#39;</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="nb">print</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>    <span class="c1"># 's_wholebody'</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="nb">print</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>   <span class="c1"># 'vitpose-s-wholebody.pth'</span>
 </span></code></pre></div>
 </div>
 <p>A few groups differ from the strict four-level shape: the <code>Pose3D</code> backends
-(<code>MotionBERT</code>, <code>DDH</code>, <code>FaceOrientation</code>) are <code>Enum</code>s <strong>directly</strong> under <code>Pose3D</code>;
+(<code>MotionBERT</code>, <code>DDH</code>) are <code>Enum</code>s <strong>directly</strong> under <code>Pose3D</code>;
 <code>Pose3D.Canonicalizer</code> holds a nested <code>Models</code> enum (3DPCNet weights) plus a
-<code>View</code> string enum; and the <code>Depth</code> backends (<code>DepthAnythingV2</code>, <code>ZipDepth</code>) are
-<code>Enum</code>s directly under <code>Depth</code>.</p>
+<code>View</code> string enum; and the <code>Depth</code> backends (<code>DepthAnythingV2</code>, <code>ZipDepth</code>) and the
+<code>Face</code> stage groups are <code>Enum</code>s directly under their task.</p>
 <h3 id="downloading-weights">Downloading weights<a class="headerlink" href="#downloading-weights" title="Permanent link">&para;</a></h3>
 <p>Selecting a member downloads nothing. Pass it to
 <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;resolve&lt;/span&gt;
@@ -2338,8 +2391,13 @@ checkpoints into the cache so they are not fetched again:</p>
 </tr>
 <tr>
 <td><strong><code>tharindu326/physiotrack</code></strong> (Hugging Face)</td>
-<td>Detection FACE / VRFACE / VR / VRSTUDENT, RT-DETR VRSTUDENT, Segmentation VRHEAD, DDH, FaceOrientation, Canonicalizer (3DPCNet), DepthAnythingV2, ZipDepth, SegFace</td>
+<td>Detection FACE / VRFACE / VR / VRSTUDENT, RT-DETR VRSTUDENT, Segmentation VRHEAD, DDH, Face Orientation, Canonicalizer (3DPCNet), DepthAnythingV2, ZipDepth, SegFace</td>
 <td>Project-hosted checkpoints</td>
+</tr>
+<tr>
+<td><strong>Upstream publishers, pinned + SHA-256</strong></td>
+<td>Face Landmarks → MediaPipe model storage; Face Expression → <code>sb-ai-lab/EmotiEffLib</code>; Face Gaze → <code>hysts/ptgaze-*</code></td>
+<td>Fetched at a fixed revision and refused if the checksum differs</td>
 </tr>
 <tr>
 <td><strong>Upstream Hugging Face repos</strong></td>
@@ -2580,7 +2638,7 @@ filenames.</p>
 </div>
 <hr />
 <h2 id="pose3d">Pose3D<a class="headerlink" href="#pose3d" title="Permanent link">&para;</a></h2>
-<p>3D lifting, head/face orientation, and pose canonicalization models. See the
+<p>3D lifting and pose canonicalization models. See the
 <a href="../guides/pose3d/">Pose3D guide</a>.</p>
 <table>
 <thead>
@@ -2615,18 +2673,6 @@ filenames.</p>
 <td>DDH</td>
 <td><code>best_epoch_DDHPose.bin</code></td>
 <td>DDHPose 3D lifter</td>
-</tr>
-<tr>
-<td><code>Models.Pose3D.FaceOrientation.default</code></td>
-<td>FaceOrientation</td>
-<td><code>6DRepNet360_Full-Rotation_300W_LP+Panoptic.pth</code></td>
-<td>6DRepNet360 full-rotation, 300W-LP + Panoptic</td>
-</tr>
-<tr>
-<td><code>Models.Pose3D.FaceOrientation.VR</code></td>
-<td>FaceOrientation</td>
-<td><code>CMVS-FO-VR_epoch80.pth</code></td>
-<td>VR-tuned face orientation, epoch 80</td>
 </tr>
 </tbody>
 </table>
@@ -2861,6 +2907,93 @@ the upsampling head (<code>upsample_unfold</code>):</p>
 </tr>
 </tbody>
 </table>
+<hr />
+<h2 id="face">Face<a class="headerlink" href="#face" title="Permanent link">&para;</a></h2>
+<p>The per-face analysis stages. Face <em>detection</em> checkpoints are under
+<a href="#detection">Detection</a>. See the <a href="../guides/face/">Face analysis guide</a>.</p>
+<table>
+<thead>
+<tr>
+<th>Access path</th>
+<th>Stage</th>
+<th>Weight file</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Models.Face.Orientation.default</code></td>
+<td><code>FaceOrientation</code></td>
+<td><code>6DRepNet360_Full-Rotation_300W_LP+Panoptic.pth</code></td>
+<td>6DRepNet360 full-rotation, 300W-LP + Panoptic</td>
+</tr>
+<tr>
+<td><code>Models.Face.Orientation.VR</code></td>
+<td><code>FaceOrientation</code></td>
+<td><code>CMVS-FO-VR_epoch80.pth</code></td>
+<td>VR-tuned head orientation, epoch 80</td>
+</tr>
+<tr>
+<td><code>Models.Face.Landmarks.face_landmarker</code></td>
+<td><code>FaceLandmarks</code></td>
+<td><code>face_landmarker.task</code></td>
+<td>MediaPipe Face Landmarker (float16 v1), 478 points; Apache-2.0</td>
+</tr>
+<tr>
+<td><code>Models.Face.Expression.enet_b0_8_best_afew</code></td>
+<td><code>FaceExpression</code></td>
+<td><code>enet_b0_8_best_afew.onnx</code></td>
+<td>EfficientNet-B0, 8 AffectNet classes, fine-tuned on AFEW (default)</td>
+</tr>
+<tr>
+<td><code>Models.Face.Expression.enet_b0_8_best_vgaf</code></td>
+<td><code>FaceExpression</code></td>
+<td><code>enet_b0_8_best_vgaf.onnx</code></td>
+<td>EfficientNet-B0, 8 classes, fine-tuned on VGAF</td>
+</tr>
+<tr>
+<td><code>Models.Face.Expression.enet_b0_8_va_mtl</code></td>
+<td><code>FaceExpression</code></td>
+<td><code>enet_b0_8_va_mtl.onnx</code></td>
+<td>EfficientNet-B0, 8 classes plus valence and arousal</td>
+</tr>
+<tr>
+<td><code>Models.Face.Expression.enet_b2_8</code></td>
+<td><code>FaceExpression</code></td>
+<td><code>enet_b2_8.onnx</code></td>
+<td>EfficientNet-B2 (260 px), 8 classes</td>
+</tr>
+<tr>
+<td><code>Models.Face.Expression.enet_b2_7</code></td>
+<td><code>FaceExpression</code></td>
+<td><code>enet_b2_7.onnx</code></td>
+<td>EfficientNet-B2 (260 px), 7 classes (no Contempt)</td>
+</tr>
+<tr>
+<td><code>Models.Face.Gaze.eth_xgaze_resnet18</code></td>
+<td><code>GazeEstimator</code></td>
+<td><code>eth-xgaze_resnet18.safetensors</code></td>
+<td>Full face, ResNet-18 trained on ETH-XGaze (default)</td>
+</tr>
+<tr>
+<td><code>Models.Face.Gaze.mpiifacegaze_resnet_simple</code></td>
+<td><code>GazeEstimator</code></td>
+<td><code>mpiifacegaze_resnet_simple.safetensors</code></td>
+<td>Full face, trained on MPIIFaceGaze</td>
+</tr>
+<tr>
+<td><code>Models.Face.Gaze.mpiigaze_resnet_preact</code></td>
+<td><code>GazeEstimator</code></td>
+<td><code>mpiigaze_resnet_preact.safetensors</code></td>
+<td>Per eye, trained on MPIIGaze</td>
+</tr>
+</tbody>
+</table>
+<p>The expression weights (AffectNet) and the gaze weights (ETH-XGaze, MPIIGaze,
+MPIIFaceGaze) are licensed for non-commercial research only; see
+<code>THIRD_PARTY_LICENSES.md</code>.</p>
+<p><code>FaceLandmarks</code>, <code>FaceExpression</code> and <code>GazeEstimator</code> need the face extra
+(<code>pip install "physiotrack[face]"</code>).</p>
 <hr />
 <h2 id="model-formats">Model formats<a class="headerlink" href="#model-formats" title="Permanent link">&para;</a></h2>
 <table>

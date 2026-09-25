@@ -770,17 +770,6 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#two-face-detector-entry-points" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Two face-detector entry points
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#vr-objects-and-people" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -975,7 +964,7 @@
   <span class="md-ellipsis">
     
   
-    Face & Head Orientation
+    Face Analysis
   
 
     
@@ -1711,6 +1700,8 @@
       
         
       
+        
+      
     
     
     
@@ -1808,6 +1799,34 @@
     
   
     Motion & Features
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/signals/face/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Face Signals
   
 
     
@@ -2000,17 +2019,6 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#two-face-detector-entry-points" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Two face-detector entry points
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#vr-objects-and-people" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2103,14 +2111,14 @@ directly), and read the returned <a class="autorefs autorefs-internal" title="&l
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">physiotrack</span><span class="w"> </span><span class="kn">import</span> <span class="n">Detection</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">cv2</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">image</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">imread</span><span class="p">(</span><span class="s2">&quot;frame_1.png&quot;</span><span class="p">)</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">image</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">imread</span><span class="p">(</span><span class="s2">"frame_1.png"</span><span class="p">)</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>
 </span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="n">detector</span> <span class="o">=</span> <span class="n">Detection</span><span class="o">.</span><span class="n">Person</span><span class="p">(</span><span class="n">conf</span><span class="o">=</span><span class="mf">0.25</span><span class="p">,</span> <span class="n">iou</span><span class="o">=</span><span class="mf">0.45</span><span class="p">)</span>   <span class="c1"># person boxes (COCO class 0)</span>
 </span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="n">result</span> <span class="o">=</span> <span class="n">detector</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">image</span><span class="p">)</span>                    <span class="c1"># or: detector(image)</span>
 </span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>
 </span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="n">boxes</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">boxes</span>            <span class="c1"># (N, 4) array of [x1, y1, x2, y2]</span>
 </span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="n">annotated</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>       <span class="c1"># BGR image with boxes drawn</span>
-</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="n">cv2</span><span class="o">.</span><span class="n">imwrite</span><span class="p">(</span><span class="s2">&quot;out.png&quot;</span><span class="p">,</span> <span class="n">annotated</span><span class="p">)</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="n">cv2</span><span class="o">.</span><span class="n">imwrite</span><span class="p">(</span><span class="s2">"out.png"</span><span class="p">,</span> <span class="n">annotated</span><span class="p">)</span>
 </span></code></pre></div>
 <h2 id="available-presets">Available presets<a class="headerlink" href="#available-presets" title="Permanent link">&para;</a></h2>
 <p>Each preset pins a validated backbone; construction fails fast if you pass an
@@ -2132,12 +2140,6 @@ incompatible model. See the <a href="../../model-zoo/">Model Zoo</a> for every v
 <td>People only; class filter is pinned to person.</td>
 </tr>
 <tr>
-<td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Face&lt;/span&gt;" href="../../api/detection/#physiotrack.Detection.Face"><code>Detection.Face</code></a></td>
-<td>YOLO</td>
-<td>face</td>
-<td>Face bounding boxes.</td>
-</tr>
-<tr>
 <td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VR&lt;/span&gt;" href="../../api/detection/#physiotrack.Detection.VR"><code>Detection.VR</code></a></td>
 <td>YOLO</td>
 <td><code>VR-head</code></td>
@@ -2157,33 +2159,12 @@ incompatible model. See the <a href="../../model-zoo/">Model Zoo</a> for every v
 </tr>
 </tbody>
 </table>
-<h3 id="two-face-detector-entry-points">Two face-detector entry points<a class="headerlink" href="#two-face-detector-entry-points" title="Permanent link">&para;</a></h3>
-<p>PhysioTrack also exposes a top-level <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Face&lt;/span&gt;" href="../../api/face/#physiotrack.Face"><code>Face</code></a> preset. Both face
-entry points use <code>Models.Detection.YOLO.FACE.m_face</code> by default and return the same
-box/confidence structure; the difference is the semantic task label:</p>
-<table>
-<thead>
-<tr>
-<th>Entry point</th>
-<th>Result task</th>
-<th>Prefer it when…</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>pt.Face()</code></td>
-<td><code>"face"</code></td>
-<td>face boxes feed head orientation, face parsing, rPPG, or face tracking</td>
-</tr>
-<tr>
-<td><code>pt.Detection.Face()</code></td>
-<td><code>"detect"</code></td>
-<td>face boxes are one detector choice inside a generic object-detection pipeline</td>
-</tr>
-</tbody>
-</table>
-<p>The dedicated <a href="../face-examples/">face examples</a> use <code>pt.Face()</code> so serialized output
-clearly identifies a facial task.</p>
+<div class="admonition info">
+<p class="admonition-title">Faces</p>
+<p>Face detectors live with the rest of face analysis: <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Face&lt;/span&gt;" href="../../api/face/#physiotrack.Face"><code>Face</code></a>
+and the VR-tuned <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VRFace&lt;/span&gt;" href="../../api/face/#physiotrack.VRFace"><code>VRFace</code></a> share this constructor and return
+a <code>Result</code> with <code>task="face"</code>. See the <a href="../face/">Face analysis guide</a>.</p>
+</div>
 <h3 id="vr-objects-and-people">VR objects and people<a class="headerlink" href="#vr-objects-and-people" title="Permanent link">&para;</a></h3>
 <p>These presets answer different questions. <code>Detection.VR</code> locates the headset region,
 <code>Detection.VRStudent</code> locates the full body of a VR-equipped person, and
@@ -2192,8 +2173,8 @@ clearly identifies a facial task.</p>
 to compare all three on the same synthetic lab scene.</p>
 <p>Only a medium VR-head checkpoint (<code>yolo11m_VR_head.pt</code>) is currently published.
 Large checkpoints are available for VR-person and generic-person detection. The
-example's <code>--model-size largest</code> mode therefore uses medium for VR-head and large for
-the other two, and reports every exact filename in its panels and JSON output.</p>
+example's <code>--model-size largest</code> therefore uses medium for VR-head and large for the
+other two, and reports every model in its panels and JSON output.</p>
 <p><img alt="VR-person and generic-person comparison" src="../../images/comparison_person_vrperson.jpg" /></p>
 <p><em>Focused output from the bundled synthetic scene. The large VR-person checkpoint
 (top) retains two full people using headsets; the large generic-person checkpoint
@@ -2271,7 +2252,7 @@ vectorized <code>boxes</code> view.</p>
 </span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>    <span class="n">x1</span><span class="p">,</span> <span class="n">y1</span><span class="p">,</span> <span class="n">x2</span><span class="p">,</span> <span class="n">y2</span> <span class="o">=</span> <span class="n">inst</span><span class="o">.</span><span class="n">box</span>            <span class="c1"># (4,) pixel box</span>
 </span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">inst</span><span class="o">.</span><span class="n">cls</span><span class="p">,</span> <span class="n">inst</span><span class="o">.</span><span class="n">cls_name</span><span class="p">,</span> <span class="n">inst</span><span class="o">.</span><span class="n">confidence</span><span class="p">)</span>
 </span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>
-</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="n">data</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>  <span class="c1"># JSON-friendly: {&quot;task&quot;: &quot;detect&quot;, &quot;instances&quot;: [...]}</span>
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="n">data</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>  <span class="c1"># JSON-friendly: {"task": "detect", "instances": [...]}</span>
 </span></code></pre></div>
 <p>Render an annotated copy with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;plot&lt;/span&gt;" href="../../api/results/#physiotrack.Result.plot"><code>Result.plot</code></a> — the source
 frame is never modified:</p>
@@ -2283,7 +2264,7 @@ frame is never modified:</p>
 <p class="admonition-title">Batch inference</p>
 <p>Pass a list or tuple of frames to run them in one call; you get back a
 <code>list[Result]</code>, one per frame.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">frames</span> <span class="o">=</span> <span class="p">[</span><span class="n">cv2</span><span class="o">.</span><span class="n">imread</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;a.png&quot;</span><span class="p">,</span> <span class="s2">&quot;b.png&quot;</span><span class="p">,</span> <span class="s2">&quot;c.png&quot;</span><span class="p">)]</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">frames</span> <span class="o">=</span> <span class="p">[</span><span class="n">cv2</span><span class="o">.</span><span class="n">imread</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"a.png"</span><span class="p">,</span> <span class="s2">"b.png"</span><span class="p">,</span> <span class="s2">"c.png"</span><span class="p">)]</span>
 </span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="n">results</span> <span class="o">=</span> <span class="n">detector</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">frames</span><span class="p">)</span>     <span class="c1"># list[Result], same order as input</span>
 </span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="n">counts</span> <span class="o">=</span> <span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">r</span><span class="p">)</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">results</span><span class="p">]</span>
 </span></code></pre></div>

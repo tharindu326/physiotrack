@@ -986,7 +986,7 @@
   <span class="md-ellipsis">
     
   
-    Face & Head Orientation
+    Face Analysis
   
 
     
@@ -1722,6 +1722,8 @@
       
         
       
+        
+      
     
     
     
@@ -1819,6 +1821,34 @@
     
   
     Motion & Features
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/signals/face/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Face Signals
   
 
     
@@ -2181,7 +2211,7 @@ official <a href="https://pytorch.org/get-started/locally/">PyTorch installation
 The appropriate build depends on the operating system, driver, and accelerator, so
 PhysioTrack deliberately does not hard-code one CUDA version.</p>
 <p>Verify the result before installing the rest of the project:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>python<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;import torch; print(torch.__version__); print(&#39;CUDA:&#39;, torch.cuda.is_available())&quot;</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>python<span class="w"> </span>-c<span class="w"> </span><span class="s2">"import torch; print(torch.__version__); print('CUDA:', torch.cuda.is_available())"</span>
 </span></code></pre></div>
 <h3 id="2-install-physiotrack">2. Install PhysioTrack<a class="headerlink" href="#2-install-physiotrack" title="Permanent link">&para;</a></h3>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>python<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.
@@ -2190,11 +2220,20 @@ PhysioTrack deliberately does not hard-code one CUDA version.</p>
 and is convenient for running the repository examples. Runtime dependencies come
 from <code>pyproject.toml</code>; there is no separate <code>requirements.txt</code> to maintain.</p>
 <p>Install optional contributor tooling as needed:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>python<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span><span class="s2">&quot;.[test]&quot;</span><span class="w">       </span><span class="c1"># pytest + biomedical reference checks</span>
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>python<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span><span class="s2">&quot;.[docs]&quot;</span><span class="w">       </span><span class="c1"># MkDocs documentation toolchain</span>
-</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>python<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span><span class="s2">&quot;.[test,docs]&quot;</span><span class="w">  </span><span class="c1"># normal development setup</span>
-</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>python<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span><span class="s2">&quot;.[pose3d]&quot;</span><span class="w">     </span><span class="c1"># optional SMPL mesh rendering</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>python<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span><span class="s2">".[test]"</span><span class="w">       </span><span class="c1"># pytest + biomedical reference checks</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>python<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span><span class="s2">".[docs]"</span><span class="w">       </span><span class="c1"># MkDocs documentation toolchain</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>python<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span><span class="s2">".[test,face,docs]"</span><span class="w">  </span><span class="c1"># normal development setup</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>python<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span><span class="s2">".[pose3d]"</span><span class="w">     </span><span class="c1"># optional SMPL mesh rendering</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>python<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span><span class="s2">".[face]"</span><span class="w">       </span><span class="c1"># face mesh, expression and gaze stages</span>
 </span></code></pre></div>
+<p>The <code>face</code> extra adds MediaPipe, ONNX Runtime and safetensors for
+<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;FaceLandmarks&lt;/span&gt;" href="../../api/face/#physiotrack.FaceLandmarks"><code>FaceLandmarks</code></a>,
+<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;FaceExpression&lt;/span&gt;" href="../../api/face/#physiotrack.FaceExpression"><code>FaceExpression</code></a> and
+<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;GazeEstimator&lt;/span&gt;" href="../../api/face/#physiotrack.GazeEstimator"><code>GazeEstimator</code></a>. For expression recognition on a GPU,
+replace <code>onnxruntime</code> with <code>onnxruntime-gpu</code>. MediaPipe declares
+<code>opencv-contrib-python</code> while ultralytics declares <code>opencv-python</code>; both provide
+<code>cv2</code>, and if <code>import cv2</code> fails after installing the extra, reinstall one of them
+(<code>pip install --force-reinstall opencv-python</code>).</p>
 <h2 id="conda-development-environment">Conda development environment<a class="headerlink" href="#conda-development-environment" title="Permanent link">&para;</a></h2>
 <p>The repository includes <code>environment-dev.yml</code> as a small, reviewable developer
 bootstrap:</p>
@@ -2206,7 +2245,7 @@ It intentionally does <strong>not</strong> choose PyTorch: a shared environment 
 guess whether a contributor needs CPU, CUDA, ROCm, or Apple Silicon. After activation,
 install PyTorch with the CPU command or the official selector above, then install the
 editable project:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>python<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span><span class="s2">&quot;.[test,docs]&quot;</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>python<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span><span class="s2">".[test,face,docs]"</span>
 </span></code></pre></div>
 <p>When <code>environment-dev.yml</code> changes, update the existing environment with:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>conda<span class="w"> </span>env<span class="w"> </span>update<span class="w"> </span>-n<span class="w"> </span>physiotrack-dev<span class="w"> </span>-f<span class="w"> </span>environment-dev.yml<span class="w"> </span>--prune
@@ -2215,12 +2254,12 @@ editable project:</p>
 single source of truth for Python runtime and optional dependencies.</p>
 <h2 id="install-directly-from-github">Install directly from GitHub<a class="headerlink" href="#install-directly-from-github" title="Permanent link">&para;</a></h2>
 <p>If you only need the library and not the examples or source tree:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>python<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;git+https://github.com/tharindu326/physiotrack.git&quot;</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>python<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">"git+https://github.com/tharindu326/physiotrack.git"</span>
 </span></code></pre></div>
 <p>Install the appropriate PyTorch build first, just as for an editable installation.</p>
 <h2 id="verify-the-installation">Verify the installation<a class="headerlink" href="#verify-the-installation" title="Permanent link">&para;</a></h2>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>python<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;import physiotrack as pt; print(&#39;PhysioTrack&#39;, pt.__version__)&quot;</span>
-</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>python<span class="w"> </span>examples/face_detection/detect_faces.py<span class="w"> </span>--model<span class="w"> </span>nano<span class="w"> </span>--device<span class="w"> </span>cpu
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>python<span class="w"> </span>-c<span class="w"> </span><span class="s2">"import physiotrack as pt; print('PhysioTrack', pt.__version__)"</span>
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>python<span class="w"> </span>examples/face_detection/detect_faces.py<span class="w"> </span>--model<span class="w"> </span>n_face<span class="w"> </span>--device<span class="w"> </span>cpu
 </span></code></pre></div>
 <p>The import check is offline. The example constructs a face detector, so its first run
 downloads model weights and then reuses the local cache.</p>
@@ -2261,8 +2300,8 @@ downloads model weights and then reuses the local cache.</p>
 </span></code></pre></div>
 <p>Older installations that stored weights inside the package can preview and perform a
 one-time migration:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>python<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;import physiotrack as pt; pt.migrate_weight_cache(dry_run=True)&quot;</span>
-</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>python<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;import physiotrack as pt; pt.migrate_weight_cache()&quot;</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>python<span class="w"> </span>-c<span class="w"> </span><span class="s2">"import physiotrack as pt; pt.migrate_weight_cache(dry_run=True)"</span>
+</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>python<span class="w"> </span>-c<span class="w"> </span><span class="s2">"import physiotrack as pt; pt.migrate_weight_cache()"</span>
 </span></code></pre></div>
 <h2 id="video-codec-notes">Video codec notes<a class="headerlink" href="#video-codec-notes" title="Permanent link">&para;</a></h2>
 <p>The <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Video&lt;/span&gt;" href="../../api/video/#physiotrack.Video"><code>Video</code></a> pipeline tries H.264 (<code>avc1</code>) first and falls back
@@ -2300,6 +2339,10 @@ you require a specific encoder.</p>
 <tr>
 <td><code>ModuleNotFoundError: physiotrack</code></td>
 <td>run <code>python -m pip install -e .</code> from the repository root in the active environment</td>
+</tr>
+<tr>
+<td><code>OSError: libEGL.so.1</code> (or <code>libGLESv2.so.2</code>) from <code>FaceLandmarks</code> on Linux</td>
+<td>MediaPipe needs the EGL/GLES runtime even on the CPU; on Debian/Ubuntu install <code>libegl1 libgles2</code> (e.g. in a headless server or Docker image)</td>
 </tr>
 </tbody>
 </table>

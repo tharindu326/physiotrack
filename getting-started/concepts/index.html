@@ -1008,7 +1008,7 @@
   <span class="md-ellipsis">
     
   
-    Face & Head Orientation
+    Face Analysis
   
 
     
@@ -1744,6 +1744,8 @@
       
         
       
+        
+      
     
     
     
@@ -1841,6 +1843,34 @@
     
   
     Motion & Features
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/signals/face/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Face Signals
   
 
     
@@ -2203,7 +2233,7 @@ registry entry.</p>
 <tbody>
 <tr>
 <td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Detection&lt;/span&gt;" href="../../api/detection/#physiotrack.Detection"><code>Detection</code></a></td>
-<td><code>.Person</code> · <code>.Face</code> · <code>.VR</code> · <code>.VRStudent</code> · <code>.Custom</code></td>
+<td><code>.Person</code> · <code>.VR</code> · <code>.VRStudent</code> · <code>.Custom</code> (face detectors: <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Face&lt;/span&gt;" href="../../api/face/#physiotrack.Face"><code>Face</code></a>, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VRFace&lt;/span&gt;" href="../../api/face/#physiotrack.VRFace"><code>VRFace</code></a>)</td>
 </tr>
 <tr>
 <td><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Pose&lt;/span&gt;" href="../../api/pose/#physiotrack.Pose"><code>Pose</code></a></td>
@@ -2219,7 +2249,9 @@ registry entry.</p>
 </tr>
 </tbody>
 </table>
-<p><code>device</code> and <code>verbose</code> are accepted by every predictor. <code>conf</code>, <code>iou</code> and <code>classes</code>
+<p><code>device</code> and <code>verbose</code> are accepted by the detection, pose, segmentation and depth
+predictors. The <a href="../../guides/face/">face stages</a> take <code>device</code> where they run a network
+on it; <code>FaceLandmarks</code> (MediaPipe) and <code>FaceQuality</code> run on the CPU and take none. <code>conf</code>, <code>iou</code> and <code>classes</code>
 apply to the <strong>box-based</strong> backends (detection, pose, instance segmentation) — a dense
 predictor has no detections to threshold or filter, so <code>Depth</code> and <code>Segmentation.Face</code>
 do not take them. Where such a predictor builds a detector internally, the detector's
@@ -2228,9 +2260,9 @@ face detector, not the parser. See each <a href="../../api/">API page</a> for th
 <h3 id="what-predict-accepts">What <code>predict()</code> accepts<a class="headerlink" href="#what-predict-accepts" title="Permanent link">&para;</a></h3>
 <p>Every image predictor takes the same kinds of input and follows the same batching rule:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">det</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">frame</span><span class="p">)</span>                      <span class="c1"># np.ndarray (H, W, 3) BGR  -&gt; Result</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">det</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="s2">&quot;photo.jpg&quot;</span><span class="p">)</span>                <span class="c1"># a path is loaded for you  -&gt; Result</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">det</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="s2">"photo.jpg"</span><span class="p">)</span>                <span class="c1"># a path is loaded for you  -&gt; Result</span>
 </span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">det</span><span class="o">.</span><span class="n">predict</span><span class="p">([</span><span class="n">frame_a</span><span class="p">,</span> <span class="n">frame_b</span><span class="p">])</span>         <span class="c1"># a sequence               -&gt; list[Result]</span>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">det</span><span class="o">.</span><span class="n">predict</span><span class="p">([</span><span class="s2">&quot;a.png&quot;</span><span class="p">,</span> <span class="s2">&quot;b.png&quot;</span><span class="p">])</span>         <span class="c1"># paths work in batches too -&gt; list[Result]</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">det</span><span class="o">.</span><span class="n">predict</span><span class="p">([</span><span class="s2">"a.png"</span><span class="p">,</span> <span class="s2">"b.png"</span><span class="p">])</span>         <span class="c1"># paths work in batches too -&gt; list[Result]</span>
 </span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="n">det</span><span class="p">(</span><span class="n">frame</span><span class="p">)</span>                              <span class="c1"># calling is an alias for predict</span>
 </span></code></pre></div>
 <p>A sequence always returns a list — a one-element list gives a one-element list of
@@ -2284,7 +2316,7 @@ the task, but the container and accessors are uniform.</p>
 <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Keypoint&lt;/span&gt;" href="../../api/results/#physiotrack.Keypoint"><code>Keypoint</code></a> objects — look them up by name or id, or take
 array views:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">person</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="n">kp</span> <span class="o">=</span> <span class="n">person</span><span class="o">.</span><span class="n">keypoints</span><span class="o">.</span><span class="n">by_name</span><span class="p">(</span><span class="s2">&quot;left_wrist&quot;</span><span class="p">)</span>   <span class="c1"># or .by_id(9)</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="n">kp</span> <span class="o">=</span> <span class="n">person</span><span class="o">.</span><span class="n">keypoints</span><span class="o">.</span><span class="n">by_name</span><span class="p">(</span><span class="s2">"left_wrist"</span><span class="p">)</span>   <span class="c1"># or .by_id(9)</span>
 </span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">kp</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">kp</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="n">kp</span><span class="o">.</span><span class="n">confidence</span><span class="p">,</span> <span class="n">kp</span><span class="o">.</span><span class="n">name</span>
 </span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>
 </span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="n">person</span><span class="o">.</span><span class="n">keypoints</span><span class="o">.</span><span class="n">xy</span>      <span class="c1"># (K, 2) ndarray</span>
@@ -2349,16 +2381,16 @@ already-constructed predictors and call <code>.run()</code>:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">physiotrack</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pt</span>
 </span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>
 </span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="n">video</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">Video</span><span class="p">(</span>
-</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>    <span class="n">source</span><span class="o">=</span><span class="s2">&quot;input.mp4&quot;</span><span class="p">,</span>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>    <span class="n">source</span><span class="o">=</span><span class="s2">"input.mp4"</span><span class="p">,</span>
 </span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>    <span class="n">detector</span><span class="o">=</span><span class="n">pt</span><span class="o">.</span><span class="n">Detection</span><span class="o">.</span><span class="n">Person</span><span class="p">(),</span>
 </span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>    <span class="n">pose</span><span class="o">=</span><span class="n">pt</span><span class="o">.</span><span class="n">Pose</span><span class="o">.</span><span class="n">Custom</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="n">pt</span><span class="o">.</span><span class="n">Models</span><span class="o">.</span><span class="n">Pose</span><span class="o">.</span><span class="n">ViTPose</span><span class="o">.</span><span class="n">WholeBody</span><span class="o">.</span><span class="n">b_wholebody</span><span class="p">),</span>
 </span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>    <span class="n">tracker</span><span class="o">=</span><span class="n">pt</span><span class="o">.</span><span class="n">Tracker</span><span class="p">(</span><span class="n">config</span><span class="o">=</span><span class="n">pt</span><span class="o">.</span><span class="n">TrackerConfig</span><span class="p">()),</span>
-</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>    <span class="n">output_dir</span><span class="o">=</span><span class="s2">&quot;output&quot;</span><span class="p">,</span>
+</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>    <span class="n">output_dir</span><span class="o">=</span><span class="s2">"output"</span><span class="p">,</span>
 </span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="p">)</span>
-</span><span id="__span-7-10"><a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="n">data</span> <span class="o">=</span> <span class="n">video</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">output_video</span><span class="o">=</span><span class="s2">&quot;out.mp4&quot;</span><span class="p">,</span> <span class="n">output_json</span><span class="o">=</span><span class="s2">&quot;out.json&quot;</span><span class="p">)</span>
+</span><span id="__span-7-10"><a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="n">data</span> <span class="o">=</span> <span class="n">video</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">output_video</span><span class="o">=</span><span class="s2">"out.mp4"</span><span class="p">,</span> <span class="n">output_json</span><span class="o">=</span><span class="s2">"out.json"</span><span class="p">)</span>
 </span></code></pre></div>
 <p>Beyond <code>detector</code>, <code>pose</code> and <code>tracker</code>, it accepts <code>segmenter=</code>, <code>depth=</code>,
-<code>face=</code>, <code>face_orientation=</code>, <code>floor_map=</code>, <code>ego_video=</code>, <code>plot_keypoint=</code>,
+<code>face=</code>, <code>face_stages=</code>, <code>floor_map=</code>, <code>ego_video=</code>, <code>plot_keypoint=</code>,
 <code>plot_angles=</code>, <code>rom=</code> and more. See the <a href="../../guides/video/">Video guide</a> and
 the <a href="../../api/video/"><code>Video</code> API</a>.</p>
 <h2 id="where-things-live-imports">Where things live (imports)<a class="headerlink" href="#where-things-live-imports" title="Permanent link">&para;</a></h2>

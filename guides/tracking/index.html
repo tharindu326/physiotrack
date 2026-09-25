@@ -832,7 +832,7 @@
   <span class="md-ellipsis">
     
   
-    Face & Head Orientation
+    Face Analysis
   
 
     
@@ -1683,6 +1683,8 @@
       
         
       
+        
+      
     
     
     
@@ -1780,6 +1782,34 @@
     
   
     Motion & Features
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/signals/face/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Face Signals
   
 
     
@@ -2050,9 +2080,9 @@ first, then pass its boxes to the tracker. For a fully wired video pipeline
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="kn">import</span><span class="w"> </span><span class="nn">physiotrack</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pt</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">det</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">Detection</span><span class="o">.</span><span class="n">Person</span><span class="p">(</span><span class="n">device</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="n">tracker</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">Tracker</span><span class="p">(</span><span class="n">pt</span><span class="o">.</span><span class="n">TrackerConfig</span><span class="p">(</span><span class="n">tracker</span><span class="o">=</span><span class="s2">&quot;ocsort&quot;</span><span class="p">,</span> <span class="n">classes</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="n">tracker</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">Tracker</span><span class="p">(</span><span class="n">pt</span><span class="o">.</span><span class="n">TrackerConfig</span><span class="p">(</span><span class="n">tracker</span><span class="o">=</span><span class="s2">"ocsort"</span><span class="p">,</span> <span class="n">classes</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
 </span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="n">cap</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">VideoCapture</span><span class="p">(</span><span class="s2">&quot;clip.mp4&quot;</span><span class="p">)</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="n">cap</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">VideoCapture</span><span class="p">(</span><span class="s2">"clip.mp4"</span><span class="p">)</span>
 </span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
 </span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    <span class="n">ok</span><span class="p">,</span> <span class="n">frame</span> <span class="o">=</span> <span class="n">cap</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>            <span class="c1"># BGR frame (H, W, 3)</span>
 </span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">ok</span><span class="p">:</span>
@@ -2069,8 +2099,8 @@ first, then pass its boxes to the tracker. For a fully wired video pipeline
 </span><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">track_result</span><span class="o">.</span><span class="n">ids</span><span class="p">)</span>                            <span class="c1"># e.g. [1, 2, 5]</span>
 </span><span id="__span-0-23"><a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>
 </span><span id="__span-0-24"><a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>    <span class="n">annotated</span> <span class="o">=</span> <span class="n">track_result</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>                    <span class="c1"># tracker overlay (BGR)</span>
-</span><span id="__span-0-25"><a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>    <span class="n">cv2</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="s2">&quot;tracks&quot;</span><span class="p">,</span> <span class="n">annotated</span><span class="p">)</span>
-</span><span id="__span-0-26"><a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a>    <span class="k">if</span> <span class="n">cv2</span><span class="o">.</span><span class="n">waitKey</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="o">&amp;</span> <span class="mh">0xFF</span> <span class="o">==</span> <span class="nb">ord</span><span class="p">(</span><span class="s2">&quot;q&quot;</span><span class="p">):</span>
+</span><span id="__span-0-25"><a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>    <span class="n">cv2</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="s2">"tracks"</span><span class="p">,</span> <span class="n">annotated</span><span class="p">)</span>
+</span><span id="__span-0-26"><a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a>    <span class="k">if</span> <span class="n">cv2</span><span class="o">.</span><span class="n">waitKey</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="o">&amp;</span> <span class="mh">0xFF</span> <span class="o">==</span> <span class="nb">ord</span><span class="p">(</span><span class="s2">"q"</span><span class="p">):</span>
 </span><span id="__span-0-27"><a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a>        <span class="k">break</span>
 </span><span id="__span-0-28"><a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a><span class="n">cap</span><span class="o">.</span><span class="n">release</span><span class="p">()</span>
 </span></code></pre></div>
@@ -2125,23 +2155,23 @@ can also pass the friendly alias <code>tracker=</code>). OC-SORT is the default.
 <div class="tabbed-set tabbed-alternate" data-tabs="1:4"><input checked="checked" id="oc-sort-default" name="__tabbed_1" type="radio" /><input id="bytetrack" name="__tabbed_1" type="radio" /><input id="strongsort" name="__tabbed_1" type="radio" /><input id="boosttrack" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="oc-sort-default">OC-SORT (default)</label><label for="bytetrack">ByteTrack</label><label for="strongsort">StrongSORT</label><label for="boosttrack">BoostTrack</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">cfg</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">TrackerConfig</span><span class="p">(</span><span class="n">tracker</span><span class="o">=</span><span class="s2">&quot;ocsort&quot;</span><span class="p">,</span> <span class="n">classes</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">cfg</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">TrackerConfig</span><span class="p">(</span><span class="n">tracker</span><span class="o">=</span><span class="s2">"ocsort"</span><span class="p">,</span> <span class="n">classes</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">tracker</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">Tracker</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span>
 </span></code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">cfg</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">TrackerConfig</span><span class="p">(</span><span class="n">tracker</span><span class="o">=</span><span class="s2">&quot;bytetrack&quot;</span><span class="p">,</span> <span class="n">classes</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">cfg</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">TrackerConfig</span><span class="p">(</span><span class="n">tracker</span><span class="o">=</span><span class="s2">"bytetrack"</span><span class="p">,</span> <span class="n">classes</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">tracker</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">Tracker</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span>
 </span></code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># Appearance ReID; set device=&quot;cuda&quot; for the OSNet network.</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">cfg</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">TrackerConfig</span><span class="p">(</span><span class="n">tracker</span><span class="o">=</span><span class="s2">&quot;strongsort&quot;</span><span class="p">,</span> <span class="n">classes</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">device</span><span class="o">=</span><span class="s2">&quot;cuda&quot;</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># Appearance ReID; set device="cuda" for the OSNet network.</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">cfg</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">TrackerConfig</span><span class="p">(</span><span class="n">tracker</span><span class="o">=</span><span class="s2">"strongsort"</span><span class="p">,</span> <span class="n">classes</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">device</span><span class="o">=</span><span class="s2">"cuda"</span><span class="p">)</span>
 </span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">tracker</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">Tracker</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span>
 </span></code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">cfg</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">TrackerConfig</span><span class="p">(</span><span class="n">tracker</span><span class="o">=</span><span class="s2">&quot;boosttrack&quot;</span><span class="p">,</span> <span class="n">classes</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">cfg</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">TrackerConfig</span><span class="p">(</span><span class="n">tracker</span><span class="o">=</span><span class="s2">"boosttrack"</span><span class="p">,</span> <span class="n">classes</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
 </span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="n">tracker</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">Tracker</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span>
 </span></code></pre></div>
 </div>
@@ -2186,8 +2216,8 @@ for each stream.</p>
 </span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="k">for</span> <span class="n">inst</span> <span class="ow">in</span> <span class="n">track_result</span><span class="p">:</span>   <span class="c1"># iterate instances</span>
 </span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">inst</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">inst</span><span class="o">.</span><span class="n">box</span><span class="p">,</span> <span class="n">inst</span><span class="o">.</span><span class="n">cls</span><span class="p">,</span> <span class="n">inst</span><span class="o">.</span><span class="n">confidence</span><span class="p">)</span>
 </span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>
-</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="n">annotated</span> <span class="o">=</span> <span class="n">track_result</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>          <span class="c1"># tracker&#39;s own rich overlay (or draw yourself)</span>
-</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a><span class="n">data</span> <span class="o">=</span> <span class="n">track_result</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>            <span class="c1"># {&quot;task&quot;: &quot;track&quot;, &quot;instances&quot;: [...]} — JSON-friendly</span>
+</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="n">annotated</span> <span class="o">=</span> <span class="n">track_result</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>          <span class="c1"># tracker's own rich overlay (or draw yourself)</span>
+</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a><span class="n">data</span> <span class="o">=</span> <span class="n">track_result</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>            <span class="c1"># {"task": "track", "instances": [...]} — JSON-friendly</span>
 </span></code></pre></div>
 <p><code>plot()</code> with no argument returns the tracker's own <code>rendered</code> overlay (boxes,
 labels, trails, locked-subject box). Pass a <code>frame</code> to draw simple <code>ID &lt;n&gt;</code> boxes on a
@@ -2245,7 +2275,7 @@ for every field and default.</p>
 </table>
 <p>Settings can be passed as constructor kwargs or set as attributes afterwards (both
 may be mixed); an unknown keyword raises <code>TypeError</code>, guarding against typos:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">cfg</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">TrackerConfig</span><span class="p">(</span><span class="n">tracker</span><span class="o">=</span><span class="s2">&quot;ocsort&quot;</span><span class="p">,</span> <span class="n">classes</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>  <span class="c1"># constructor kwargs</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">cfg</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">TrackerConfig</span><span class="p">(</span><span class="n">tracker</span><span class="o">=</span><span class="s2">"ocsort"</span><span class="p">,</span> <span class="n">classes</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>  <span class="c1"># constructor kwargs</span>
 </span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="n">cfg</span><span class="o">.</span><span class="n">debug_mode</span> <span class="o">=</span> <span class="kc">True</span>                                   <span class="c1"># attribute assignment</span>
 </span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="nb">print</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span>                                              <span class="c1"># inspect resolved settings</span>
 </span></code></pre></div>

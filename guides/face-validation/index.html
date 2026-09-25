@@ -832,7 +832,7 @@
   <span class="md-ellipsis">
     
   
-    Face & Head Orientation
+    Face Analysis
   
 
     
@@ -991,6 +991,17 @@
     <span class="md-ellipsis">
       
         Reporting checklist
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#results-of-the-project-validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Results of the project validation
       
     </span>
   </a>
@@ -1672,6 +1683,8 @@
       
         
       
+        
+      
     
     
     
@@ -1769,6 +1782,34 @@
     
   
     Motion & Features
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/signals/face/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Face Signals
   
 
     
@@ -1992,6 +2033,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#results-of-the-project-validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Results of the project validation
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2143,6 +2195,69 @@ declared multi-object tracking metric—not visually relabelled after the run.</
 <li>Keep face detection, head detection, person detection, tracking, and recognition
   claims separate. PhysioTrack's face-tracking example performs no recognition.</li>
 </ul>
+<h2 id="results-of-the-project-validation">Results of the project validation<a class="headerlink" href="#results-of-the-project-validation" title="Permanent link">&para;</a></h2>
+<p>The face-analysis components were validated in a master's thesis on public benchmarks
+with the protocol and manifest described above. The library's defaults are the settings
+those evaluations used. The numbers describe that validation run; re-run the protocol
+on your own data before relying on them.</p>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Benchmark and protocol</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Face detection (<code>Face</code>, <code>m_face</code>)</td>
+<td>WIDER FACE validation, official easy / medium / hard</td>
+<td>AP 0.959 / 0.949 / 0.872</td>
+</tr>
+<tr>
+<td>Head orientation (<code>FaceOrientation</code>, 1.2x square crop)</td>
+<td>AFLW, ground-truth face boxes, |angles| &lt; 90°</td>
+<td>overall MAE 12.9° (yaw 11.1°, pitch 13.7°, roll 13.8°)</td>
+</tr>
+<tr>
+<td>Face mesh (<code>FaceLandmarks</code>, 20 %-padded boxes)</td>
+<td>300-W, 51-point inter-ocular NME</td>
+<td>NME 4.65 %, 98 % detected</td>
+</tr>
+<tr>
+<td>Blinks (<code>detect_blinks</code>, EAR 0.22, 3 frames)</td>
+<td>MPEBlink test split, event temporal IoU ≥ 0.5</td>
+<td>precision 0.32, recall 0.26, F1 0.29; mean duration error 0.10 s</td>
+</tr>
+<tr>
+<td>Mouth openness (<code>mouth_aspect_ratio</code>)</td>
+<td>FELT reference for RAVDESS speech clips</td>
+<td>Pearson r 0.93, MAE 0.033</td>
+</tr>
+<tr>
+<td>Mouth movement (<code>mouth_movement</code>)</td>
+<td>FELT / RAVDESS speech, paired frames</td>
+<td>Pearson r 0.83, MAE 0.012 per frame</td>
+</tr>
+<tr>
+<td>Gaze (<code>GazeEstimator</code>, ETH-XGaze)</td>
+<td>MPIIFaceGaze, all 37,667 samples</td>
+<td>mean angular error 8.2° (median 7.7°)</td>
+</tr>
+<tr>
+<td>Face regions (<code>FaceRegions</code> / SegFace)</td>
+<td>CelebAMask-HQ</td>
+<td>pixel accuracy 0.956, mIoU 0.815</td>
+</tr>
+<tr>
+<td>Face tracking (<code>Face</code> + OC-SORT)</td>
+<td>ECCV 2016 face tracking videos</td>
+<td>recall 91 %, precision 72 %, MOTA 53 %</td>
+</tr>
+</tbody>
+</table>
+<p>The blink results show the limits of a fixed EAR threshold on unconstrained video:
+treat blink counts from non-frontal or low-resolution faces as indicative only.</p>
 
 
 

@@ -832,7 +832,7 @@
   <span class="md-ellipsis">
     
   
-    Face & Head Orientation
+    Face Analysis
   
 
     
@@ -1048,6 +1048,17 @@
     <span class="md-ellipsis">
       
         Vitals (rPPG heart rate · HRV · respiration)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#faces" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Faces
       
     </span>
   </a>
@@ -1739,6 +1750,8 @@
       
         
       
+        
+      
     
     
     
@@ -1836,6 +1849,34 @@
     
   
     Motion & Features
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/signals/face/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Face Signals
   
 
     
@@ -2060,6 +2101,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#faces" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Faces
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2149,7 +2201,7 @@
 <h1 id="video-pipeline">Video Pipeline<a class="headerlink" href="#video-pipeline" title="Permanent link">&para;</a></h1>
 <p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Video&lt;/span&gt;" href="../../api/video/#physiotrack.Video"><code>Video</code></a> is the high-level orchestrator that runs the <strong>full
 inference pipeline</strong> over a clip, camera device or RTSP stream. You attach the
-predictors you want — detection, pose, tracking, segmentation, face orientation,
+predictors you want — detection, pose, tracking, segmentation, face analysis,
 depth — and it drives them frame-by-frame (optionally in batches), composites every
 enabled model's output onto each frame, writes an annotated MP4, and returns the
 per-frame results as structured data.</p>
@@ -2159,8 +2211,8 @@ complete multi-model pipeline. Nothing runs until you call
 <p><img alt="Full inference overlay: pose, tracking, segmentation, depth and side panels composited on one frame" src="../../images/full_inference_overlay.png" /></p>
 <h2 id="what-video-orchestrates">What Video orchestrates<a class="headerlink" href="#what-video-orchestrates" title="Permanent link">&para;</a></h2>
 <p>The per-batch pipeline order is:</p>
-<p><strong>detection → pose → tracking → segmentation → face orientation → depth →
-overlay / compositing</strong></p>
+<p><strong>detection → tracking → pose → segmentation → faces (detection, subject ids, face
+stages) → depth → overlay / compositing</strong></p>
 <p>You attach models by passing already-constructed predictor instances to the
 constructor; any left as <code>None</code> are simply skipped. On top of the model overlays,
 <code>Video</code> can build side panels — a keypoint-motion plot, joint-angle / ROM grids, a
@@ -2180,17 +2232,17 @@ any pose preset, e.g. <code>Pose.VRStudent</code>.</p>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">pose</span> <span class="o">=</span> <span class="n">Pose</span><span class="o">.</span><span class="n">VRStudent</span><span class="p">(</span><span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>
 </span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="n">video</span> <span class="o">=</span> <span class="n">Video</span><span class="p">(</span>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">source</span><span class="o">=</span><span class="s2">&quot;clip.mp4&quot;</span><span class="p">,</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">source</span><span class="o">=</span><span class="s2">"clip.mp4"</span><span class="p">,</span>
 </span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="n">pose</span><span class="o">=</span><span class="n">pose</span><span class="p">,</span>
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="n">output_dir</span><span class="o">=</span><span class="s2">&quot;output&quot;</span><span class="p">,</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="n">output_dir</span><span class="o">=</span><span class="s2">"output"</span><span class="p">,</span>
 </span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 </span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="p">)</span>
 </span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>
 </span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="n">results</span> <span class="o">=</span> <span class="n">video</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
-</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>    <span class="s2">&quot;output/clip_poses.mp4&quot;</span><span class="p">,</span>     <span class="c1"># annotated video (optional)</span>
-</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>    <span class="s2">&quot;output/clip_result.json&quot;</span><span class="p">,</span>   <span class="c1"># per-frame JSON dump (optional)</span>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>    <span class="s2">"output/clip_poses.mp4"</span><span class="p">,</span>     <span class="c1"># annotated video (optional)</span>
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>    <span class="s2">"output/clip_result.json"</span><span class="p">,</span>   <span class="c1"># per-frame JSON dump (optional)</span>
 </span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="p">)</span>
-</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Processed </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">results</span><span class="p">)</span><span class="si">}</span><span class="s2"> frames&quot;</span><span class="p">)</span>
+</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Processed </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">results</span><span class="p">)</span><span class="si">}</span><span class="s2"> frames"</span><span class="p">)</span>
 </span></code></pre></div>
 <h2 id="constructing-a-video">Constructing a Video<a class="headerlink" href="#constructing-a-video" title="Permanent link">&para;</a></h2>
 <p>Pass predictor <strong>instances</strong> (or <code>None</code> to skip a stage); <code>detector</code> and
@@ -2202,15 +2254,15 @@ nothing until <code>run()</code>.</p>
 </span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">pose</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">Pose</span><span class="o">.</span><span class="n">Custom</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="n">pt</span><span class="o">.</span><span class="n">Models</span><span class="o">.</span><span class="n">Pose</span><span class="o">.</span><span class="n">ViTPose</span><span class="o">.</span><span class="n">WholeBody</span><span class="o">.</span><span class="n">b_wholebody</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
 </span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">detector</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">Detection</span><span class="o">.</span><span class="n">VRStudent</span><span class="p">(</span><span class="n">device</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
 </span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="n">cfg</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">TrackerConfig</span><span class="p">(</span><span class="n">tracker</span><span class="o">=</span><span class="s2">&quot;ocsort&quot;</span><span class="p">,</span> <span class="n">classes</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="n">cfg</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">TrackerConfig</span><span class="p">(</span><span class="n">tracker</span><span class="o">=</span><span class="s2">"ocsort"</span><span class="p">,</span> <span class="n">classes</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
 </span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="n">tracker</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">Tracker</span><span class="p">(</span><span class="n">config</span><span class="o">=</span><span class="n">cfg</span><span class="p">)</span>
 </span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>
 </span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="n">video</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">Video</span><span class="p">(</span>
-</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>    <span class="n">source</span><span class="o">=</span><span class="s2">&quot;clip.mp4&quot;</span><span class="p">,</span>       <span class="c1"># file path, rtsp:// URL, or int camera index</span>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>    <span class="n">source</span><span class="o">=</span><span class="s2">"clip.mp4"</span><span class="p">,</span>       <span class="c1"># file path, rtsp:// URL, or int camera index</span>
 </span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>    <span class="n">pose</span><span class="o">=</span><span class="n">pose</span><span class="p">,</span>
 </span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>    <span class="n">detector</span><span class="o">=</span><span class="n">detector</span><span class="p">,</span>       <span class="c1"># requires a Pose.Custom estimator (see above)</span>
 </span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>    <span class="n">tracker</span><span class="o">=</span><span class="n">tracker</span><span class="p">,</span>
-</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>    <span class="n">output_dir</span><span class="o">=</span><span class="s2">&quot;output&quot;</span><span class="p">,</span>
+</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>    <span class="n">output_dir</span><span class="o">=</span><span class="s2">"output"</span><span class="p">,</span>
 </span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>    <span class="n">batch_size</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
 </span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>    <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 </span><span id="__span-1-17"><a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a><span class="p">)</span>
@@ -2229,7 +2281,7 @@ nothing until <code>run()</code>.</p>
 <tbody>
 <tr>
 <td>Models</td>
-<td><code>detector</code>, <code>pose</code>, <code>segmenter</code>, <code>tracker</code>, <code>face</code>, <code>face_orientation</code>, <code>depth</code>, <code>ego_video</code></td>
+<td><code>detector</code>, <code>pose</code>, <code>segmenter</code>, <code>tracker</code>, <code>face</code>, <code>face_stages</code>, <code>depth</code>, <code>ego_video</code></td>
 <td>Which predictors run; <code>None</code> skips a stage. <code>detector</code> / <code>segmenter</code> accept a list.</td>
 </tr>
 <tr>
@@ -2316,7 +2368,8 @@ nothing until <code>run()</code>.</p>
   segmentation mask, never a raw face box). Defaults to <code>None</code>, which builds a SegFace
   <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;FaceSkinExtractor&lt;/span&gt;" href="../../api/signals/rppg/#physiotrack.signals.FaceSkinExtractor"><code>FaceSkinExtractor</code></a> (it finds faces itself, so
   <strong>no face detector is needed</strong>). Override with a custom mask provider — a callable
-  <code>roi(frame) -&gt; mask</code> or an object with <code>skin_mask(frame) -&gt; mask</code> (e.g. your own
+  <code>roi(frame) -&gt; mask</code> or an object with <code>skin_mask(frame, boxes=None) -&gt; mask</code>, which
+  receives the frame's face boxes when the pipeline finds faces (e.g. your own
   face-neck segmentation model). Pass a <code>FaceSkinExtractor(device=...)</code> to control its
   device.</li>
 </ul>
@@ -2333,26 +2386,45 @@ shows.</p>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
 </span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="c1"># Default: rPPG on the SegFace face-skin segmentation, respiration from motion.</span>
 </span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">video</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">Video</span><span class="p">(</span>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    <span class="n">source</span><span class="o">=</span><span class="s2">&quot;session.mp4&quot;</span><span class="p">,</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    <span class="n">source</span><span class="o">=</span><span class="s2">"session.mp4"</span><span class="p">,</span>
 </span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>    <span class="n">pose</span><span class="o">=</span><span class="n">pt</span><span class="o">.</span><span class="n">Pose</span><span class="o">.</span><span class="n">Person</span><span class="p">(),</span>
 </span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>    <span class="n">rppg</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">hrv</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>                        <span class="c1"># rppg_roi=None -&gt; SegFace skin (built in)</span>
-</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>    <span class="n">respiration</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">respiration_source</span><span class="o">=</span><span class="s2">&quot;motion&quot;</span><span class="p">,</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>    <span class="n">respiration</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">respiration_source</span><span class="o">=</span><span class="s2">"motion"</span><span class="p">,</span>
 </span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="p">)</span>
-</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="n">video</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">output_video</span><span class="o">=</span><span class="s2">&quot;out.mp4&quot;</span><span class="p">)</span>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="n">video</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">output_video</span><span class="o">=</span><span class="s2">"out.mp4"</span><span class="p">)</span>
 </span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>
 </span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="c1"># VR / occluded face: sample the neck / lower-face skin from your own segmentation.</span>
 </span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="k">def</span><span class="w"> </span><span class="nf">face_neck_mask</span><span class="p">(</span><span class="n">frame</span><span class="p">):</span>
 </span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>    <span class="k">return</span> <span class="n">my_face_neck_segmentor</span><span class="p">(</span><span class="n">frame</span><span class="p">)</span>        <span class="c1"># -&gt; boolean (H, W) skin mask</span>
 </span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>
 </span><span id="__span-2-16"><a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a><span class="n">video</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">Video</span><span class="p">(</span>
-</span><span id="__span-2-17"><a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a>    <span class="n">source</span><span class="o">=</span><span class="s2">&quot;hmd_session.mp4&quot;</span><span class="p">,</span>
+</span><span id="__span-2-17"><a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a>    <span class="n">source</span><span class="o">=</span><span class="s2">"hmd_session.mp4"</span><span class="p">,</span>
 </span><span id="__span-2-18"><a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a>    <span class="n">pose</span><span class="o">=</span><span class="n">pt</span><span class="o">.</span><span class="n">Pose</span><span class="o">.</span><span class="n">Person</span><span class="p">(),</span>
 </span><span id="__span-2-19"><a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a>    <span class="n">rppg</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">hrv</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 </span><span id="__span-2-20"><a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a>    <span class="n">rppg_roi</span><span class="o">=</span><span class="n">face_neck_mask</span><span class="p">,</span>                     <span class="c1"># neck/lower-face skin ROI</span>
-</span><span id="__span-2-21"><a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a>    <span class="n">respiration</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">respiration_source</span><span class="o">=</span><span class="s2">&quot;motion&quot;</span><span class="p">,</span>
+</span><span id="__span-2-21"><a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a>    <span class="n">respiration</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">respiration_source</span><span class="o">=</span><span class="s2">"motion"</span><span class="p">,</span>
 </span><span id="__span-2-22"><a id="__codelineno-2-22" name="__codelineno-2-22" href="#__codelineno-2-22"></a><span class="p">)</span>
-</span><span id="__span-2-23"><a id="__codelineno-2-23" name="__codelineno-2-23" href="#__codelineno-2-23"></a><span class="n">video</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">output_video</span><span class="o">=</span><span class="s2">&quot;out.mp4&quot;</span><span class="p">)</span>
+</span><span id="__span-2-23"><a id="__codelineno-2-23" name="__codelineno-2-23" href="#__codelineno-2-23"></a><span class="n">video</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">output_video</span><span class="o">=</span><span class="s2">"out.mp4"</span><span class="p">)</span>
 </span></code></pre></div>
+<h3 id="faces">Faces<a class="headerlink" href="#faces" title="Permanent link">&para;</a></h3>
+<p><code>face_stages=[...]</code> runs <a href="../face/">face stages</a> on every face, in order. The faces come
+from a <code>face</code> detector (<code>pt.Face()</code> / <code>pt.VRFace()</code>), or — when <code>detector</code> is itself a
+face detector — they are the tracked subjects.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">video</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">Video</span><span class="p">(</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    <span class="n">source</span><span class="o">=</span><span class="s2">"session.mp4"</span><span class="p">,</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    <span class="n">detector</span><span class="o">=</span><span class="n">pt</span><span class="o">.</span><span class="n">Detection</span><span class="o">.</span><span class="n">Person</span><span class="p">(),</span> <span class="n">tracker</span><span class="o">=</span><span class="n">pt</span><span class="o">.</span><span class="n">Tracker</span><span class="p">(),</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>    <span class="n">face</span><span class="o">=</span><span class="n">pt</span><span class="o">.</span><span class="n">VRFace</span><span class="p">(),</span>                                         <span class="c1"># faces of tracked people</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>    <span class="n">face_stages</span><span class="o">=</span><span class="p">[</span><span class="n">pt</span><span class="o">.</span><span class="n">FaceOrientation</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="n">pt</span><span class="o">.</span><span class="n">Models</span><span class="o">.</span><span class="n">Face</span><span class="o">.</span><span class="n">Orientation</span><span class="o">.</span><span class="n">VR</span><span class="p">),</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>                 <span class="n">pt</span><span class="o">.</span><span class="n">FaceLandmarks</span><span class="p">()],</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="p">)</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="n">results</span> <span class="o">=</span> <span class="n">video</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="n">blinks</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">signals</span><span class="o">.</span><span class="n">detect_blinks</span><span class="p">(</span><span class="n">results</span><span class="p">,</span> <span class="n">detection_id</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>   <span class="c1"># person 1's blinks</span>
+</span></code></pre></div>
+<p>With a tracker, a face takes the track id of the person box that contains most of it
+(one face per person), so face signals follow a person across frames; without one, face
+ids are <code>None</code>. Faces are detected on the clean frames, drawn onto the output, and
+returned as <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;FrameResult&lt;/span&gt;" href="../../api/results/#physiotrack.FrameResult"><code>FrameResult.faces</code></a>. When rPPG is on, its skin
+segmentation reuses these face boxes instead of detecting faces again.</p>
 <div class="admonition tip">
 <p class="admonition-title">Batching and tracking</p>
 <p><code>batch_size</code> sets how many frames each pipeline step processes together (values
@@ -2366,14 +2438,14 @@ regardless of batch size, because a tracker is stateful. See the
 <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VideoResults&lt;/span&gt;" href="../../api/results/#physiotrack.VideoResults"><code>VideoResults</code></a>, a typed sequence with one
 <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;FrameResult&lt;/span&gt;" href="../../api/results/#physiotrack.FrameResult"><code>FrameResult</code></a> per processed frame. It optionally writes an
 annotated MP4 (H.264 when available, otherwise MPEG-4) and a JSON dump.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">results</span> <span class="o">=</span> <span class="n">video</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    <span class="n">output_video</span><span class="o">=</span><span class="s2">&quot;output/clip.mp4&quot;</span><span class="p">,</span>   <span class="c1"># optional</span>
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    <span class="n">output_json</span><span class="o">=</span><span class="s2">&quot;output/clip.json&quot;</span><span class="p">,</span>   <span class="c1"># optional</span>
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">results</span> <span class="o">=</span> <span class="n">video</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>    <span class="n">output_video</span><span class="o">=</span><span class="s2">"output/clip.mp4"</span><span class="p">,</span>   <span class="c1"># optional</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>    <span class="n">output_json</span><span class="o">=</span><span class="s2">"output/clip.json"</span><span class="p">,</span>   <span class="c1"># optional</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="p">)</span>
 </span></code></pre></div>
 <p>Each <code>FrameResult</code> is iterable over its typed <code>Instance</code> objects and carries metadata.
 Its serialized dictionary always has <code>frame_id</code> (int), <code>timestamp</code> (float seconds),
-and <code>instances</code> (list), plus optional pipeline fields:</p>
+<code>task</code> and <code>instances</code> (list), plus optional pipeline fields:</p>
 <table>
 <thead>
 <tr>
@@ -2394,6 +2466,11 @@ and <code>instances</code> (list), plus optional pipeline fields:</p>
 <td>Seconds from start (float).</td>
 </tr>
 <tr>
+<td><code>task</code></td>
+<td>always</td>
+<td><code>"pose"</code>, <code>"track"</code> or <code>"detect"</code> — which stage the instances come from.</td>
+</tr>
+<tr>
 <td><code>instances</code></td>
 <td>always</td>
 <td>Per-subject fields from the richest attached stage: pose instances with keypoints, else tracked instances with persistent <code>id</code>s, else bare detections. Empty when no detection, tracking, or pose stage is attached.</td>
@@ -2404,9 +2481,14 @@ and <code>instances</code> (list), plus optional pipeline fields:</p>
 <td>The tracked subject box <code>[x1, y1, x2, y2]</code>.</td>
 </tr>
 <tr>
-<td><code>face_orientation</code></td>
-<td>face + face-orientation are attached</td>
-<td>List of head-pose dicts (<code>bbox</code>, <code>pose</code> = yaw/pitch/roll).</td>
+<td><code>faces</code></td>
+<td>a face source (<code>face=</code> or a face <code>detector</code>) is attached</td>
+<td>The frame's faces as a <code>task="face"</code> result: each face's <code>id</code>, <code>box</code> and the fields its face stages added. Face meshes are included with <code>include_arrays=True</code>.</td>
+</tr>
+<tr>
+<td><code>vitals</code></td>
+<td>rPPG / HRV / respiration are on</td>
+<td><code>hr</code>, <code>snr</code>, <code>hrv</code>, <code>respiration</code>.</td>
 </tr>
 </tbody>
 </table>
@@ -2417,54 +2499,54 @@ and <code>instances</code> (list), plus optional pipeline fields:</p>
 across several input files, writing <code>&lt;name&gt;_processed.mp4</code> / <code>&lt;name&gt;_result.json</code>
 into an output directory and returning a <code>dict</code> mapping each file stem to its
 <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;VideoResults&lt;/span&gt;" href="../../api/results/#physiotrack.VideoResults"><code>VideoResults</code></a> sequence:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">results</span> <span class="o">=</span> <span class="n">video</span><span class="o">.</span><span class="n">batch_run</span><span class="p">(</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>    <span class="p">[</span><span class="s2">&quot;clip_a.mp4&quot;</span><span class="p">,</span> <span class="s2">&quot;clip_b.mp4&quot;</span><span class="p">],</span>
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>    <span class="n">output_dir</span><span class="o">=</span><span class="s2">&quot;output&quot;</span><span class="p">,</span>
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>    <span class="n">save_videos</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>    <span class="n">save_json</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">results</span> <span class="o">=</span> <span class="n">video</span><span class="o">.</span><span class="n">batch_run</span><span class="p">(</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    <span class="p">[</span><span class="s2">"clip_a.mp4"</span><span class="p">,</span> <span class="s2">"clip_b.mp4"</span><span class="p">],</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>    <span class="n">output_dir</span><span class="o">=</span><span class="s2">"output"</span><span class="p">,</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>    <span class="n">save_videos</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>    <span class="n">save_json</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="p">)</span>
 </span></code></pre></div>
 <h2 id="complete-example">Complete example<a class="headerlink" href="#complete-example" title="Permanent link">&para;</a></h2>
 <p>A pose + detector + tracker pass with the subject-lock overlay, adapted from
 <code>examples/tracker_aided_pose_video.py</code>:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">physiotrack</span><span class="w"> </span><span class="kn">import</span> <span class="n">Pose</span><span class="p">,</span> <span class="n">Video</span><span class="p">,</span> <span class="n">Models</span><span class="p">,</span> <span class="n">Detection</span><span class="p">,</span> <span class="n">Tracker</span><span class="p">,</span> <span class="n">TrackerConfig</span>
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
-</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>
-</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="c1"># Pose estimator with an explicit detector + tracker.</span>
-</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="n">pose_estimator</span> <span class="o">=</span> <span class="n">Pose</span><span class="o">.</span><span class="n">Custom</span><span class="p">(</span>
-</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>    <span class="n">model</span><span class="o">=</span><span class="n">Models</span><span class="o">.</span><span class="n">Pose</span><span class="o">.</span><span class="n">ViTPose</span><span class="o">.</span><span class="n">WholeBody</span><span class="o">.</span><span class="n">b_wholebody</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="mi">0</span>
-</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="p">)</span>
-</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="n">detector</span> <span class="o">=</span> <span class="n">Detection</span><span class="o">.</span><span class="n">VRStudent</span><span class="p">(</span>
-</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>    <span class="n">model</span><span class="o">=</span><span class="n">Models</span><span class="o">.</span><span class="n">Detection</span><span class="o">.</span><span class="n">YOLO</span><span class="o">.</span><span class="n">VRSTUDENT</span><span class="o">.</span><span class="n">m_vrstudent</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="mi">0</span>
-</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="p">)</span>
-</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a>
-</span><span id="__span-5-12"><a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="n">tracker_config</span> <span class="o">=</span> <span class="n">TrackerConfig</span><span class="p">()</span>
-</span><span id="__span-5-13"><a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a><span class="n">tracker_config</span><span class="o">.</span><span class="n">tracker_type</span> <span class="o">=</span> <span class="s2">&quot;ocsort&quot;</span>
-</span><span id="__span-5-14"><a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a><span class="n">tracker_config</span><span class="o">.</span><span class="n">classes</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-</span><span id="__span-5-15"><a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a><span class="n">tracker_config</span><span class="o">.</span><span class="n">enable_subject_lock</span> <span class="o">=</span> <span class="kc">True</span>     <span class="c1"># lock onto one subject</span>
-</span><span id="__span-5-16"><a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a><span class="n">tracker</span> <span class="o">=</span> <span class="n">Tracker</span><span class="p">(</span><span class="n">config</span><span class="o">=</span><span class="n">tracker_config</span><span class="p">)</span>
-</span><span id="__span-5-17"><a id="__codelineno-5-17" name="__codelineno-5-17" href="#__codelineno-5-17"></a>
-</span><span id="__span-5-18"><a id="__codelineno-5-18" name="__codelineno-5-18" href="#__codelineno-5-18"></a><span class="n">input_video</span> <span class="o">=</span> <span class="s2">&quot;BV_S17_cut1.mp4&quot;</span>
-</span><span id="__span-5-19"><a id="__codelineno-5-19" name="__codelineno-5-19" href="#__codelineno-5-19"></a><span class="n">output_directory</span> <span class="o">=</span> <span class="s2">&quot;output&quot;</span>
-</span><span id="__span-5-20"><a id="__codelineno-5-20" name="__codelineno-5-20" href="#__codelineno-5-20"></a><span class="n">video_name</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">input_video</span><span class="p">)</span><span class="o">.</span><span class="n">stem</span>
-</span><span id="__span-5-21"><a id="__codelineno-5-21" name="__codelineno-5-21" href="#__codelineno-5-21"></a>
-</span><span id="__span-5-22"><a id="__codelineno-5-22" name="__codelineno-5-22" href="#__codelineno-5-22"></a><span class="n">video_processor</span> <span class="o">=</span> <span class="n">Video</span><span class="p">(</span>
-</span><span id="__span-5-23"><a id="__codelineno-5-23" name="__codelineno-5-23" href="#__codelineno-5-23"></a>    <span class="n">source</span><span class="o">=</span><span class="n">input_video</span><span class="p">,</span>
-</span><span id="__span-5-24"><a id="__codelineno-5-24" name="__codelineno-5-24" href="#__codelineno-5-24"></a>    <span class="n">pose</span><span class="o">=</span><span class="n">pose_estimator</span><span class="p">,</span>
-</span><span id="__span-5-25"><a id="__codelineno-5-25" name="__codelineno-5-25" href="#__codelineno-5-25"></a>    <span class="n">detector</span><span class="o">=</span><span class="n">detector</span><span class="p">,</span>       <span class="c1"># Pose.Custom consumes these boxes</span>
-</span><span id="__span-5-26"><a id="__codelineno-5-26" name="__codelineno-5-26" href="#__codelineno-5-26"></a>    <span class="n">tracker</span><span class="o">=</span><span class="n">tracker</span><span class="p">,</span>
-</span><span id="__span-5-27"><a id="__codelineno-5-27" name="__codelineno-5-27" href="#__codelineno-5-27"></a>    <span class="n">fps</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>                <span class="c1"># process every frame at source fps</span>
-</span><span id="__span-5-28"><a id="__codelineno-5-28" name="__codelineno-5-28" href="#__codelineno-5-28"></a>    <span class="n">resize</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-</span><span id="__span-5-29"><a id="__codelineno-5-29" name="__codelineno-5-29" href="#__codelineno-5-29"></a>    <span class="n">rotate</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-</span><span id="__span-5-30"><a id="__codelineno-5-30" name="__codelineno-5-30" href="#__codelineno-5-30"></a>    <span class="n">output_dir</span><span class="o">=</span><span class="n">output_directory</span><span class="p">,</span>
-</span><span id="__span-5-31"><a id="__codelineno-5-31" name="__codelineno-5-31" href="#__codelineno-5-31"></a>    <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-</span><span id="__span-5-32"><a id="__codelineno-5-32" name="__codelineno-5-32" href="#__codelineno-5-32"></a><span class="p">)</span>
-</span><span id="__span-5-33"><a id="__codelineno-5-33" name="__codelineno-5-33" href="#__codelineno-5-33"></a>
-</span><span id="__span-5-34"><a id="__codelineno-5-34" name="__codelineno-5-34" href="#__codelineno-5-34"></a><span class="n">video_output_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">output_directory</span><span class="p">)</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">video_name</span><span class="si">}</span><span class="s2">_poses.mp4&quot;</span>
-</span><span id="__span-5-35"><a id="__codelineno-5-35" name="__codelineno-5-35" href="#__codelineno-5-35"></a><span class="n">json_output_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">output_directory</span><span class="p">)</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">video_name</span><span class="si">}</span><span class="s2">_result.json&quot;</span>
-</span><span id="__span-5-36"><a id="__codelineno-5-36" name="__codelineno-5-36" href="#__codelineno-5-36"></a>
-</span><span id="__span-5-37"><a id="__codelineno-5-37" name="__codelineno-5-37" href="#__codelineno-5-37"></a><span class="n">detection_data</span> <span class="o">=</span> <span class="n">video_processor</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">video_output_path</span><span class="p">,</span> <span class="n">json_output_path</span><span class="p">)</span>
-</span><span id="__span-5-38"><a id="__codelineno-5-38" name="__codelineno-5-38" href="#__codelineno-5-38"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Successfully processed video with </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">detection_data</span><span class="p">)</span><span class="si">}</span><span class="s2"> frames&quot;</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">physiotrack</span><span class="w"> </span><span class="kn">import</span> <span class="n">Pose</span><span class="p">,</span> <span class="n">Video</span><span class="p">,</span> <span class="n">Models</span><span class="p">,</span> <span class="n">Detection</span><span class="p">,</span> <span class="n">Tracker</span><span class="p">,</span> <span class="n">TrackerConfig</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="c1"># Pose estimator with an explicit detector + tracker.</span>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="n">pose_estimator</span> <span class="o">=</span> <span class="n">Pose</span><span class="o">.</span><span class="n">Custom</span><span class="p">(</span>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>    <span class="n">model</span><span class="o">=</span><span class="n">Models</span><span class="o">.</span><span class="n">Pose</span><span class="o">.</span><span class="n">ViTPose</span><span class="o">.</span><span class="n">WholeBody</span><span class="o">.</span><span class="n">b_wholebody</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="mi">0</span>
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="p">)</span>
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="n">detector</span> <span class="o">=</span> <span class="n">Detection</span><span class="o">.</span><span class="n">VRStudent</span><span class="p">(</span>
+</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>    <span class="n">model</span><span class="o">=</span><span class="n">Models</span><span class="o">.</span><span class="n">Detection</span><span class="o">.</span><span class="n">YOLO</span><span class="o">.</span><span class="n">VRSTUDENT</span><span class="o">.</span><span class="n">m_vrstudent</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="mi">0</span>
+</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="p">)</span>
+</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>
+</span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a><span class="n">tracker_config</span> <span class="o">=</span> <span class="n">TrackerConfig</span><span class="p">()</span>
+</span><span id="__span-6-13"><a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a><span class="n">tracker_config</span><span class="o">.</span><span class="n">tracker_type</span> <span class="o">=</span> <span class="s2">"ocsort"</span>
+</span><span id="__span-6-14"><a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a><span class="n">tracker_config</span><span class="o">.</span><span class="n">classes</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+</span><span id="__span-6-15"><a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a><span class="n">tracker_config</span><span class="o">.</span><span class="n">enable_subject_lock</span> <span class="o">=</span> <span class="kc">True</span>     <span class="c1"># lock onto one subject</span>
+</span><span id="__span-6-16"><a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a><span class="n">tracker</span> <span class="o">=</span> <span class="n">Tracker</span><span class="p">(</span><span class="n">config</span><span class="o">=</span><span class="n">tracker_config</span><span class="p">)</span>
+</span><span id="__span-6-17"><a id="__codelineno-6-17" name="__codelineno-6-17" href="#__codelineno-6-17"></a>
+</span><span id="__span-6-18"><a id="__codelineno-6-18" name="__codelineno-6-18" href="#__codelineno-6-18"></a><span class="n">input_video</span> <span class="o">=</span> <span class="s2">"BV_S17_cut1.mp4"</span>
+</span><span id="__span-6-19"><a id="__codelineno-6-19" name="__codelineno-6-19" href="#__codelineno-6-19"></a><span class="n">output_directory</span> <span class="o">=</span> <span class="s2">"output"</span>
+</span><span id="__span-6-20"><a id="__codelineno-6-20" name="__codelineno-6-20" href="#__codelineno-6-20"></a><span class="n">video_name</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">input_video</span><span class="p">)</span><span class="o">.</span><span class="n">stem</span>
+</span><span id="__span-6-21"><a id="__codelineno-6-21" name="__codelineno-6-21" href="#__codelineno-6-21"></a>
+</span><span id="__span-6-22"><a id="__codelineno-6-22" name="__codelineno-6-22" href="#__codelineno-6-22"></a><span class="n">video_processor</span> <span class="o">=</span> <span class="n">Video</span><span class="p">(</span>
+</span><span id="__span-6-23"><a id="__codelineno-6-23" name="__codelineno-6-23" href="#__codelineno-6-23"></a>    <span class="n">source</span><span class="o">=</span><span class="n">input_video</span><span class="p">,</span>
+</span><span id="__span-6-24"><a id="__codelineno-6-24" name="__codelineno-6-24" href="#__codelineno-6-24"></a>    <span class="n">pose</span><span class="o">=</span><span class="n">pose_estimator</span><span class="p">,</span>
+</span><span id="__span-6-25"><a id="__codelineno-6-25" name="__codelineno-6-25" href="#__codelineno-6-25"></a>    <span class="n">detector</span><span class="o">=</span><span class="n">detector</span><span class="p">,</span>       <span class="c1"># Pose.Custom consumes these boxes</span>
+</span><span id="__span-6-26"><a id="__codelineno-6-26" name="__codelineno-6-26" href="#__codelineno-6-26"></a>    <span class="n">tracker</span><span class="o">=</span><span class="n">tracker</span><span class="p">,</span>
+</span><span id="__span-6-27"><a id="__codelineno-6-27" name="__codelineno-6-27" href="#__codelineno-6-27"></a>    <span class="n">fps</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>                <span class="c1"># process every frame at source fps</span>
+</span><span id="__span-6-28"><a id="__codelineno-6-28" name="__codelineno-6-28" href="#__codelineno-6-28"></a>    <span class="n">resize</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+</span><span id="__span-6-29"><a id="__codelineno-6-29" name="__codelineno-6-29" href="#__codelineno-6-29"></a>    <span class="n">rotate</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+</span><span id="__span-6-30"><a id="__codelineno-6-30" name="__codelineno-6-30" href="#__codelineno-6-30"></a>    <span class="n">output_dir</span><span class="o">=</span><span class="n">output_directory</span><span class="p">,</span>
+</span><span id="__span-6-31"><a id="__codelineno-6-31" name="__codelineno-6-31" href="#__codelineno-6-31"></a>    <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+</span><span id="__span-6-32"><a id="__codelineno-6-32" name="__codelineno-6-32" href="#__codelineno-6-32"></a><span class="p">)</span>
+</span><span id="__span-6-33"><a id="__codelineno-6-33" name="__codelineno-6-33" href="#__codelineno-6-33"></a>
+</span><span id="__span-6-34"><a id="__codelineno-6-34" name="__codelineno-6-34" href="#__codelineno-6-34"></a><span class="n">video_output_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">output_directory</span><span class="p">)</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">video_name</span><span class="si">}</span><span class="s2">_poses.mp4"</span>
+</span><span id="__span-6-35"><a id="__codelineno-6-35" name="__codelineno-6-35" href="#__codelineno-6-35"></a><span class="n">json_output_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">output_directory</span><span class="p">)</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">video_name</span><span class="si">}</span><span class="s2">_result.json"</span>
+</span><span id="__span-6-36"><a id="__codelineno-6-36" name="__codelineno-6-36" href="#__codelineno-6-36"></a>
+</span><span id="__span-6-37"><a id="__codelineno-6-37" name="__codelineno-6-37" href="#__codelineno-6-37"></a><span class="n">detection_data</span> <span class="o">=</span> <span class="n">video_processor</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">video_output_path</span><span class="p">,</span> <span class="n">json_output_path</span><span class="p">)</span>
+</span><span id="__span-6-38"><a id="__codelineno-6-38" name="__codelineno-6-38" href="#__codelineno-6-38"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Successfully processed video with </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">detection_data</span><span class="p">)</span><span class="si">}</span><span class="s2"> frames"</span><span class="p">)</span>
 </span></code></pre></div>
 <div class="admonition tip">
 <p class="admonition-title">Live preview and FPS stats</p>

@@ -832,7 +832,7 @@
   <span class="md-ellipsis">
     
   
-    Face & Head Orientation
+    Face Analysis
   
 
     
@@ -993,10 +993,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#api-choice-face-or-detectionface" class="md-nav__link">
+  <a href="#analyse-faces" class="md-nav__link">
     <span class="md-ellipsis">
       
-        API choice: Face() or Detection.Face()?
+        Analyse faces
       
     </span>
   </a>
@@ -1706,6 +1706,8 @@
       
         
       
+        
+      
     
     
     
@@ -1803,6 +1805,34 @@
     
   
     Motion & Features
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/signals/face/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Face Signals
   
 
     
@@ -2050,10 +2080,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#api-choice-face-or-detectionface" class="md-nav__link">
+  <a href="#analyse-faces" class="md-nav__link">
     <span class="md-ellipsis">
       
-        API choice: Face() or Detection.Face()?
+        Analyse faces
       
     </span>
   </a>
@@ -2081,7 +2111,7 @@
 
 
 <h1 id="face-detection-tracking-examples">Face Detection &amp; Tracking Examples<a class="headerlink" href="#face-detection-tracking-examples" title="Permanent link">&para;</a></h1>
-<p>PhysioTrack includes two runnable, self-contained examples with small synthetic
+<p>PhysioTrack includes runnable, self-contained examples with small synthetic
 inputs. They are designed to answer three practical questions: does the model run,
 what did it return, and how can those results be inspected outside Python?</p>
 <table>
@@ -2102,6 +2132,11 @@ what did it return, and how can those results be inspected outside Python?</p>
 <td><a href="https://github.com/tharindu326/physiotrack/tree/main/examples/face_tracking"><code>examples/face_tracking</code></a></td>
 <td>one 10-second clip</td>
 <td>annotated MP4, per-frame JSON, track CSV</td>
+</tr>
+<tr>
+<td><a href="https://github.com/tharindu326/physiotrack/tree/main/examples/face_analysis"><code>examples/face_analysis</code></a></td>
+<td>the selfie image and the clip</td>
+<td>every face stage on an image; per-face blinks and mouth motion over the video</td>
 </tr>
 </tbody>
 </table>
@@ -2127,7 +2162,7 @@ model scope, SynthID status, and checksums.</p>
 model is constructed once and reused for every image. Use CUDA, a different model
 size, or your own input like this:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>python<span class="w"> </span>examples/face_detection/detect_faces.py<span class="w"> </span>--device<span class="w"> </span>cuda
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>python<span class="w"> </span>examples/face_detection/detect_faces.py<span class="w"> </span>--model<span class="w"> </span>nano<span class="w"> </span>--input<span class="w"> </span>path/to/images
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>python<span class="w"> </span>examples/face_detection/detect_faces.py<span class="w"> </span>--model<span class="w"> </span>n_face<span class="w"> </span>--input<span class="w"> </span>path/to/images
 </span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>python<span class="w"> </span>examples/face_detection/detect_faces.py<span class="w"> </span>--input<span class="w"> </span>path/to/one_image.jpg
 </span></code></pre></div>
 <p>Each annotated image has normal face boxes and confidence labels plus a top-left
@@ -2136,7 +2171,7 @@ panel containing:</p>
 <li><code>Faces detected</code>: the number of <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Instance&lt;/span&gt;" href="../../api/results/#physiotrack.Instance"><code>Instance</code></a> objects in
   this image's <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Result&lt;/span&gt;" href="../../api/results/#physiotrack.Result"><code>Result</code></a>;</li>
 <li><code>Detector</code>: the exact checkpoint filename, such as <code>yolov11m-face.pt</code>;</li>
-<li><code>Device</code> and elapsed inference time for this call.</li>
+<li><code>Device</code>: the requested compute device.</li>
 </ul>
 <p><img alt="Face detections in the synthetic point-of-view exercise scene" src="../../images/exercise_class_pov.jpg" /></p>
 <p><em>Example output from the bundled point-of-view scene: seven retained face boxes,
@@ -2144,8 +2179,8 @@ confidence labels, and the run-context panel. This is a qualitative illustration
 not a ground-truth accuracy result.</em></p>
 <h3 id="detection-output">Detection output<a class="headerlink" href="#detection-output" title="Permanent link">&para;</a></h3>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>examples/face_detection/results/
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>├── annotated/&lt;scene&gt;/&lt;image&gt;.png
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>├── predictions/&lt;scene&gt;/&lt;image&gt;.json
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>├── annotated/&lt;scene&gt;__&lt;image&gt;.png
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>├── predictions/&lt;scene&gt;__&lt;image&gt;.json
 </span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>├── summary.csv
 </span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>└── run.json
 </span></code></pre></div>
@@ -2159,8 +2194,8 @@ not a ground-truth accuracy result.</em></p>
 </thead>
 <tbody>
 <tr>
-<td><code>image</code>, <code>scene</code></td>
-<td>relative input path and its first directory (for example <code>crowd</code>)</td>
+<td><code>image</code></td>
+<td>relative input path</td>
 </tr>
 <tr>
 <td><code>width</code>, <code>height</code></td>
@@ -2174,43 +2209,31 @@ not a ground-truth accuracy result.</em></p>
 <td><code>mean_confidence</code>, <code>minimum_confidence</code></td>
 <td>summaries of the retained face confidences; blank when none were found</td>
 </tr>
-<tr>
-<td><code>inference_ms</code></td>
-<td>one end-to-end <code>detector.predict(image)</code> call; model setup is excluded</td>
-</tr>
-<tr>
-<td><code>model</code>, <code>device_requested</code></td>
-<td>checkpoint filename and requested compute device</td>
-</tr>
-<tr>
-<td><code>status</code>, <code>error</code></td>
-<td><code>ok</code>, or a readable exception while other images continue processing</td>
-</tr>
 </tbody>
 </table>
-<p>Each per-image JSON is the detailed, typed counterpart:</p>
+<p>Each per-image JSON is exactly <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;to_json&lt;/span&gt;" href="../../api/results/#physiotrack.Result.to_json"><code>Result.to_json()</code></a>, so it
+reloads with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;from_dict&lt;/span&gt;
+
+
+  &lt;span class=&quot;doc doc-labels&quot;&gt;
+      &lt;small class=&quot;doc doc-label doc-label-classmethod&quot;&gt;&lt;code&gt;classmethod&lt;/code&gt;&lt;/small&gt;
+  &lt;/span&gt;" href="../../api/results/#physiotrack.Result.from_dict"><code>Result.from_dict</code></a>:</p>
 <div class="language-json highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="p">{</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span><span class="nt">&quot;source&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;image&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;selfie/two_person_selfie.jpg&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;width&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1643</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;height&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2200</span><span class="p">},</span>
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">  </span><span class="nt">&quot;configuration&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;entry_point&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;physiotrack.Face&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;model&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;yolov11m-face.pt&quot;</span><span class="p">},</span>
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">  </span><span class="nt">&quot;timing&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;inference_ms&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">123.4</span><span class="p">},</span>
-</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">  </span><span class="nt">&quot;result&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">    </span><span class="nt">&quot;task&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;face&quot;</span><span class="p">,</span>
-</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">    </span><span class="nt">&quot;instances&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w">      </span><span class="p">{</span><span class="nt">&quot;box&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mf">100.0</span><span class="p">,</span><span class="w"> </span><span class="mf">120.0</span><span class="p">,</span><span class="w"> </span><span class="mf">400.0</span><span class="p">,</span><span class="w"> </span><span class="mf">520.0</span><span class="p">],</span><span class="w"> </span><span class="nt">&quot;confidence&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.97</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;cls&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">}</span>
-</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="w">    </span><span class="p">]</span>
-</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="w">  </span><span class="p">}</span>
-</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="p">}</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span><span class="nt">"task"</span><span class="p">:</span><span class="w"> </span><span class="s2">"face"</span><span class="p">,</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">  </span><span class="nt">"instances"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">    </span><span class="p">{</span><span class="nt">"box"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mf">100.0</span><span class="p">,</span><span class="w"> </span><span class="mf">120.0</span><span class="p">,</span><span class="w"> </span><span class="mf">400.0</span><span class="p">,</span><span class="w"> </span><span class="mf">520.0</span><span class="p">],</span><span class="w"> </span><span class="nt">"confidence"</span><span class="p">:</span><span class="w"> </span><span class="mf">0.97</span><span class="p">,</span><span class="w"> </span><span class="nt">"cls"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="nt">"cls_name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"face"</span><span class="p">}</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">  </span><span class="p">],</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">  </span><span class="nt">"names"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"0"</span><span class="p">:</span><span class="w"> </span><span class="s2">"face"</span><span class="p">}</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="p">}</span>
 </span></code></pre></div>
-<p>The example is the outer experiment record; <code>result</code> is exactly
-<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;to_dict&lt;/span&gt;" href="../../api/results/#physiotrack.Result.to_dict"><code>Result.to_dict()</code></a>. Coordinates are <code>[x1, y1, x2,
-y2]</code> pixels. <code>run.json</code> records the thresholds, warm-up count, model setup time,
-aggregate counts/timing, PhysioTrack/OpenCV/PyTorch versions, CUDA visibility, and
-GPU name so the run can be interpreted later.</p>
+<p>Coordinates are <code>[x1, y1, x2, y2]</code> pixels. <code>run.json</code> records the registry path of the
+model, the device, the thresholds, the image and face counts, and the detector's mean
+inference time.</p>
 <h3 id="compare-cpu-and-gpu">Compare CPU and GPU<a class="headerlink" href="#compare-cpu-and-gpu" title="Permanent link">&para;</a></h3>
 <p>The companion benchmark runs the same image, weights, thresholds, and entry point on
 both devices:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>python<span class="w"> </span>examples/face_detection/compare_cpu_gpu.py
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>python<span class="w"> </span>examples/face_detection/compare_cpu_gpu.py<span class="w"> </span>--model<span class="w"> </span>nano<span class="w"> </span>--repeats<span class="w"> </span><span class="m">20</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>python<span class="w"> </span>examples/face_detection/compare_cpu_gpu.py<span class="w"> </span>--model<span class="w"> </span>n_face<span class="w"> </span>--repeats<span class="w"> </span><span class="m">20</span>
 </span></code></pre></div>
 <p>It requires CUDA. Each device receives separate warm-up runs; CUDA is synchronized
 around every measured <code>predict()</code> call so queued kernels are included in the elapsed
@@ -2228,12 +2251,12 @@ time. The output directory <code>examples/face_detection/results/cpu_vs_gpu/</co
 <td>final annotated result and mean timing for each device</td>
 </tr>
 <tr>
-<td><code>side_by_side.png</code>, <code>side_by_side.jpg</code></td>
-<td>the two annotated results on one canvas; JPEG is the compact documentation preview</td>
+<td><code>side_by_side.jpg</code></td>
+<td>the two annotated results on one canvas, the compact documentation preview</td>
 </tr>
 <tr>
 <td><code>comparison.json</code></td>
-<td>raw timings, summary statistics, speed-up, GPU memory, runtime metadata, and greedy box-IoU agreement</td>
+<td>timing statistics per device, the speed-up, and the agreement of the two box sets (one-to-one IoU matching)</td>
 </tr>
 </tbody>
 </table>
@@ -2256,7 +2279,7 @@ PyTorch/CUDA versions, image size, thermal state, and repeat count all affect it
 through the core <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Video&lt;/span&gt;" href="../../api/video/#physiotrack.Video"><code>Video</code></a> pipeline — the same pattern as
 <code>examples/pose_video.py</code> and <code>examples/tracker_aided_pose_video.py</code>:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">detector</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">Face</span><span class="p">(</span><span class="n">model</span><span class="o">=...</span><span class="p">,</span> <span class="n">conf</span><span class="o">=...</span><span class="p">,</span> <span class="n">iou</span><span class="o">=...</span><span class="p">,</span> <span class="n">device</span><span class="o">=...</span><span class="p">)</span>
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="n">tracker</span>  <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">Tracker</span><span class="p">(</span><span class="n">pt</span><span class="o">.</span><span class="n">TrackerConfig</span><span class="p">(</span><span class="n">tracker_type</span><span class="o">=</span><span class="s2">&quot;ocsort&quot;</span><span class="p">,</span> <span class="n">classes</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="n">tracker</span>  <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">Tracker</span><span class="p">(</span><span class="n">pt</span><span class="o">.</span><span class="n">TrackerConfig</span><span class="p">(</span><span class="n">tracker_type</span><span class="o">=</span><span class="s2">"ocsort"</span><span class="p">,</span> <span class="n">classes</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
 </span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="n">video</span>    <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">Video</span><span class="p">(</span><span class="n">source</span><span class="o">=...</span><span class="p">,</span> <span class="n">detector</span><span class="o">=</span><span class="n">detector</span><span class="p">,</span> <span class="n">tracker</span><span class="o">=</span><span class="n">tracker</span><span class="p">,</span> <span class="n">output_dir</span><span class="o">=...</span><span class="p">)</span>
 </span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="n">results</span>  <span class="o">=</span> <span class="n">video</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">output_video</span><span class="p">,</span> <span class="n">output_json</span><span class="p">)</span>
 </span></code></pre></div>
@@ -2293,12 +2316,13 @@ through a missed detection.</p>
 </table>
 <p>One JSON frame record has this shape:</p>
 <div class="language-json highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="p">{</span>
-</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="w">  </span><span class="nt">&quot;frame_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">42</span><span class="p">,</span>
-</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="w">  </span><span class="nt">&quot;timestamp&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">1.75</span><span class="p">,</span>
-</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="w">  </span><span class="nt">&quot;instances&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="w">    </span><span class="p">{</span><span class="nt">&quot;box&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mf">100.0</span><span class="p">,</span><span class="w"> </span><span class="mf">120.0</span><span class="p">,</span><span class="w"> </span><span class="mf">180.0</span><span class="p">,</span><span class="w"> </span><span class="mf">220.0</span><span class="p">],</span><span class="w"> </span><span class="nt">&quot;confidence&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.94</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;cls&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">}</span>
-</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="w">  </span><span class="p">]</span>
-</span><span id="__span-8-7"><a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="p">}</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="w">  </span><span class="nt">"frame_id"</span><span class="p">:</span><span class="w"> </span><span class="mi">42</span><span class="p">,</span>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="w">  </span><span class="nt">"timestamp"</span><span class="p">:</span><span class="w"> </span><span class="mf">1.75</span><span class="p">,</span>
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="w">  </span><span class="nt">"task"</span><span class="p">:</span><span class="w"> </span><span class="s2">"track"</span><span class="p">,</span>
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="w">  </span><span class="nt">"instances"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="w">    </span><span class="p">{</span><span class="nt">"box"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mf">100.0</span><span class="p">,</span><span class="w"> </span><span class="mf">120.0</span><span class="p">,</span><span class="w"> </span><span class="mf">180.0</span><span class="p">,</span><span class="w"> </span><span class="mf">220.0</span><span class="p">],</span><span class="w"> </span><span class="nt">"confidence"</span><span class="p">:</span><span class="w"> </span><span class="mf">0.94</span><span class="p">,</span><span class="w"> </span><span class="nt">"cls"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">}</span>
+</span><span id="__span-8-7"><a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="w">  </span><span class="p">]</span>
+</span><span id="__span-8-8"><a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="p">}</span>
 </span></code></pre></div>
 <p>This is the same per-frame schema every <code>Video</code> pipeline produces (see the
 <a href="../video/">Video guide</a>), so the output feeds any tooling that already consumes
@@ -2315,13 +2339,17 @@ face, extra box, or ID switch is useful qualitative evidence for debugging, but 
 not enough to calculate accuracy. Use a labelled benchmark and a fixed evaluation
 protocol for claims about precision, recall, average precision, or tracking metrics;
 the <a href="../face-validation/">face validation guide</a> explains the separation.</p>
-<h2 id="api-choice-face-or-detectionface">API choice: <code>Face()</code> or <code>Detection.Face()</code>?<a class="headerlink" href="#api-choice-face-or-detectionface" title="Permanent link">&para;</a></h2>
-<p>The examples intentionally use top-level <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Face&lt;/span&gt;" href="../../api/face/#physiotrack.Face"><code>Face</code></a>. It returns
-<code>Result(task="face")</code> and communicates that the boxes feed a facial pipeline.
-<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;Face&lt;/span&gt;" href="../../api/detection/#physiotrack.Detection.Face"><code>Detection.Face</code></a> uses the same default YOLO face
-checkpoint but belongs to the generic detector namespace and returns
-<code>Result(task="detect")</code>. Box coordinates and confidences follow the same contract;
-choose the entry point whose task semantics fit the pipeline.</p>
+<h2 id="analyse-faces">Analyse faces<a class="headerlink" href="#analyse-faces" title="Permanent link">&para;</a></h2>
+<p>The <a href="https://github.com/tharindu326/physiotrack/tree/main/examples/face_analysis">face analysis examples</a>
+go beyond boxes and tracks. <code>analyze_image.py</code> chains every
+<a href="../face/">face stage</a> on the selfie and prints each face's head pose, expression,
+eye and mouth aspect ratios, iris position and gaze. <code>analyze_video.py</code> runs the stages
+inside <code>Video</code> on the tracking clip and reports each face's blinks, blink rate and
+mouth movement with the <a href="../signals/#face-signals">face signals</a>:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">"physiotrack[face]"</span>
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>python<span class="w"> </span>examples/face_analysis/analyze_image.py
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>python<span class="w"> </span>examples/face_analysis/analyze_video.py<span class="w"> </span>--gaze
+</span></code></pre></div>
 
 
 
@@ -2359,7 +2387,7 @@ choose the entry point whose task semantics fit the pipeline.</p>
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../face/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Face &amp; Head Orientation">
+          <a href="../face/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Face Analysis">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -2369,7 +2397,7 @@ choose the entry point whose task semantics fit the pipeline.</p>
                 Previous
               </span>
               <div class="md-ellipsis">
-                Face & Head Orientation
+                Face Analysis
               </div>
             </div>
           </a>
