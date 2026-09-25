@@ -72,9 +72,19 @@ Install optional contributor tooling as needed:
 ```bash
 python -m pip install -e ".[test]"       # pytest + biomedical reference checks
 python -m pip install -e ".[docs]"       # MkDocs documentation toolchain
-python -m pip install -e ".[test,docs]"  # normal development setup
+python -m pip install -e ".[test,face,docs]"  # normal development setup
 python -m pip install -e ".[pose3d]"     # optional SMPL mesh rendering
+python -m pip install -e ".[face]"       # face mesh, expression and gaze stages
 ```
+
+The `face` extra adds MediaPipe, ONNX Runtime and safetensors for
+[`FaceLandmarks`][physiotrack.FaceLandmarks],
+[`FaceExpression`][physiotrack.FaceExpression] and
+[`GazeEstimator`][physiotrack.GazeEstimator]. For expression recognition on a GPU,
+replace `onnxruntime` with `onnxruntime-gpu`. MediaPipe declares
+`opencv-contrib-python` while ultralytics declares `opencv-python`; both provide
+`cv2`, and if `import cv2` fails after installing the extra, reinstall one of them
+(`pip install --force-reinstall opencv-python`).
 
 ## Conda development environment
 
@@ -93,7 +103,7 @@ install PyTorch with the CPU command or the official selector above, then instal
 editable project:
 
 ```bash
-python -m pip install -e ".[test,docs]"
+python -m pip install -e ".[test,face,docs]"
 ```
 
 When `environment-dev.yml` changes, update the existing environment with:
@@ -119,7 +129,7 @@ Install the appropriate PyTorch build first, just as for an editable installatio
 
 ```bash
 python -c "import physiotrack as pt; print('PhysioTrack', pt.__version__)"
-python examples/face_detection/detect_faces.py --model nano --device cpu
+python examples/face_detection/detect_faces.py --model n_face --device cpu
 ```
 
 The import check is offline. The example constructs a face detector, so its first run

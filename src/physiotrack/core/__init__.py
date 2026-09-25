@@ -8,7 +8,7 @@ from, exported so a custom capture loop can compose the same panels.
 
 from .depth_view import DepthView
 from .ego_view import EgoVideoView
-from .overlay import OverlayCanvas, alpha_composite, draw_label
+from .overlay import OverlayCanvas, alpha_composite, draw_info_panel, draw_label
 from .radar_view import RadarView
 from .rom_skeleton_view import ROMSkeletonView
 
@@ -21,5 +21,6 @@ __all__ = [
     # drawing primitives
     "OverlayCanvas",
     "draw_label",
+    "draw_info_panel",
     "alpha_composite",
 ]

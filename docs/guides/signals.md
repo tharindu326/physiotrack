@@ -37,6 +37,8 @@ from physiotrack.signals import (
 | Motion features | [`compute_all_motion_features`][physiotrack.signals.compute_all_motion_features] | velocity / accel / angles | [Motion, Joint Angles & ROM](#motion-features-joint-angles-rom) |
 | Joint angles | [`joint_angles`][physiotrack.signals.joint_angles], [`compute_all_joint_angles`][physiotrack.signals.compute_all_joint_angles] | angles (see the [units note](#warning-degrees-vs-radians)) | [Motion, Joint Angles & ROM](#motion-features-joint-angles-rom) |
 | Clinical ROM | [`compute_rom_angles`][physiotrack.signals.compute_rom_angles], [`JointAnglePlotter`][physiotrack.signals.JointAnglePlotter] | degrees + overlay | [Motion, Joint Angles & ROM](#motion-features-joint-angles-rom) |
+| Face geometry | [`eye_aspect_ratio`][physiotrack.signals.eye_aspect_ratio], [`mouth_aspect_ratio`][physiotrack.signals.mouth_aspect_ratio], [`iris_position`][physiotrack.signals.iris_position] | ratios per frame | [Face signals](#face-signals) |
+| Face over time | [`detect_blinks`][physiotrack.signals.detect_blinks], [`blink_rate`][physiotrack.signals.blink_rate], [`mouth_movement`][physiotrack.signals.mouth_movement], [`face_feature_sequence`][physiotrack.signals.face_feature_sequence], [`face_window_summary`][physiotrack.signals.face_window_summary] | events, rates, DataFrames | [Face signals](#face-signals) |
 | Filters | `bandpass_filter`, `highpass_filter`, `notch_filter`, … | filtered arrays | [Filters & Normalization](#filters-normalization) |
 | Normalization | `z_score_normalize`, `min_max_normalize`, … | scaled series | [Filters & Normalization](#filters-normalization) |
 | Signal metrics | `compute_plv`, `calculate_pearson_correlation`, `compute_rmse`, `calculate_dtw_distance` | agreement scores | [Signal metrics](#signal-metrics) |
@@ -432,6 +434,86 @@ See `examples/joint_angle_overlay.py` for both paths.
 
 ---
 
+## Face signals
+
+Facial geometry measured from face landmarks, and the per-face signals built on it.
+The landmarks come from [`FaceLandmarks`][physiotrack.FaceLandmarks] (the 478-point
+`"FACEMESH"`) or from a COCO-WholeBody pose model, whose ids 23–90 are a 68-point face.
+The two layouts number their points differently, so the layout is read from the
+keypoints; plain dicts must name it (`layout="FACEMESH"` or `"WHOLEBODY"`).
+
+### Per frame
+
+| Function | Measures |
+| --- | --- |
+| [`eye_aspect_ratio`][physiotrack.signals.eye_aspect_ratio] | lid opening over eye width per eye (Soukupová & Čech 2016); ≈ 0.25–0.35 open, → 0 closed |
+| [`mouth_aspect_ratio`][physiotrack.signals.mouth_aspect_ratio] | inner-lip gap at the midline over mouth-corner width, built like the EAR; 0 with the lips closed |
+| [`iris_position`][physiotrack.signals.iris_position] | iris centre within each eye, in eye widths (FACEMESH only) |
+
+```python
+import physiotrack as pt
+
+faces = pt.FaceLandmarks()(frame, pt.Face()(frame))
+pt.signals.eye_aspect_ratio(faces[0])      # {'left': 0.29, 'right': 0.31, 'mean': 0.30}
+pt.signals.mouth_aspect_ratio(faces[0])    # 0.08
+pt.signals.iris_position(faces[0])         # {'x': 0.52, 'y': -0.03, ...}
+
+# The same eye measure from a WholeBody pose, no face model needed:
+person = pt.Pose.Custom(model=pt.Models.Pose.ViTPose.WholeBody.b_wholebody)(frame)[0]
+pt.signals.eye_aspect_ratio(person)
+```
+
+### Over a video
+
+These read the faces of a [`Video`][physiotrack.Video] run — `FrameResult.faces` — and
+follow a face by its `id`, the track id of the subject it belongs to (see
+[Faces in a video](face.md#faces-in-a-video)). Every processed frame counts: a frame in
+which the face is absent, or has no face mesh, is a gap that interrupts a blink, a
+movement estimate and a summary window. Frames skipped by `Video(fps=...)` are not
+gaps. Times are the frame timestamps; a record without one is rejected.
+
+| Function | Output |
+| --- | --- |
+| [`face_feature_sequence`][physiotrack.signals.face_feature_sequence] | DataFrame, one row per face per frame: box, head pose, EAR, MAR, iris, expression, gaze, quality, skin fraction |
+| [`detect_blinks`][physiotrack.signals.detect_blinks] | DataFrame of blinks: `start`, `end`, `duration`, `min_ear` |
+| [`blink_rate`][physiotrack.signals.blink_rate] | blinks per minute over the time the face was present |
+| [`mouth_movement`][physiotrack.signals.mouth_movement] | DataFrame: `time`, `mar`, `mar_movement`, `mar_velocity` |
+| [`face_window_summary`][physiotrack.signals.face_window_summary] | DataFrame, per face per frame: mean / std / min / max of each measure over the last `window` seconds, blinks in the window, dominant expression |
+
+```python
+results = pt.Video("clip.mp4", detector=pt.Face(), tracker=pt.Tracker(),
+                   face_stages=[pt.FaceLandmarks(), pt.FaceExpression()]).run()
+
+blinks = pt.signals.detect_blinks(results, detection_id=1)
+rate = pt.signals.blink_rate(results, detection_id=1)
+motion = pt.signals.mouth_movement(results, detection_id=1)
+windows = pt.signals.face_window_summary(results, window=5.0)
+```
+
+- **Blinks.** At least `min_closed_frames` (3) consecutive frames with mean EAR below
+  `threshold` (0.22), counted when the eye reopens; the duration runs from the first
+  closed frame to the reopening frame. These are the settings validated on MPEBlink
+  (see [Face validation](face-validation.md#results-of-the-project-validation)); they
+  suit frontal faces at 25–30 fps. EAR depends on the viewing angle, so tune
+  `threshold` per camera setup.
+- **Blink rate.** Blinks divided by the time the face was in view — its frames times
+  the mean processing interval — so frames without the face do not dilute it.
+- **Mouth movement.** The absolute change of the MAR since the previous frame, and that
+  change divided by the time between the frames; `0` on the first frame after a gap.
+- **Window summary.** For each face, its most recent `round(window / interval)`
+  frames in view, restarting when it leaves the view. Frames without a measure are
+  skipped for that measure only.
+
+!!! note "Validation"
+    The geometry is checked against closed-form values on synthetic landmarks and, on
+    two real face meshes committed as a test fixture, against the project's validation
+    implementation. Blink counting, blink rate, mouth movement and the window summary
+    reproduce that implementation on a scenario with gaps and edge cases, and blink
+    detection is also cross-checked against an independent `scipy.signal.find_peaks`
+    implementation (`tests/test_motion.py`).
+
+---
+
 ## Filters & Normalization
 
 DSP helpers for pre- and post-processing extracted signals. The band-pass used throughout the
@@ -499,6 +581,7 @@ See `examples/motion.py` for a full 2D-vs-3D comparison and the
 - [Signals API reference](../api/signals/index.md) — the full auto-generated docs, including:
     - [rPPG / heart rate](../api/signals/rppg.md)
     - [Motion features & angles](../api/signals/motion.md)
+    - [Face signals](../api/signals/face.md)
     - [Filters](../api/signals/filters.md)
     - [Normalization](../api/signals/normalize.md)
     - [Signal metrics](../api/signals/evaluate.md)

@@ -34,24 +34,14 @@ incompatible model. See the [Model Zoo](../model-zoo.md) for every variant.
 | Preset | Backend | Classes | Description |
 | --- | --- | --- | --- |
 | [`Detection.Person`][physiotrack.Detection.Person] | YOLO | `[0]` (person) | People only; class filter is pinned to person. |
-| [`Detection.Face`][physiotrack.Detection.Face] | YOLO | face | Face bounding boxes. |
 | [`Detection.VR`][physiotrack.Detection.VR] | YOLO | `VR-head` | VR-headset boxes; use `Segmentation.VRHead` when masks are needed. |
 | [`Detection.VRStudent`][physiotrack.Detection.VRStudent] | YOLO | `VR-person` | Full-person boxes for people wearing a VR headset. |
 | [`Detection.Custom`][physiotrack.Detection.Custom] | YOLO | any | Run any validated `Models.Detection.*` variant. |
 
-### Two face-detector entry points
-
-PhysioTrack also exposes a top-level [`Face`][physiotrack.Face] preset. Both face
-entry points use `Models.Detection.YOLO.FACE.m_face` by default and return the same
-box/confidence structure; the difference is the semantic task label:
-
-| Entry point | Result task | Prefer it when… |
-| --- | --- | --- |
-| `pt.Face()` | `"face"` | face boxes feed head orientation, face parsing, rPPG, or face tracking |
-| `pt.Detection.Face()` | `"detect"` | face boxes are one detector choice inside a generic object-detection pipeline |
-
-The dedicated [face examples](face-examples.md) use `pt.Face()` so serialized output
-clearly identifies a facial task.
+!!! info "Faces"
+    Face detectors live with the rest of face analysis: [`Face`][physiotrack.Face]
+    and the VR-tuned [`VRFace`][physiotrack.VRFace] share this constructor and return
+    a `Result` with `task="face"`. See the [Face analysis guide](face.md).
 
 ### VR objects and people
 
@@ -63,8 +53,8 @@ to compare all three on the same synthetic lab scene.
 
 Only a medium VR-head checkpoint (`yolo11m_VR_head.pt`) is currently published.
 Large checkpoints are available for VR-person and generic-person detection. The
-example's `--model-size largest` mode therefore uses medium for VR-head and large for
-the other two, and reports every exact filename in its panels and JSON output.
+example's `--model-size largest` therefore uses medium for VR-head and large for the
+other two, and reports every model in its panels and JSON output.
 
 ![VR-person and generic-person comparison](../images/comparison_person_vrperson.jpg)
 

@@ -1,9 +1,9 @@
 from enum import Enum
 import inspect
 import os
+import hashlib
 import requests
 from tqdm import tqdm
-from pathlib import Path
 
 from importlib.metadata import PackageNotFoundError, version as _pkg_version
 
@@ -36,7 +36,7 @@ class Models:
         Models.<Task>.<Backend>.<Enum>.<member>
 
     - **Task** — what the model does: ``Detection``, ``Pose``, ``Pose3D``,
-      ``Depth``, ``Segmentation``.
+      ``Depth``, ``Segmentation``, ``Face``.
     - **Backend** — the architecture/family, e.g. ``YOLO``, ``RTDETR``, ``Sapiens``,
       ``ViTPose``, ``MotionBERT``, ``DDH``, ``DepthAnythingV2``, ``SegFace``.
     - **Enum** — a group of interchangeable checkpoints (often by dataset or
@@ -45,9 +45,10 @@ class Models:
       filename** on disk (or a relative path); ``.name`` is the short handle.
 
     A few groups nest one level deeper or sit directly under the task: ``Pose3D``
-    backends (``MotionBERT``, ``DDH``, ``FaceOrientation``) are ``Enum``\\ s directly
-    under ``Pose3D``; ``Pose3D.Canonicalizer.Models`` holds the 3DPCNet weights; and
-    ``Depth.DepthAnythingV2`` is an ``Enum`` directly under ``Depth``.
+    backends (``MotionBERT``, ``DDH``) are ``Enum``\\ s directly under ``Pose3D``;
+    ``Pose3D.Canonicalizer.Models`` holds the 3DPCNet weights; the ``Depth`` backends
+    and the ``Face`` stage groups (``Orientation``, ``Landmarks``, ``Expression``,
+    ``Gaze``) are ``Enum``\\ s directly under their task.
 
     The registry contains **only checkpoints**. The canonical viewpoint a pose is
     rotated to is a parameter, not a model, and lives in
@@ -173,10 +174,6 @@ class Models:
         class DDH(Enum):
             best = 'best_epoch_DDHPose.bin'
 
-        class FaceOrientation(Enum):
-            default = '6DRepNet360_Full-Rotation_300W_LP+Panoptic.pth'
-            VR = 'CMVS-FO-VR_epoch80.pth'
-
         class Canonicalizer:
             class Models(Enum):
                 _3DPCNetS2 = 'best_model_3DPCNetS2.pth'
@@ -235,11 +232,75 @@ class Models:
             class Face(Enum):
                 swinb_celeba_512 = "segface_swinb_celeba_512.pt"
 
+    class Face:
+        # Per-face analysis stages (physiotrack.face). Face *detection* checkpoints
+        # stay under Detection.YOLO.FACE / VRFACE.
+        class Orientation(Enum):
+            # 6DoF head orientation (6DRepNet360).
+            default = '6DRepNet360_Full-Rotation_300W_LP+Panoptic.pth'
+            VR = 'CMVS-FO-VR_epoch80.pth'
+
+        class Landmarks(Enum):
+            # MediaPipe Face Landmarker: 478-point face mesh incl. 10 iris points.
+            face_landmarker = 'face_landmarker.task'
+
+        class Expression(Enum):
+            # EmotiEffLib EfficientNets trained on AffectNet (ONNX): 8 or 7 expression
+            # classes; the *_va_mtl model also regresses valence and arousal.
+            enet_b0_8_best_afew = 'enet_b0_8_best_afew.onnx'
+            enet_b0_8_best_vgaf = 'enet_b0_8_best_vgaf.onnx'
+            enet_b0_8_va_mtl = 'enet_b0_8_va_mtl.onnx'
+            enet_b2_8 = 'enet_b2_8.onnx'
+            enet_b2_7 = 'enet_b2_7.onnx'
+
+        class Gaze(Enum):
+            # Appearance-based 3D gaze (ptgaze releases): full-face ETH-XGaze ResNet-18,
+            # full-face MPIIFaceGaze, and the per-eye MPIIGaze model.
+            eth_xgaze_resnet18 = 'eth-xgaze_resnet18.safetensors'
+            mpiifacegaze_resnet_simple = 'mpiifacegaze_resnet_simple.safetensors'
+            mpiigaze_resnet_preact = 'mpiigaze_resnet_preact.safetensors'
+
+    # Third-party face-stage weights, fetched from their upstream publishers at a pinned
+    # revision and verified by SHA-256. The 6DRepNet360 orientation weights are hosted
+    # on the project repo like the other checkpoints, so they are not listed here.
+    _FACE_SOURCES = {
+        'face_landmarker.task': (
+            "https://storage.googleapis.com/mediapipe-models/face_landmarker/"
+            "face_landmarker/float16/1/face_landmarker.task",
+            "64184e229b263107bc2b804c6625db1341ff2bb731874b0bcc2fe6544e0bc9ff"),
+        'enet_b0_8_best_afew.onnx': (
+            "https://raw.githubusercontent.com/sb-ai-lab/EmotiEffLib/"
+            "af833487321c3efdcb1768a91a6c656a1986fdf6/models/affectnet_emotions/onnx/"
+            "enet_b0_8_best_afew.onnx",
+            "7aa2ea31c1311f4f8aa9d3fdb085d418dd4e7a48c4b9ed41df8c044f91d0213f"),
+        **{f"{name}.onnx": (
+            "https://raw.githubusercontent.com/sb-ai-lab/EmotiEffLib/"
+            f"af833487321c3efdcb1768a91a6c656a1986fdf6/models/affectnet_emotions/onnx/{name}.onnx",
+            sha256) for name, sha256 in (
+            ("enet_b0_8_best_vgaf", "fa07e841fd06c7a67ee651ea4e6e4a3a2bb5695f47b37a7da50492526f59c898"),
+            ("enet_b0_8_va_mtl", "c43e056ad388d4a8dc911832b8291435b2af537f967e5870ebd731574ec7e812"),
+            ("enet_b2_8", "180a9d4845b59393de4511598a0d1d34b705034691ea32959ce5009db7cf52b7"),
+            ("enet_b2_7", "7863032d8c0c0bc259aa0dd7b8ebf6b607af454e7a0ea82be2b37767914ecd0f"),
+        )},
+        'eth-xgaze_resnet18.safetensors': (
+            "https://huggingface.co/hysts/ptgaze-eth-xgaze-resnet18/resolve/"
+            "5b6aebd02c7a612b50afb2e48c453f23533b8de3/model.safetensors",
+            "d1c91b2aa6a0c73856c16890d337afdecdb05563ed52182dfdb77742f1c856bc"),
+        'mpiifacegaze_resnet_simple.safetensors': (
+            "https://huggingface.co/hysts/ptgaze-mpiifacegaze-resnet-simple/resolve/"
+            "766311228bc5364889387926ed361e658f90049f/model.safetensors",
+            "094f1cdd95e4e8d1b11ae63df8404095df9b1ee082d0d7e720baf323d972d2c7"),
+        'mpiigaze_resnet_preact.safetensors': (
+            "https://huggingface.co/hysts/ptgaze-mpiigaze-resnet-preact/resolve/"
+            "2ded454205ba7845236cfde68b70d06326905038/model.safetensors",
+            "7e8d7830660a5ef4588209f67fc2dd4edd5f2ea17b3a447646878a36a986c76d"),
+    }
+
 
     # Task namespaces walked by the introspection helpers below. Kept in one place so
-    # `list`, `info`, `get` and `_get_model_info` cannot disagree about what the
+    # `list`, `info`, `get` and the download dispatch cannot disagree about what the
     # registry contains.
-    _TASKS = ('Detection', 'Pose', 'Segmentation', 'Pose3D', 'Depth')
+    _TASKS = ('Detection', 'Pose', 'Segmentation', 'Pose3D', 'Depth', 'Face')
 
     @staticmethod
     def _walk():
@@ -300,7 +361,8 @@ class Models:
 
         Args:
             task (str, optional): Restrict to one task — ``"Detection"``, ``"Pose"``,
-                ``"Segmentation"``, ``"Pose3D"`` or ``"Depth"`` (case-insensitive).
+                ``"Segmentation"``, ``"Pose3D"``, ``"Depth"`` or ``"Face"``
+                (case-insensitive).
                 Defaults to ``None`` (all tasks).
             backend (str, optional): Restrict to one backend, e.g. ``"ViTPose"``
                 (case-insensitive). Defaults to ``None`` (all backends).
@@ -320,7 +382,7 @@ class Models:
             from physiotrack import Models
             Models.list(task="depth")
             # ['Depth.DepthAnythingV2.vitb', 'Depth.DepthAnythingV2.vitl', ...]
-            len(Models.list(weights_only=True))   # 51 downloadable checkpoints
+            len(Models.list(weights_only=True))   # 59 downloadable checkpoints
             ```
         """
         if task is not None:
@@ -416,82 +478,21 @@ class Models:
                 }
         raise ValueError(f"{member!r} is not a member of the Models registry.")
 
+    #: The project's HuggingFace repository, which hosts every checkpoint not fetched
+    #: from its upstream publisher.
+    _PROJECT_REPO = "https://huggingface.co/tharindu326/physiotrack/resolve/main"
+
     @staticmethod
-    def _get_model_info(model_enum):
-        """Extract model information from enum instance"""
-        if not isinstance(model_enum, Enum):
-            return None
-            
-        for category_name in ['Detection', 'Pose', 'Segmentation', 'Pose3D', 'Depth']:
-            category = getattr(Models, category_name, None)
-            if not category:
-                continue
-            for backend_name in dir(category):
-                if backend_name.startswith('_'):
-                    continue
-                    
-                backend = getattr(category, backend_name)
-                if not inspect.isclass(backend):
-                    continue
-                if category_name == "Pose3D":
-                    if issubclass(backend, Enum) and isinstance(model_enum, backend):
-                        return {
-                            'category': category_name,
-                            'backend': backend_name,
-                            'enum_class': backend_name,  # For Pose3D, backend and enum_class are the same
-                            'model_name': model_enum.name,
-                            'file_name': model_enum.value
-                        }
-                    # Check for Canonicalizer models
-                    elif backend_name == 'Canonicalizer':
-                        for enum_class_name in dir(backend):
-                            if enum_class_name.startswith('_'):
-                                continue
-                            enum_class = getattr(backend, enum_class_name)
-                            if (inspect.isclass(enum_class) and
-                                issubclass(enum_class, Enum) and
-                                isinstance(model_enum, enum_class)):
-                                return {
-                                    'category': category_name,
-                                    'backend': 'Canonicalizer',
-                                    'enum_class': enum_class_name,
-                                    'model_name': model_enum.name,
-                                    'file_name': model_enum.value
-                                }
-                elif category_name == "Depth":
-                    # Depth has enums directly under the category (e.g., Depth.DepthAnythingV2)
-                    if issubclass(backend, Enum) and isinstance(model_enum, backend):
-                        return {
-                            'category': category_name,
-                            'backend': backend_name,  # e.g., 'DepthAnythingV2'
-                            'enum_class': backend_name,
-                            'model_name': model_enum.name,  # e.g., 'vitl'
-                            'file_name': model_enum.value  # e.g., 'depth_anything_v2_vitl.pth'
-                        }
-                else:
-                    for enum_class_name in dir(backend):
-                        if enum_class_name.startswith('_'):
-                            continue
-                        enum_class = getattr(backend, enum_class_name)
-                        if (inspect.isclass(enum_class) and 
-                            issubclass(enum_class, Enum) and 
-                            isinstance(model_enum, enum_class)):
-                            return {
-                                'category': category_name,
-                                'backend': backend_name,
-                                'enum_class': enum_class_name,
-                                'model_name': model_enum.name,
-                                'file_name': model_enum.value
-                            }
-        return None
-    
-    @staticmethod
-    def _download_yolo_model(model_info, download_path):
-        """Download ViTPose models from HuggingFace"""
+    def _download_project_model(model_info, download_path):
+        """Download a checkpoint hosted on the project's HuggingFace repository.
+
+        A registry value with a directory part (e.g. ``"sub/weights.bin"``) is cached
+        under the same subdirectory.
+        """
         file_name = model_info['file_name']
-        base_url = f"https://huggingface.co/tharindu326/physiotrack/resolve/main"
-        download_url = f"{base_url}/{file_name}?download=true"
-        return Models._download_file(download_url, file_name, download_path)
+        target_dir = os.path.join(download_path, os.path.dirname(file_name))
+        return Models._download_file(f"{Models._PROJECT_REPO}/{file_name}?download=true",
+                                     os.path.basename(file_name), target_dir)
 
     @staticmethod
     def _download_sapiens_model(model_info, download_path):
@@ -504,11 +505,11 @@ class Models:
         size_map = {"03b": "0.3b", "06b": "0.6b", "1b": "1b"}
         size = size_map.get(size, size)
 
-        if model_info['category'] == 'Pose':
+        if model_info['task'] == 'Pose':
             task = "pose-coco"
             format_type = "torchscript"
             base_url = f"https://huggingface.co/noahcao/sapiens-{task}/resolve/main/sapiens_lite_host/{format_type}/pose/checkpoints/sapiens_{size}"
-        elif model_info['category'] == 'Segmentation':
+        elif model_info['task'] == 'Segmentation':
             # Sapiens segmentation models - all use facebook repos
             task = "seg"
             format_type = "torchscript"
@@ -516,7 +517,7 @@ class Models:
         else:
             raise ValueError(
                 f"Sapiens weights are only hosted for the Pose and Segmentation tasks, "
-                f"got category {model_info['category']!r} for {file_name!r}."
+                f"got task {model_info['task']!r} for {file_name!r}."
             )
         download_url = f"{base_url}/{file_name}?download=true"
         return Models._download_file(download_url, file_name, download_path)
@@ -525,7 +526,7 @@ class Models:
     def _download_vitpose_model(model_info, download_path):
         """Download ViTPose models from HuggingFace"""
         file_name = model_info['file_name']
-        dataset = model_info['enum_class'].lower()  # 'wholebody' or 'coco'
+        dataset = model_info['group'].lower()  # 'wholebody' or 'coco'
         base_url = f"https://huggingface.co/JunkyByte/easy_ViTPose/resolve/main/torch/{dataset}"
         download_url = f"{base_url}/{file_name}?download=true"
         return Models._download_file(download_url, file_name, download_path)
@@ -544,60 +545,18 @@ class Models:
         return Models._download_file(download_url, actual_filename, full_download_path)
 
     @staticmethod
-    def _download_ddh_model(model_info, download_path):
-        """Download DDHPose models from HuggingFace"""
-        file_name = model_info['file_name']
-        file_dir = os.path.dirname(file_name)
-        actual_filename = os.path.basename(file_name)
-        full_download_path = os.path.join(download_path, file_dir)
-        os.makedirs(full_download_path, exist_ok=True)
-        base_url = f"https://huggingface.co/tharindu326/physiotrack/resolve/main"
-        download_url = f"{base_url}/{file_name}?download=true"
-        
-        return Models._download_file(download_url, actual_filename, full_download_path)
-    
-    @staticmethod
-    def _download_canonicalizer_model(model_info, download_path):
-        """Download a Canonicalizer (3DPCNet) checkpoint from HuggingFace.
+    def _download_upstream_face_model(model_info, download_path):
+        """Download a third-party face-stage checkpoint from its pinned upstream source.
 
-        All 3DPCNet checkpoints share one architecture and load from a single
-        bundled inference config, so only the ``.pth`` weights are downloaded.
+        The source and its SHA-256 come from ``_FACE_SOURCES``; a download whose digest
+        differs is refused.
         """
         file_name = model_info['file_name']
-        file_dir = os.path.dirname(file_name)
-        full_download_path = os.path.join(download_path, file_dir)
-        os.makedirs(full_download_path, exist_ok=True)
-        base_url = f"https://huggingface.co/tharindu326/physiotrack/resolve/main"
-
-        model_download_url = f"{base_url}/{file_name}?download=true"
-        return Models._download_file(model_download_url, file_name, full_download_path)
+        url, sha256 = Models._FACE_SOURCES[file_name]
+        return Models._download_file(url, file_name, download_path, sha256=sha256)
 
     @staticmethod
-    def _download_depth_model(model_info, download_path):
-        """Download DepthAnythingV2 models from tharindu326/physiotrack HuggingFace repo"""
-        file_name = model_info['file_name']
-        base_url = f"https://huggingface.co/tharindu326/physiotrack/resolve/main"
-        download_url = f"{base_url}/{file_name}?download=true"
-        return Models._download_file(download_url, file_name, download_path)
-
-    @staticmethod
-    def _download_zipdepth_model(model_info, download_path):
-        """Download a ZipDepth checkpoint from the tharindu326/physiotrack HuggingFace repo."""
-        file_name = model_info['file_name']
-        base_url = f"https://huggingface.co/tharindu326/physiotrack/resolve/main"
-        download_url = f"{base_url}/{file_name}?download=true"
-        return Models._download_file(download_url, file_name, download_path)
-
-    @staticmethod
-    def _download_segface_model(model_info, download_path):
-        """Download a SegFace face-parsing checkpoint from the physiotrack HuggingFace repo."""
-        file_name = model_info['file_name']
-        base_url = f"https://huggingface.co/tharindu326/physiotrack/resolve/main"
-        download_url = f"{base_url}/{file_name}?download=true"
-        return Models._download_file(download_url, file_name, download_path)
-
-    @staticmethod
-    def _download_file(url, file_name, download_path):
+    def _download_file(url, file_name, download_path, sha256=None):
         """Download a weight file into the cache, atomically.
 
         The download streams to a temporary sibling file and is renamed into place
@@ -608,12 +567,15 @@ class Models:
             url (str): Source URL.
             file_name (str): Destination file name within ``download_path``.
             download_path (str | os.PathLike): Destination directory.
+            sha256 (str, optional): Expected SHA-256 hex digest. When given, a
+                download whose digest differs is discarded. Defaults to ``None``.
 
         Returns:
             str: Absolute path to the cached file.
 
         Raises:
             requests.exceptions.RequestException: If the transfer fails.
+            IOError: If the download is truncated or its SHA-256 does not match.
         """
         os.makedirs(download_path, exist_ok=True)
         file_path = os.path.join(download_path, file_name)
@@ -630,17 +592,24 @@ class Models:
             response.raise_for_status()
 
             total_size = int(response.headers.get("content-length", 0))
+            digest = hashlib.sha256()
             with tqdm(total=total_size, unit="iB", unit_scale=True, desc=file_name) as pbar:
                 with open(tmp_path, "wb") as f:
                     for chunk in response.iter_content(chunk_size=8192):
                         if chunk:  # filter out keep-alive chunks
                             f.write(chunk)
+                            digest.update(chunk)
                             pbar.update(len(chunk))
 
             if total_size and os.path.getsize(tmp_path) != total_size:
                 raise IOError(
                     f"Incomplete download for {file_name}: expected {total_size} bytes, "
                     f"got {os.path.getsize(tmp_path)}."
+                )
+            if sha256 is not None and digest.hexdigest() != sha256:
+                raise IOError(
+                    f"Checksum mismatch for {file_name}: expected SHA-256 {sha256}, got "
+                    f"{digest.hexdigest()}. The upstream file changed; refusing to use it."
                 )
 
             os.replace(tmp_path, file_path)
@@ -758,38 +727,25 @@ class Models:
         if download_path is None:
             download_path = str(weights_dir())
 
-        model_info = Models._get_model_info(model_enum)
-        if not model_info:
-            raise ValueError(f"Could not determine model information for {model_enum}")
-        
-        # print(f"Downloading {model_info['category']} model: {model_info['backend']}.{model_info['enum_class']}.{model_info['model_name']}")
-        if model_info['backend'] in ('YOLO', 'RTDETR'):
+        model_info = Models.info(model_enum)
+        if model_info['file_name'] in Models._FACE_SOURCES:
+            return Models._download_upstream_face_model(model_info, download_path)
+        backend = model_info['backend']
+        if backend in ('YOLO', 'RTDETR'):
             # Pose-YOLO and any PERSON variant (detection or segmentation) auto-download
             # via ultralytics; everything else (FACE/VR/VRSTUDENT/VRHEAD/...) is hosted.
-            if model_info['category'] == 'Pose' or model_info['enum_class'] == 'PERSON':
+            if model_info['task'] == 'Pose' or model_info['group'] == 'PERSON':
                 return None
-            return Models._download_yolo_model(model_info, download_path)
-        elif model_info['backend'] == 'Sapiens':
+            return Models._download_project_model(model_info, download_path)
+        if backend == 'Sapiens':
             return Models._download_sapiens_model(model_info, download_path)
-        elif model_info['backend'] == 'ViTPose':
+        if backend == 'ViTPose':
             return Models._download_vitpose_model(model_info, download_path)
-        elif model_info['backend'] == 'MotionBERT':
+        if backend == 'MotionBERT':
             return Models._download_motionbert_model(model_info, download_path)
-        elif model_info['backend'] == 'DDH':
-            return Models._download_ddh_model(model_info, download_path)
-        elif model_info['backend'] == 'Canonicalizer':
-            return Models._download_canonicalizer_model(model_info, download_path)
-        elif model_info['backend'] == 'FaceOrientation':
-            # FaceOrientation uses HuggingFace download like DDH
-            return Models._download_ddh_model(model_info, download_path)
-        elif model_info['backend'] == 'DepthAnythingV2':
-            return Models._download_depth_model(model_info, download_path)
-        elif model_info['backend'] == 'ZipDepth':
-            return Models._download_zipdepth_model(model_info, download_path)
-        elif model_info['backend'] == 'SegFace':
-            return Models._download_segface_model(model_info, download_path)
-        else:
-            raise ValueError(f"Unknown backend: {model_info['backend']}")
+        if backend in ('DDH', 'Canonicalizer', 'DepthAnythingV2', 'ZipDepth', 'SegFace')                 or model_info['task'] == 'Face':
+            return Models._download_project_model(model_info, download_path)
+        raise ValueError(f"Unknown backend: {backend}")
 
     @staticmethod
     def validate_det_model(model, expected_subclass: str = None):
@@ -1005,7 +961,7 @@ class Models:
             model (enum.Enum): The candidate 3D-pose registry member, e.g.
                 ``Models.Pose3D.MotionBERT.mb_ft_h36m``.
             expected_subclass (str, optional): Backend/enum-class name the model must
-                come from, e.g. ``"MotionBERT"``, ``"DDH"``, ``"FaceOrientation"``.
+                come from, e.g. ``"MotionBERT"`` or ``"DDH"``.
                 Defaults to ``None`` (any Pose3D member accepted).
 
         Raises:
@@ -1125,6 +1081,34 @@ class Models:
             f"Invalid depth model: {repr(model)}.\n"
             f"Expected a valid enum member from Models.Depth.<Backend>.<model_name>\n"
             f"Valid models are:\n  {valid_str}"
+        )
+
+    @staticmethod
+    def validate_face_model(model, expected_group: str):
+        """Verify a model is a ``Models.Face`` member of the expected stage group.
+
+        Args:
+            model (enum.Enum): The candidate registry member, e.g.
+                ``Models.Face.Orientation.VR``.
+            expected_group (str): The stage group it must belong to: ``"Orientation"``,
+                ``"Landmarks"``, ``"Expression"`` or ``"Gaze"``.
+
+        Raises:
+            ValueError: If ``model`` is not a registry member of
+                ``Models.Face.<expected_group>`` (the message lists the valid members).
+
+        Example:
+            ```python
+            from physiotrack import Models
+            Models.validate_face_model(Models.Face.Orientation.VR, "Orientation")
+            ```
+        """
+        group = getattr(Models.Face, expected_group)
+        if isinstance(model, group):
+            return
+        valid = ", ".join(f"Models.Face.{expected_group}.{m.name}" for m in group)
+        raise ValueError(
+            f"Invalid {expected_group} model: {model!r}. Valid models are: {valid}."
         )
 
     @staticmethod

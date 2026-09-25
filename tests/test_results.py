@@ -201,6 +201,104 @@ def test_as_frame_records_rejects_unsupported_elements():
         as_frame_records([object()])
 
 
+# --- face analysis on the result model -----------------------------------------------
+
+def _face_mesh(n=478, offset=0.0):
+    return pt.Keypoints([{"id": i, "x": float(i) + offset, "y": 2.0 * i} for i in range(n)],
+                        "FACEMESH")
+
+
+def _face(**fields):
+    return pt.Instance(box=np.array([10, 20, 60, 90], np.float32), confidence=0.8, cls=0,
+                       cls_name="face", **fields)
+
+
+def test_facemesh_keypoints_are_named_and_carry_no_confidence():
+    mesh = _face_mesh()
+    assert mesh.by_name("left_iris_center").id == 473
+    assert mesh.by_name("right_eye_outer").id == 33
+    assert mesh[5].name == "facemesh_5" and mesh[5].confidence is None
+    assert np.isnan(mesh.conf).all()
+    assert "conf=" not in repr(mesh[5])
+
+
+def test_unknown_keypoint_architecture_is_rejected():
+    # Ids of different layouts overlap, so silently falling back to COCO names would
+    # give face-mesh point 1 the name of a body joint.
+    with pytest.raises(ValueError, match="Unknown keypoint architecture"):
+        pt.Keypoints([{"id": 1, "x": 0.0, "y": 0.0}], "HALPE")
+
+
+def test_wholebody_face_points_use_the_subjects_sides():
+    from physiotrack.pose.config import COCO_WHOLEBODY
+
+    # iBUG-68 36-41 / 17-21 are the subject's right eye / eyebrow, like body id 2.
+    assert COCO_WHOLEBODY["59"] == "face_right_eye_0"
+    assert COCO_WHOLEBODY["65"] == "face_left_eye_0"
+    assert COCO_WHOLEBODY["40"] == "face_right_eyebrow_0"
+    assert COCO_WHOLEBODY["2"] == "right_eye"
+
+
+def test_face_fields_round_trip():
+    face = _face(id=3, orientation={"yaw": 1.0, "pitch": 2.0, "roll": 3.0},
+                 expression={"label": "Neutral", "confidence": 0.7, "scores": {"Neutral": 0.7}},
+                 gaze={"pitch": 5.0, "yaw": -4.0, "vector": [0.0, 0.1, -0.99]},
+                 quality={"brightness": 0.5, "sharpness": 120.0, "area_ratio": 0.01})
+    restored = pt.Instance.from_dict(face.to_dict())
+    for name in ("id", "orientation", "expression", "gaze", "quality", "cls_name"):
+        assert getattr(restored, name) == getattr(face, name)
+    assert "expression='Neutral'" in repr(face)
+
+
+def test_face_mesh_is_serialized_only_on_request():
+    # 478 points per face per frame would make a video's JSON hundreds of MB.
+    face = _face(keypoints=_face_mesh())
+    brief = face.to_dict()
+    assert brief["has_keypoints"] is True and "keypoints" not in brief
+    full = face.to_dict(include_arrays=True)
+    assert len(full["keypoints"]) == 478 and "confidence" not in full["keypoints"][0]
+    restored = pt.Instance.from_dict(full, architecture="FACEMESH")
+    assert restored.keypoints.by_name("left_iris_center").x == 473.0
+    # Body keypoints stay in the default output.
+    assert "keypoints" in _instance().to_dict()
+
+
+def test_instance_replace_copies_and_validates():
+    face = _face(id=1)
+    tagged = face.replace(id=9, quality={"brightness": 0.1})
+    assert (tagged.id, face.id) == (9, 1)
+    assert tagged.box is face.box and tagged.quality == {"brightness": 0.1}
+    with pytest.raises(TypeError, match="no field"):
+        face.replace(colour="red")
+
+
+def test_facemesh_is_drawn_with_face_contours_not_the_body_skeleton():
+    img = np.zeros((200, 200, 3), np.uint8)
+    # COCO-17 edge (0, 5) would join mesh points 0 and 5; the face contours do not.
+    mesh = pt.Keypoints([{"id": i, "x": 20.0, "y": 20.0} for i in range(478)], "FACEMESH")
+    mesh.by_id(5).x, mesh.by_id(5).y = 180.0, 180.0
+    drawn = pt.Result(orig_img=img, task="face", architecture="FACEMESH",
+                      instances=[pt.Instance(keypoints=mesh)]).plot()
+    assert drawn[100, 100].sum() == 0
+
+
+def test_frame_result_carries_faces_through_serialization():
+    faces = pt.Result(orig_img=None, task="face", architecture="FACEMESH",
+                      instances=[_face(id=7, keypoints=_face_mesh(),
+                                       orientation={"yaw": 1.0, "pitch": 0.0, "roll": 0.0})])
+    frame = pt.FrameResult(
+        result=pt.Result(orig_img=None, instances=[pt.Instance(id=7)], task="track",
+                         meta=pt.ResultMeta(frame_index=4, timestamp=0.2)),
+        faces=faces)
+    data = frame.to_dict(include_arrays=True)
+    assert data["task"] == "track" and data["faces"]["task"] == "face"
+    restored = pt.FrameResult.from_dict(json.loads(json.dumps(data)))
+    assert restored.result.task == "track"
+    assert restored.faces.architecture == "FACEMESH"
+    assert restored.faces[0].id == 7 and len(restored.faces[0].keypoints) == 478
+    assert "faces=1" in repr(restored)
+
+
 # --- box geometry ---------------------------------------------------------------------
 
 def test_box_iou_matches_hand_computed_overlaps():
@@ -245,17 +343,8 @@ def test_assign_ids_matches_faces_to_containing_subjects_one_to_one():
     assert assign_ids(np.empty((0, 4)), subjects, [11, 22]) == []
 
 
-def test_wholebody_face_points_use_the_subjects_sides():
-    from physiotrack.pose.config import COCO_WHOLEBODY
-
-    # iBUG-68 36-41 / 17-21 are the subject's right eye / eyebrow, like body id 2.
-    assert COCO_WHOLEBODY["59"] == "face_right_eye_0"
-    assert COCO_WHOLEBODY["65"] == "face_left_eye_0"
-    assert COCO_WHOLEBODY["40"] == "face_right_eyebrow_0"
-    assert COCO_WHOLEBODY["2"] == "right_eye"
-
-
-# --- Video: detectors ------------------------------------------------------------
+# --- Video: faces through the pipeline -----------------------------------------------
+# Stub detectors stand in for YOLO so no weights load; the tracker is real.
 
 _CLIP = (Path(__file__).resolve().parents[1]
          / "examples" / "face_tracking" / "data" / "students_face_tracking.mp4")
@@ -286,9 +375,77 @@ class _PersonDetector:
         return [_YoloResult(self.rows)], frame
 
 
+class _FaceDetector(_PersonDetector):
+    """Face boxes inside the two person boxes, as a face detector preset reports them."""
+    task = "face"
+    rows = np.array([[60, 45, 100, 85, 0.9, 0], [220, 65, 260, 105, 0.8, 0]], np.float32)
+
+    def predict(self, frames):
+        return [pt.Result(orig_img=f, task="face", instances=[
+            pt.Instance(box=r[:4].copy(), confidence=float(r[4]), cls=0) for r in self.rows])
+            for f in frames]
+
+    def get_avg_fps(self):
+        return 0.0
+
+    def get_avg_inference_time(self):
+        return 0.0
+
+
+def _tracker():
+    return pt.Tracker(pt.TrackerConfig(tracker_type="ocsort", classes=[0],
+                                       enable_subject_lock=False))
+
+
+def _quality_stage():
+    from physiotrack.face import FaceQuality
+    return FaceQuality()
+
+
+def test_video_exports_tracked_instances_without_a_pose_estimator():
+    results = pt.Video(source=_CLIP, detector=_PersonDetector(), tracker=_tracker(),
+                       fps=5).run()
+    tracked = [inst for frame in results for inst in frame if inst.id is not None]
+    assert tracked and all(len(inst.box) == 4 for inst in tracked)
+    assert results[-1].result.task == "track"
+    assert results[-1].faces is None
+
+
+def test_video_gives_faces_the_track_id_of_their_person():
+    results = pt.Video(source=_CLIP, detector=_PersonDetector(), tracker=_tracker(),
+                       face=_FaceDetector(), face_stages=[_quality_stage()], fps=5).run()
+    last = results[-1]
+    person_of = {int(inst.box[0]): inst.id for inst in last}          # x1 -> track id
+    assert sorted(f.id for f in last.faces) == sorted(person_of.values())
+    assert [f.id for f in last.faces] == [person_of[40], person_of[200]]
+    assert all(f.quality is not None for f in last.faces)
+    assert "faces" in last.to_dict()
+
+
+def test_a_face_detector_as_detector_makes_the_tracked_subjects_the_faces():
+    results = pt.Video(source=_CLIP, detector=_FaceDetector(), tracker=_tracker(),
+                       face_stages=[_quality_stage()], fps=5).run()
+    last = results[-1]
+    assert [f.id for f in last.faces] == [i.id for i in last]
+    assert all(f.id is not None and f.quality is not None for f in last.faces)
+
+
+def test_video_rejects_ambiguous_or_missing_face_sources():
+    with pytest.raises(ValueError, match="already a face detector"):
+        pt.Video(source=_CLIP, detector=_FaceDetector(), face=_FaceDetector())
+    with pytest.raises(ValueError, match="face_stages need faces"):
+        pt.Video(source=_CLIP, detector=_PersonDetector(), face_stages=[_quality_stage()])
+    with pytest.raises(ValueError, match="mixed with other detectors"):
+        pt.Video(source=_CLIP, detector=[_FaceDetector(), _PersonDetector()])
+
+
 def test_every_detector_contributes_detections():
-    # Each detector in a list runs; the first one used to shadow the others.
     video = pt.Video(source=_CLIP, detector=[_PersonDetector(), _PersonDetector()])
     frame = np.zeros((240, 320, 3), np.uint8)
     (_, detections), = video.process_batch_detections([frame])
     assert len(detections) == 2 and all(len(d) == 2 for d in detections)
+
+
+def test_vr_detector_points_at_the_published_head_checkpoint():
+    assert pt.Models.Detection.YOLO.VR.m_vr.value == "yolo11m_VR_head.pt"
+    assert list(pt.Models.Detection.YOLO.VR.__members__) == ["m_vr"]

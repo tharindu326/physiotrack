@@ -80,7 +80,7 @@ class SegmentationBase(PredictorMixin):
 
         model_path = Models.resolve(model)
 
-        self.minfo = Models._get_model_info(model)
+        self.minfo = Models.info(model)
         self.segmentation_framework = self.minfo['backend']
         logger.log(logging.INFO if verbose else logging.DEBUG,
                    'Initiating %s %s for segmentation', self.segmentation_framework, model.name)
@@ -329,8 +329,8 @@ class Segmentation:
             ```
 
         See Also:
-            [`Detection.Face`][physiotrack.Detection.Face]: the auto-detector used
-                when ``boxes`` is omitted.
+            [`Face`][physiotrack.Face]: the auto-detector used when ``boxes`` is
+                omitted.
         """
         default_model = Models.Segmentation.SegFace.Face.swinb_celeba_512
 
@@ -347,7 +347,7 @@ class Segmentation:
                 face_detector (optional): A pre-built face detector to reuse for
                     auto-detection when ``predict`` is called without ``boxes``.
                     Defaults to ``None`` (lazily builds a
-                    [`Detection.Face`][physiotrack.Detection.Face]).
+                    [`Face`][physiotrack.Face]).
                 face_conf (float, optional): Confidence threshold in ``[0.0, 1.0]``
                     for the auto-built face detector. Defaults to ``0.25``.
                 face_iou (float, optional): NMS/IoU threshold in ``[0.0, 1.0]``
@@ -364,8 +364,8 @@ class Segmentation:
 
         def _ensure_detector(self):
             if self._face_detector is None:
-                from ..detect import Detection
-                self._face_detector = Detection.Face(
+                from ..face.detect import Face
+                self._face_detector = Face(
                     conf=self._face_conf, iou=self._face_iou, device=self.device)
             return self._face_detector
 

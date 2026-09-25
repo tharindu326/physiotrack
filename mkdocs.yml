@@ -167,7 +167,7 @@ nav:
       - 3D Pose & Canonicalization: guides/pose3d.md
       - Segmentation: guides/segmentation.md
       - Depth: guides/depth.md
-      - Face & Head Orientation: guides/face.md
+      - Face Analysis: guides/face.md
       - Face Detection & Tracking Examples: guides/face-examples.md
       - Face Detection & Tracking Validation: guides/face-validation.md
       - Tracking: guides/tracking.md
@@ -194,6 +194,7 @@ nav:
           - api/signals/index.md
           - rPPG / Heart Rate: api/signals/rppg.md
           - Motion & Features: api/signals/motion.md
+          - Face Signals: api/signals/face.md
           - Filters: api/signals/filters.md
           - Normalization: api/signals/normalize.md
           - Signal Metrics: api/signals/evaluate.md

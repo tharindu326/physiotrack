@@ -87,6 +87,15 @@ dependencies = [
 pose3d = [
   "smplx>=0.1.28",
 ]
+# Face-analysis stages beyond detection and head orientation (physiotrack.face):
+# FaceLandmarks runs MediaPipe, FaceExpression runs an ONNX model, GazeEstimator loads
+# safetensors weights. Kept optional so pose/rPPG users do not pull these runtimes.
+# A GPU build of ONNX Runtime can replace `onnxruntime` (`onnxruntime-gpu`).
+face = [
+  "mediapipe>=0.10.30",
+  "onnxruntime>=1.18",
+  "safetensors>=0.4",
+]
 docs = [
   "mkdocs>=1.6,<2",
   "mkdocs-material>=9.5",

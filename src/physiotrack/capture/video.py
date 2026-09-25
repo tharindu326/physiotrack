@@ -1,11 +1,10 @@
 import cv2
 import sys
-import json
 import time
 import warnings
 import numpy as np
 from pathlib import Path
-from typing import Optional, Union, List, Dict, Any, Tuple
+from typing import Optional, Union, List, Any, Tuple
 from tqdm import tqdm
 from physiotrack.modules.Yolo.classes_and_palettes import COLORS
 from physiotrack.core.overlay import draw_label
@@ -19,6 +18,7 @@ from physiotrack.capture.orientation import resolve_rotation, apply_rotation
 from physiotrack.signals.motion.features import DEFAULT_ROM_MOVEMENTS, ROM_DEFINITIONS
 from physiotrack.utils import get_screen_size, resize_frame_for_display
 
+from ..core.boxes import assign_ids
 from ..core.panel import attach_stack
 from .._logging import get_logger
 from .writer import open_video_writer
@@ -32,7 +32,7 @@ class Video:
     """High-level orchestrator that runs the full inference pipeline over a video.
 
     ``Video`` ties together the individual predictors -- detection, pose
-    estimation, tracking, segmentation, face detection / orientation and depth --
+    estimation, tracking, segmentation, face detection and analysis, and depth --
     and drives them frame-by-frame (optionally in batches) across a clip, camera
     device or RTSP stream. It composites every enabled model's output onto each
     frame, builds the requested side panels (keypoint-motion plot, joint-angle /
@@ -46,8 +46,8 @@ class Video:
     Every stage is optional, so the same class covers a bare pose-only pass as well
     as the complete multi-model pipeline.
 
-    The pipeline order per batch is: detection -> pose -> tracking -> segmentation
-    -> face orientation -> depth -> overlay/compositing. When both a custom
+    The pipeline order per batch is: detection -> tracking -> pose -> segmentation
+    -> faces (detection, subject ids, face stages) -> depth -> overlay/compositing. When both a custom
     ``detector`` and a ``pose`` estimator are supplied, the pose estimator must be
     a ``Pose.Custom`` instance (so it consumes external boxes); otherwise a
     ``ValueError`` is raised at run time.
@@ -98,7 +98,7 @@ class Video:
                  segmenter=None,
                  tracker=None,
                  face=None,
-                 face_orientation=None,
+                 face_stages=None,
                  depth=None,
                  ego_video: Optional[Union[str, Path]] = None,
                  output_dir: Optional[Union[str, Path]] = None,
@@ -154,10 +154,19 @@ class Video:
             tracker (optional): Multi-object tracker assigning stable IDs to
                 detections; runs frame-by-frame (no batching). Defaults to
                 ``None``. See [`Tracker`][physiotrack.Tracker].
-            face (optional): Face detector; required for ``face_orientation``.
-                Defaults to ``None``.
-            face_orientation (optional): Head-pose (yaw/pitch/roll) estimator;
-                effective only when ``face`` is also provided. Defaults to ``None``.
+            face (Face | VRFace, optional): Face detector run on every frame. With a
+                ``tracker``, each face is given the track id of the subject whose box
+                contains it, so face signals can follow a person over time. Its faces
+                are exported as [`FrameResult.faces`][physiotrack.FrameResult].
+                Defaults to ``None``. Leave it out when ``detector`` is itself a face
+                detector: the (tracked) detections are then the faces.
+            face_stages (list[FaceStage], optional): Face stages applied, in order, to
+                every face -- e.g. ``[FaceOrientation(), FaceLandmarks(),
+                FaceExpression()]``. A stage that needs another's output (e.g.
+                [`GazeEstimator`][physiotrack.GazeEstimator] needs
+                [`FaceLandmarks`][physiotrack.FaceLandmarks]) must come after it.
+                Requires faces from ``face`` or a face ``detector``. Defaults to
+                ``None``.
             depth (optional): Monocular depth estimator; enables the depth side
                 view. Defaults to ``None``.
             ego_video (str | Path, optional): Path to an ego-centric video to
@@ -247,9 +256,11 @@ class Video:
                 [`FaceSkinExtractor`][physiotrack.signals.FaceSkinExtractor] (it finds
                 faces itself, so no separate face detector is needed). Pass a custom
                 provider to override it -- a callable ``roi(frame_bgr) -> mask`` or an
-                object exposing ``skin_mask(frame_bgr) -> mask`` (e.g. a face-neck
-                segmentation model for VR/occluded-face cases) -- returning a boolean
-                ``(H, W)`` mask (or ``None`` to skip that frame). Provide a
+                object exposing ``skin_mask(frame_bgr, boxes=None) -> mask`` (e.g. a
+                face-neck segmentation model for VR/occluded-face cases) -- returning a
+                boolean ``(H, W)`` mask (or ``None`` to skip that frame). ``boxes`` are
+                the frame's face boxes when the pipeline finds faces (``face=`` or a
+                face ``detector``), else ``None``. Provide a
                 ``FaceSkinExtractor(device=...)`` here to override the device the
                 default extractor uses (which is ``device``).
             rppg_window_sec (float, optional): Sliding-window length (seconds) of the
@@ -269,7 +280,9 @@ class Video:
                 frame-by-frame regardless. Defaults to ``1``.
 
         Raises:
-            ValueError: If ``source`` cannot be opened by OpenCV.
+            ValueError: If ``source`` cannot be opened by OpenCV; if ``face_stages`` are
+                given without a face source or out of order; or if faces would come
+                from two places (a face ``detector`` and ``face``).
 
         Example:
             ```python
@@ -291,6 +304,16 @@ class Video:
                 verbose=True,
             )
             video.run("output/clip_poses.mp4", "output/clip_result.json")
+
+            # Faces of tracked people, with head pose and face mesh; blinks per person
+            video = pt.Video(
+                source="clip.mp4",
+                detector=pt.Detection.Person(), tracker=pt.Tracker(),
+                face=pt.Face(),
+                face_stages=[pt.FaceOrientation(), pt.FaceLandmarks()],
+            )
+            results = video.run()
+            blinks = pt.signals.detect_blinks(results, detection_id=1)
             ```
 
         Note:
@@ -305,7 +328,25 @@ class Video:
         self.tracker = tracker
         self.pose_estimator = pose
         self.face_detector = face
-        self.face_orientation = face_orientation
+        self.face_stages = list(face_stages or [])
+        # A face detector passed as ``detector`` makes the (tracked) subjects the faces.
+        face_detectors = [getattr(d, "task", "detect") == "face" for d in self.detectors]
+        self._faces_from_detector = bool(face_detectors) and all(face_detectors)
+        if any(face_detectors) and not self._faces_from_detector:
+            raise ValueError(
+                "A face detector was mixed with other detectors in `detector`. Pass the "
+                "face detector as `face=` so its faces are matched to the tracked subjects.")
+        if self._faces_from_detector and face is not None:
+            raise ValueError(
+                "`detector` is already a face detector, so its detections are the faces; "
+                "drop `face=` (or use a person detector with `face=`).")
+        if self.face_stages:
+            from ..face.base import check_stage_order
+            check_stage_order(self.face_stages)
+            if face is None and not self._faces_from_detector:
+                raise ValueError(
+                    "face_stages need faces: pass face=pt.Face() (or VRFace), or use a "
+                    "face detector as `detector`.")
         self.depth_estimator = depth
         self.ego_video_path = ego_video
         self.verbose = verbose
@@ -444,6 +485,10 @@ class Video:
         # default a SegFace face-skin segmentation (FaceSkinExtractor, which finds faces
         # itself -- no face detector needed), or a custom ``rppg_roi`` mask provider
         # (e.g. a face-neck segmentation model for VR/occluded-face cases).
+        if rppg_roi is not None and not (hasattr(rppg_roi, "skin_mask") or callable(rppg_roi)):
+            raise TypeError(
+                "rppg_roi must be a callable roi(frame) -> mask or an object with "
+                "skin_mask(frame, boxes=None) -> mask.")
         self.rppg_roi = rppg_roi
         self.rppg_estimator = None
         self.rppg_panels = []
@@ -537,7 +582,8 @@ class Video:
         for idx, segmentor in enumerate(self.segmentators):
             record(f"segmentor[{idx}]", segmentor)
         record("face_detector", self.face_detector)
-        record("face_orientation", self.face_orientation)
+        for stage in self.face_stages:
+            record(type(stage).__name__, stage)
         record("depth", self.depth_estimator)
 
         return {
@@ -935,79 +981,44 @@ class Video:
 
         return batch_results
     
-    def process_batch_face_orientation(self, frames_batch: List[np.ndarray]) -> List[Tuple[np.ndarray, List[Dict]]]:
-        """Detect faces and estimate head orientation over a batch, drawing pose axes.
+    def process_batch_faces(self, frames_batch: List[np.ndarray],
+                            subjects_batch: List[List[Instance]]) -> Optional[List[Result]]:
+        """Find the faces of a batch, give them subject ids, and run the face stages.
 
-        Runs the face detector per frame, then batch head-pose estimation on frames
-        that contain faces, and draws yaw/pitch/roll axes at each face center.
-        Returns the frames unchanged (with empty results) unless both a ``face``
-        detector and a ``face_orientation`` estimator are configured.
+        Faces come from the ``face`` detector (run on the clean frames) or, when
+        ``detector`` is a face detector, are the frame's subjects themselves. With a
+        tracker, a detected face takes the track id of the subject box that contains it
+        (one-to-one, see [`assign_ids`][physiotrack.core.boxes.assign_ids]); without
+        one its ``id`` is ``None``. The ``face_stages`` then run in order.
 
         Args:
-            frames_batch (list[np.ndarray]): BGR frames of shape ``(H, W, 3)``.
+            frames_batch (list[np.ndarray]): Clean BGR frames.
+            subjects_batch (list[list[Instance]]): Each frame's tracked (or detected)
+                subjects.
 
         Returns:
-            list[tuple[np.ndarray, list[dict]]]: One ``(result_frame,
-                face_orientation_results)`` tuple per frame. Each result dict holds
-                a ``"box"`` (``x1, y1, x2, y2``) and an ``"orientation"`` mapping with
-                ``"yaw"``, ``"pitch"`` and ``"roll"`` angles.
+            list[Result] | None: One ``task="face"`` result per frame, or ``None`` when
+                the pipeline has no face source.
         """
-        if self.face_detector is None or self.face_orientation is None:
-            return [(frame, []) for frame in frames_batch]
-        
-        batch_results = []
-        
-        # Detect faces in batch
-        face_bboxes_batch = []
-        for frame in frames_batch:
-            bboxes = self.face_detector.predict(frame).boxes  # (N, 4)
-            face_bboxes_batch.append(bboxes if bboxes.size else np.array([]).reshape(0, 4))
-
-        # Estimate face orientation in batch using batch inference
-        face_orientation_results_batch = []
-        if any(len(bboxes) > 0 for bboxes in face_bboxes_batch):
-            # Use batch inference for frames with faces (returns one Result per frame)
-            # A list source means batch inference; predict() dispatches on that.
-            orientation_batch_results = self.face_orientation.predict(
-                frames_batch, face_bboxes_batch)
-            for result in orientation_batch_results:
-                face_orientation_results_batch.append(result.to_dict()['instances'])
+        if self._faces_from_detector:
+            faces = [Result(orig_img=frame, instances=list(subjects), task="face")
+                     for frame, subjects in zip(frames_batch, subjects_batch)]
+        elif self.face_detector is not None:
+            faces = self.face_detector.predict(list(frames_batch))
+            if self.tracker is not None:
+                for face_result, subjects in zip(faces, subjects_batch):
+                    tracked = [s for s in subjects if s.box is not None and s.id is not None]
+                    boxed = [f for f in face_result.instances if f.box is not None]
+                    ids = assign_ids([f.box for f in boxed], [s.box for s in tracked],
+                                     [s.id for s in tracked])
+                    id_of = {id(f): i for f, i in zip(boxed, ids)}
+                    face_result.instances = [f.replace(id=id_of.get(id(f)))
+                                             for f in face_result.instances]
         else:
-            face_orientation_results_batch = [[] for _ in frames_batch]
-
-        # Visualize face orientation on frames
-        # Reset batch_results to avoid mixing with the batch predict() outputs
-        batch_results = []
-        from physiotrack.face import draw_axis
-        for frame, face_bboxes, orientation_results in zip(frames_batch, face_bboxes_batch, face_orientation_results_batch):
-            vis_frame = frame.copy()
-            if len(orientation_results) > 0:
-                for detection in orientation_results:
-                    pose = detection['orientation']
-                    bbox = detection['box']
-
-                    x1, y1, x2, y2 = bbox
-                    face_center_x = int((x1 + x2) / 2)
-                    face_center_y = int((y1 + y2) / 2)
-
-                    face_width = x2 - x1
-                    face_height = y2 - y1
-                    axis_size = max(face_width, face_height) * 0.6
-
-                    # Draw orientation axes
-                    vis_frame = draw_axis(
-                        vis_frame,
-                        yaw=pose['yaw'],
-                        pitch=pose['pitch'],
-                        roll=pose['roll'],
-                        tdx=face_center_x,
-                        tdy=face_center_y,
-                        size=axis_size
-                    )
-
-            batch_results.append((vis_frame, orientation_results))
-
-        return batch_results
+            return None
+        for stage in self.face_stages:
+            faces = stage.predict(list(frames_batch), faces)
+        return faces
 
     def process_batch_depth(self, frames_batch: List[np.ndarray]) -> List[np.ndarray]:
         """Estimate a depth map for each frame in a batch.
@@ -1030,28 +1041,25 @@ class Video:
         results = self.depth_estimator.predict(frames_batch)
         return [r.depth for r in results]
 
-    def _rppg_roi_mask(self, clean_frame: np.ndarray):
+    def _rppg_roi_mask(self, clean_frame: np.ndarray, face_boxes=None):
         """Boolean skin ROI mask for rPPG from the configured ``rppg_roi`` segmenter.
 
         ``rppg_roi`` is a segmentation provider -- either the default SegFace
         [`FaceSkinExtractor`][physiotrack.signals.FaceSkinExtractor], or a custom mask
         provider: a callable ``roi(frame) -> mask`` or an object exposing
-        ``skin_mask(frame) -> mask`` (e.g. a face-neck segmentation model). Any exception
-        yields ``None`` (that frame is skipped) so a flaky ROI never crashes the pipeline.
+        ``skin_mask(frame, boxes=None) -> mask`` (e.g. a face-neck segmentation model).
+        Providers with ``skin_mask`` receive this frame's face boxes when the pipeline
+        found faces, so the default extractor segments them instead of detecting the
+        faces a second time. An empty or missing mask skips the frame.
         """
         roi = self.rppg_roi
-        try:
-            if hasattr(roi, "skin_mask"):
-                mask = roi.skin_mask(clean_frame)
-            elif callable(roi):
-                mask = roi(clean_frame)
-            else:
-                return None
-        except Exception:
-            return None
+        if hasattr(roi, "skin_mask"):
+            mask = roi.skin_mask(clean_frame, boxes=face_boxes)
+        else:
+            mask = roi(clean_frame)
         return mask if mask is not None and np.asarray(mask).any() else None
 
-    def _update_rppg(self, clean_frame: np.ndarray) -> None:
+    def _update_rppg(self, clean_frame: np.ndarray, face_boxes=None) -> None:
         """Feed one clean frame to the shared rPPG estimator and refresh derived panels.
 
         Skin RGB is sampled from ``clean_frame`` (before any overlay is drawn) over the
@@ -1059,10 +1067,17 @@ class Video:
         default, or a custom provider's mask. The estimator is updated exactly once; the
         HRV and respiration panels only recompute their cached values (they do not
         re-update the estimator window).
+
+        Args:
+            clean_frame (np.ndarray): The frame before any overlay.
+            face_boxes (np.ndarray, optional): This frame's face boxes when the
+                pipeline found faces, reused as the skin-segmentation input. Defaults
+                to ``None``.
         """
         if self.rppg_estimator is None:
             return
-        self.rppg_estimator.update(clean_frame, roi_mask=self._rppg_roi_mask(clean_frame))
+        self.rppg_estimator.update(clean_frame,
+                                   roi_mask=self._rppg_roi_mask(clean_frame, face_boxes))
         for panel in self.rppg_panels:
             if hasattr(panel, "refresh"):
                 panel.refresh()
@@ -1096,7 +1111,7 @@ class Video:
                 [`Instance`][physiotrack.Instance] objects — so the object model
                 survives video processing — plus ``meta`` (frame index, timestamp,
                 source fps) and, when the relevant stage is enabled, ``vitals``,
-                ``face_orientation`` and ``track_box``. The subjects come from the
+                ``faces`` (the analysed faces) and ``track_box``. The subjects come from the
                 richest attached stage: pose instances with named keypoints
                 (``task="pose"``), else tracked instances with persistent ``id``s
                 (``task="track"``), else bare detections (``task="detect"``). The
@@ -1268,6 +1283,18 @@ class Video:
                     track_ids_batch.append(track_ids)
                     track_instances_batch.append(track_instances)
 
+                # The frame's subjects before pose: the tracker's instances (persistent
+                # ids) or, without a tracker, the bare detections.
+                if self.tracker is not None:
+                    subjects_batch = track_instances_batch
+                else:
+                    subjects_batch = [
+                        [Instance(box=np.array(row[:4], dtype=np.float32),
+                                  confidence=float(row[4]), cls=int(row[5]))
+                         for det_rows in frame_detections for row in det_rows]
+                        for frame_detections in all_detections_batch
+                    ]
+
                 # Step 3: Batch pose estimation (if applicable)
                 pose_results_batch = []
                 if self.pose_estimator:
@@ -1297,15 +1324,14 @@ class Video:
                 else:
                     frames_after_seg = frames_with_tracking
                 
-                # Step 6: Batch face orientation processing
-                face_orientation_results_batch = []
-                if self.face_detector is not None and self.face_orientation is not None:
-                    face_orientation_batch_results = self.process_batch_face_orientation(frames_after_seg)
-                    frames_with_face_orientation = [r[0] for r in face_orientation_batch_results]
-                    face_orientation_results_batch = [r[1] for r in face_orientation_batch_results]
-                else:
-                    frames_with_face_orientation = frames_after_seg
-                    face_orientation_results_batch = [[] for _ in frame_batch]
+                # Step 6: Faces -- found on the clean frames, tied to their subject's track
+                # id, analysed by the face stages, and drawn onto the annotated frames.
+                faces_batch = self.process_batch_faces(frame_batch, subjects_batch)
+                if faces_batch is not None:
+                    frames_after_seg = [
+                        faces.plot(image=frame, boxes=not self._faces_from_detector)
+                        for frame, faces in zip(frames_after_seg, faces_batch)
+                    ]
 
                 # Step 7: Batch depth estimation
                 depth_maps_batch = []
@@ -1315,8 +1341,10 @@ class Video:
                     depth_maps_batch = [None for _ in frame_batch]
 
                 # Step 8: Process overlays (radar view, depth view) and save results
-                for idx, (result_frame, metadata, pose_results, online_targets, face_orientation_results, depth_map) in enumerate(
-                        zip(frames_with_face_orientation, frame_batch_metadata, pose_results_batch, online_targets_batch, face_orientation_results_batch, depth_maps_batch)):
+                for idx, (result_frame, metadata, pose_results, online_targets, depth_map) in enumerate(
+                        zip(frames_after_seg, frame_batch_metadata, pose_results_batch,
+                            online_targets_batch, depth_maps_batch)):
+                    faces = faces_batch[idx] if faces_batch is not None else None
                     
                     # Top-right stack (top -> bottom): motion plot, then the rPPG vitals
                     # panels, then motion-derived respiration. Update each panel's data
@@ -1327,7 +1355,8 @@ class Video:
                     # Skin is sampled from the CLEAN frame (frame_batch[idx]), never the
                     # overlaid result_frame, so the pulse signal is not corrupted.
                     if self.rppg_estimator is not None:
-                        self._update_rppg(frame_batch[idx])
+                        self._update_rppg(frame_batch[idx],
+                                          faces.boxes if faces is not None else None)
 
                     # Motion-based respiration: reuse the pose keypoints already computed
                     # this frame (no extra inference), buffer them, and recompute the
@@ -1398,13 +1427,6 @@ class Video:
                             and getattr(self.tracker, 'locked_subject_box', None) is not None):
                         track_box = self.tracker.locked_subject_box.tolist()
 
-                    face_orientation_data = (
-                        face_orientation_results
-                        if (self.face_orientation is not None
-                            and len(face_orientation_results) > 0)
-                        else None
-                    )
-
                     # Instances come back from the pose backend as serialized dicts, so
                     # rebuild them into the object model: the frame result must expose
                     # Instance/Keypoints objects, not raw dicts. Detector/tracker-only
@@ -1419,17 +1441,9 @@ class Video:
                             Instance.from_dict(det, architecture or "WHOLEBODY")
                             for det in (pose_results or [])
                         ]
-                    elif self.tracker is not None:
-                        frame_task = 'track'
-                        frame_instances = list(track_instances_batch[idx])
                     else:
-                        frame_task = 'detect'
-                        frame_instances = [
-                            Instance(box=np.array(row[:4], dtype=np.float32),
-                                     confidence=float(row[4]), cls=int(row[5]))
-                            for det_rows in all_detections_batch[idx]
-                            for row in det_rows
-                        ]
+                        frame_task = 'track' if self.tracker is not None else 'detect'
+                        frame_instances = list(subjects_batch[idx])
 
                     frame_meta = ResultMeta(
                         frame_index=metadata['frame_id'],
@@ -1464,7 +1478,7 @@ class Video:
                         ),
                         meta=frame_meta,
                         vitals=vitals,
-                        face_orientation=face_orientation_data,
+                        faces=faces,
                         track_box=track_box,
                     ))
                     
@@ -1518,9 +1532,10 @@ class Video:
                                     seg_fps = segmentor.get_avg_fps()
                                     fps_dict[f"Seg[{idx}]"] = f"{seg_fps:.2f}"
                         
-                        if self.face_orientation and hasattr(self.face_orientation, 'get_avg_fps'):
-                            face_fps = self.face_orientation.get_avg_fps()
-                            fps_dict["Face"] = f"{face_fps:.2f}"
+                        if self.face_detector is not None:
+                            fps_dict["Face"] = f"{self.face_detector.get_avg_fps():.2f}"
+                        for stage in self.face_stages:
+                            fps_dict[type(stage).__name__] = f"{stage.get_avg_fps():.2f}"
 
                         if self.depth_estimator and hasattr(self.depth_estimator, 'get_avg_fps'):
                             depth_fps = self.depth_estimator.get_avg_fps()

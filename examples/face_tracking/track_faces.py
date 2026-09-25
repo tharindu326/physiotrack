@@ -17,11 +17,7 @@ import physiotrack as pt
 EXAMPLE_DIR = Path(__file__).resolve().parent
 DEFAULT_INPUT = EXAMPLE_DIR / "data" / "students_face_tracking.mp4"
 DEFAULT_OUTPUT = EXAMPLE_DIR / "results"
-FACE_MODELS = {
-    "nano": pt.Models.Detection.YOLO.FACE.n_face,
-    "medium": pt.Models.Detection.YOLO.FACE.m_face,
-    "large": pt.Models.Detection.YOLO.FACE.l_face,
-}
+FACE_MODELS = pt.Models.Detection.YOLO.FACE
 
 
 def parse_args() -> argparse.Namespace:
@@ -35,9 +31,9 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--model",
-        choices=tuple(FACE_MODELS),
-        default="medium",
-        help="YOLO face model size (default: medium).",
+        choices=[m.name for m in FACE_MODELS],
+        default="m_face",
+        help="YOLO face checkpoint (default: m_face).",
     )
     parser.add_argument("--device", default="cpu", help="Face detector device: cpu, cuda, or 0.")
     parser.add_argument("--conf", type=float, default=0.25, help="Confidence threshold.")

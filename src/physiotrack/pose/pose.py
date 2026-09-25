@@ -115,8 +115,8 @@ class PoseBase(PredictorMixin):
 
         model_path = Models.resolve(model)
 
-        self.minfo = Models._get_model_info(model)
-        self.architecture = self.minfo['enum_class'].upper()
+        self.minfo = Models.info(model)
+        self.architecture = self.minfo['group'].upper()
         self.pose_framework = self.minfo['backend']
         # `verbose` selects the level, so a quiet predictor stays quiet without
         # muting the rest of the library.

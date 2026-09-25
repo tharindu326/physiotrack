@@ -1,6 +1,6 @@
 # Face Detection & Tracking Examples
 
-PhysioTrack includes two runnable, self-contained examples with small synthetic
+PhysioTrack includes runnable, self-contained examples with small synthetic
 inputs. They are designed to answer three practical questions: does the model run,
 what did it return, and how can those results be inspected outside Python?
 
@@ -8,6 +8,7 @@ what did it return, and how can those results be inspected outside Python?
 | --- | --- | --- |
 | [`examples/face_detection`](https://github.com/tharindu326/physiotrack/tree/main/examples/face_detection) | four scene images | annotated PNGs, per-image JSON, `summary.csv`, `run.json` |
 | [`examples/face_tracking`](https://github.com/tharindu326/physiotrack/tree/main/examples/face_tracking) | one 10-second clip | annotated MP4, per-frame JSON, track CSV |
+| [`examples/face_analysis`](https://github.com/tharindu326/physiotrack/tree/main/examples/face_analysis) | the selfie image and the clip | every face stage on an image; per-face blinks and mouth motion over the video |
 
 The generated `results/` directories are ignored by Git. Run the scripts locally,
 inspect their outputs, and commit only deliberate documentation assets—not an entire
@@ -37,7 +38,7 @@ size, or your own input like this:
 
 ```bash
 python examples/face_detection/detect_faces.py --device cuda
-python examples/face_detection/detect_faces.py --model nano --input path/to/images
+python examples/face_detection/detect_faces.py --model n_face --input path/to/images
 python examples/face_detection/detect_faces.py --input path/to/one_image.jpg
 ```
 
@@ -47,7 +48,7 @@ panel containing:
 - `Faces detected`: the number of [`Instance`][physiotrack.Instance] objects in
   this image's [`Result`][physiotrack.Result];
 - `Detector`: the exact checkpoint filename, such as `yolov11m-face.pt`;
-- `Device` and elapsed inference time for this call.
+- `Device`: the requested compute device.
 
 ![Face detections in the synthetic point-of-view exercise scene](../images/exercise_class_pov.jpg)
 
@@ -59,8 +60,8 @@ not a ground-truth accuracy result.*
 
 ```text
 examples/face_detection/results/
-├── annotated/<scene>/<image>.png
-├── predictions/<scene>/<image>.json
+├── annotated/<scene>__<image>.png
+├── predictions/<scene>__<image>.json
 ├── summary.csv
 └── run.json
 ```
@@ -69,35 +70,27 @@ examples/face_detection/results/
 
 | Field | Meaning |
 | --- | --- |
-| `image`, `scene` | relative input path and its first directory (for example `crowd`) |
+| `image` | relative input path |
 | `width`, `height` | decoded image dimensions in pixels |
 | `faces_detected` | number of boxes retained after confidence filtering and NMS |
 | `mean_confidence`, `minimum_confidence` | summaries of the retained face confidences; blank when none were found |
-| `inference_ms` | one end-to-end `detector.predict(image)` call; model setup is excluded |
-| `model`, `device_requested` | checkpoint filename and requested compute device |
-| `status`, `error` | `ok`, or a readable exception while other images continue processing |
 
-Each per-image JSON is the detailed, typed counterpart:
+Each per-image JSON is exactly [`Result.to_json()`][physiotrack.Result.to_json], so it
+reloads with [`Result.from_dict`][physiotrack.Result.from_dict]:
 
 ```json
 {
-  "source": {"image": "selfie/two_person_selfie.jpg", "width": 1643, "height": 2200},
-  "configuration": {"entry_point": "physiotrack.Face", "model": "yolov11m-face.pt"},
-  "timing": {"inference_ms": 123.4},
-  "result": {
-    "task": "face",
-    "instances": [
-      {"box": [100.0, 120.0, 400.0, 520.0], "confidence": 0.97, "cls": 0}
-    ]
-  }
+  "task": "face",
+  "instances": [
+    {"box": [100.0, 120.0, 400.0, 520.0], "confidence": 0.97, "cls": 0, "cls_name": "face"}
+  ],
+  "names": {"0": "face"}
 }
 ```
 
-The example is the outer experiment record; `result` is exactly
-[`Result.to_dict()`][physiotrack.Result.to_dict]. Coordinates are `[x1, y1, x2,
-y2]` pixels. `run.json` records the thresholds, warm-up count, model setup time,
-aggregate counts/timing, PhysioTrack/OpenCV/PyTorch versions, CUDA visibility, and
-GPU name so the run can be interpreted later.
+Coordinates are `[x1, y1, x2, y2]` pixels. `run.json` records the registry path of the
+model, the device, the thresholds, the image and face counts, and the detector's mean
+inference time.
 
 ### Compare CPU and GPU
 
@@ -106,7 +99,7 @@ both devices:
 
 ```bash
 python examples/face_detection/compare_cpu_gpu.py
-python examples/face_detection/compare_cpu_gpu.py --model nano --repeats 20
+python examples/face_detection/compare_cpu_gpu.py --model n_face --repeats 20
 ```
 
 It requires CUDA. Each device receives separate warm-up runs; CUDA is synchronized
@@ -116,8 +109,8 @@ time. The output directory `examples/face_detection/results/cpu_vs_gpu/` contain
 | Output | Contents |
 | --- | --- |
 | `cpu.png`, `gpu.png` | final annotated result and mean timing for each device |
-| `side_by_side.png`, `side_by_side.jpg` | the two annotated results on one canvas; JPEG is the compact documentation preview |
-| `comparison.json` | raw timings, summary statistics, speed-up, GPU memory, runtime metadata, and greedy box-IoU agreement |
+| `side_by_side.jpg` | the two annotated results on one canvas, the compact documentation preview |
+| `comparison.json` | timing statistics per device, the speed-up, and the agreement of the two box sets (one-to-one IoU matching) |
 
 ![CPU and CUDA face-detection comparison](../images/side_by_side.jpg)
 
@@ -179,6 +172,7 @@ One JSON frame record has this shape:
 {
   "frame_id": 42,
   "timestamp": 1.75,
+  "task": "track",
   "instances": [
     {"box": [100.0, 120.0, 180.0, 220.0], "confidence": 0.94, "cls": 0, "id": 1}
   ]
@@ -202,11 +196,17 @@ not enough to calculate accuracy. Use a labelled benchmark and a fixed evaluatio
 protocol for claims about precision, recall, average precision, or tracking metrics;
 the [face validation guide](face-validation.md) explains the separation.
 
-## API choice: `Face()` or `Detection.Face()`?
+## Analyse faces
 
-The examples intentionally use top-level [`Face`][physiotrack.Face]. It returns
-`Result(task="face")` and communicates that the boxes feed a facial pipeline.
-[`Detection.Face`][physiotrack.Detection.Face] uses the same default YOLO face
-checkpoint but belongs to the generic detector namespace and returns
-`Result(task="detect")`. Box coordinates and confidences follow the same contract;
-choose the entry point whose task semantics fit the pipeline.
+The [face analysis examples](https://github.com/tharindu326/physiotrack/tree/main/examples/face_analysis)
+go beyond boxes and tracks. `analyze_image.py` chains every
+[face stage](face.md) on the selfie and prints each face's head pose, expression,
+eye and mouth aspect ratios, iris position and gaze. `analyze_video.py` runs the stages
+inside `Video` on the tracking clip and reports each face's blinks, blink rate and
+mouth movement with the [face signals](signals.md#face-signals):
+
+```bash
+pip install "physiotrack[face]"
+python examples/face_analysis/analyze_image.py
+python examples/face_analysis/analyze_video.py --gaze
+```
