@@ -38,6 +38,11 @@ jobs:
           python-version: ${{ matrix.python-version }}
           cache: pip
 
+      - name: Install MediaPipe's system libraries
+        # The mediapipe Linux wheel links libEGL/libGLESv2 even when it runs on the CPU;
+        # the runner image does not ship them, so FaceLandmarks fails to load without.
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libegl1 libgles2
+
       - name: Install CPU-only PyTorch
         # The default PyPI wheels pull the full CUDA stack, which is unnecessary on
         # CI runners and far slower to install. Resolve torch from the CPU index

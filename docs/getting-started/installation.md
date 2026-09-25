@@ -181,3 +181,4 @@ Annotated outputs never copy source audio.
 | model download fails on first use | check network/proxy access and that the weight-cache directory is writable |
 | OpenCV cannot open an image/video | verify the path and codec support; try the bundled face example to separate input problems from installation problems |
 | `ModuleNotFoundError: physiotrack` | run `python -m pip install -e .` from the repository root in the active environment |
+| `OSError: libEGL.so.1` (or `libGLESv2.so.2`) from `FaceLandmarks` on Linux | MediaPipe needs the EGL/GLES runtime even on the CPU; on Debian/Ubuntu install `libegl1 libgles2` (e.g. in a headless server or Docker image) |
