@@ -242,3 +242,13 @@ def test_assign_ids_matches_faces_to_containing_subjects_one_to_one():
     # Two faces in one person box: only the better-covered face gets the id.
     assert assign_ids([[10, 10, 40, 40], [90, 10, 130, 40]], [[0, 0, 100, 100]], [5]) == [5, None]
     assert assign_ids(np.empty((0, 4)), subjects, [11, 22]) == []
+
+
+def test_wholebody_face_points_use_the_subjects_sides():
+    from physiotrack.pose.config import COCO_WHOLEBODY
+
+    # iBUG-68 36-41 / 17-21 are the subject's right eye / eyebrow, like body id 2.
+    assert COCO_WHOLEBODY["59"] == "face_right_eye_0"
+    assert COCO_WHOLEBODY["65"] == "face_left_eye_0"
+    assert COCO_WHOLEBODY["40"] == "face_right_eyebrow_0"
+    assert COCO_WHOLEBODY["2"] == "right_eye"
