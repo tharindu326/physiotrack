@@ -1043,8 +1043,7 @@ Then open an issue or pull request on
 [GitHub](https://github.com/tharindu326/physiotrack).
 
 <div align="center">
-
-[![Physiotrack contributors](https://contrib.rocks/image?repo=tharindu326/physiotrack)](https://github.com/tharindu326/physiotrack/graphs/contributors)
+[![Physiotrack contributors](https://contrib.rocks/image?repo=Multimodal-Sensing-Lab/physiotrack)](https://github.com/Multimodal-Sensing-Lab/physiotrack/graphs/contributors)
 
 </div>
 
