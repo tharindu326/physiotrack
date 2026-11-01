@@ -237,10 +237,16 @@ class Models:
                 swinb_celeba_512 = "segface_swinb_celeba_512.pt"
 
 
+    class Face:
+        class MediaPipe:
+            class Landmarks(Enum):
+                face_landmarker = "mediapipe/face_landmarker.task"
+
+
     # Task namespaces walked by the introspection helpers below. Kept in one place so
     # `list`, `info`, `get` and `_get_model_info` cannot disagree about what the
     # registry contains.
-    _TASKS = ('Detection', 'Pose', 'Segmentation', 'Pose3D', 'Depth')
+    _TASKS = ('Detection', 'Pose', 'Segmentation', 'Pose3D', 'Depth', 'Face')
 
     @staticmethod
     def _walk():
@@ -423,7 +429,7 @@ class Models:
         if not isinstance(model_enum, Enum):
             return None
             
-        for category_name in ['Detection', 'Pose', 'Segmentation', 'Pose3D', 'Depth']:
+        for category_name in ['Detection', 'Pose', 'Segmentation', 'Pose3D', 'Depth', 'Face']:
             category = getattr(Models, category_name, None)
             if not category:
                 continue
@@ -596,6 +602,28 @@ class Models:
         base_url = f"https://huggingface.co/tharindu326/physiotrack/resolve/main"
         download_url = f"{base_url}/{file_name}?download=true"
         return Models._download_file(download_url, file_name, download_path)
+
+    @staticmethod
+    def _download_mediapipe_model(model_info, download_path):
+        """Download the MediaPipe Face Landmarker model bundle."""
+        file_name = model_info['file_name']
+        file_dir = os.path.dirname(file_name)
+        actual_filename = os.path.basename(file_name)
+        full_download_path = os.path.join(download_path, file_dir)
+        os.makedirs(full_download_path, exist_ok=True)
+
+        download_url = (
+            "https://storage.googleapis.com/"
+            "mediapipe-models/face_landmarker/"
+            "face_landmarker/float16/latest/"
+            "face_landmarker.task"
+        )
+
+        return Models._download_file(
+            download_url,
+            actual_filename,
+            full_download_path,
+        )
 
     @staticmethod
     def _download_file(url, file_name, download_path):
@@ -789,6 +817,8 @@ class Models:
             return Models._download_zipdepth_model(model_info, download_path)
         elif model_info['backend'] == 'SegFace':
             return Models._download_segface_model(model_info, download_path)
+        elif model_info['backend'] == 'MediaPipe':
+            return Models._download_mediapipe_model(model_info, download_path)
         else:
             raise ValueError(f"Unknown backend: {model_info['backend']}")
 

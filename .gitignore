@@ -1,60 +1,51 @@
-# folders
-__pycache__
-.idea
-model_data
-src/physiotrack.egg-info
-examples/output
-# downloaded model weights at repo root (leading slash => NOT src/physiotrack)
-/physiotrack/
-# dataset / generated evaluation outputs
-examples/CVSSP3D/
-examples/cananon_evaluation_outputs/
-docs/paper/
-# built MkDocs site (published to the gh-pages branch by CI, not tracked on main)
-site/
 
-# model files
-*.pt
-*.engine
-*.onnx
-*.pth
-*.bin
-*.pt2
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
 
-# scripts
-test.py
-main.py
+# CAER-S qualitative images - keep locally, exclude from Git
+/validation/emotion_recognition/results/figures/caers_emotion_qualitative_examples.png
+/validation/emotion_recognition/results/qualitative/annotated_images/
 
-# media
-*.avi
-*.mp4
-*.wav
-*.json
-!.releaserc.json
+# WIDER FACE qualitative media - keep locally, exclude from Git
+/validation/face_detection/results/figures/wider_face_qualitative_examples.png
+/validation/face_detection/results/qualitative/annotated_images/
 
-# data / arrays
-*.npz
-*.npy
-*.csv
+# 300-W Face Landmarks qualitative media - keep locally, exclude from Git
+/validation/face_landmarks/results/figures/300w_landmark_qualitative_examples.png
+/validation/face_landmarks/results/qualitative/annotated_images/
 
-# binaries / fonts / archives / shortcuts
-*.dll
-*.bz2
-*.ttf
-# ...except the bundled overlay fonts, which ship as package data
-!src/physiotrack/assets/fonts/*.ttf
-*.lnk
+# 300-W Face Quality qualitative media - keep locally, exclude from Git
+/validation/face_quality/results/figures/face_quality_qualitative_examples.png
+/validation/face_quality/results/qualitative/sample_*.png
 
-# generated docs / diagrams / scratch
-*.html
-*.svg
-*.pdf
+# CelebAMask-HQ Face Regions qualitative media - keep locally, exclude from Git
+/validation/face_regions/results/figures/celebamaskhq_qualitative_examples.png
+/validation/face_regions/results/qualitative/annotated_images/
 
-# duplicates / backups
-* - Copy.*
-*_old.*
+# ECCV 2016 Face Tracking qualitative media - keep locally, exclude from Git
+/validation/face_tracking/results/figures/eccv16_tracking_qualitative_examples.png
+/validation/face_tracking/results/qualitative/annotated_videos/
+/validation/face_tracking/results/qualitative/representative_frames/
 
-# other
-*.ovpn
+# AFLW Head Pose qualitative media - keep locally, exclude from Git
+/validation/head_pose/results/figures/aflw_head_pose_qualitative_examples.png
+/validation/head_pose/results/qualitative/annotated_images/
 
+# Pexels integration media - excluded from Git by project policy
+/validation/integration/test_data/images/*.jpg
+/validation/integration/test_data/multi_person/multi_person2.mp4
+/validation/integration/test_data/single_person/ravdess_single_person.mp4
+/validation/integration/test_data/whole_project/ravdess_whole_project.mp4
 
+# Pexels-derived robustness media - excluded from Git by project policy
+/validation/robustness/results/figures/robustness_qualitative_examples.png
+/validation/robustness/results/qualitative/annotated_images/
+/validation/robustness/test_data/generated_controlled/01_baseline.png
+/validation/robustness/test_data/generated_controlled/02_dim_lighting.png
+/validation/robustness/test_data/generated_controlled/03_overexposed_lighting.png
+/validation/robustness/test_data/generated_controlled/04_gaussian_blur.png
+/validation/robustness/test_data/generated_controlled/05_motion_blur.png
+/validation/robustness/test_data/generated_controlled/06_small_face.png
+/validation/robustness/test_data/generated_controlled/07_partial_occlusion.png

@@ -9,6 +9,7 @@ same for every predictor.
 The models themselves are not loaded here (each is a large download); the input layer and
 the class wiring are what these tests cover.
 """
+
 import numpy as np
 import pytest
 
@@ -63,31 +64,46 @@ class TestAsFrames:
         assert frames[0].shape == (6, 8, 3) and was_batch is False
 
     def test_list_is_a_batch(self):
-        frames, was_batch = as_frames([np.zeros((4, 4, 3), np.uint8)] * 3)
+        frames, was_batch = as_frames(
+            [np.zeros((4, 4, 3), np.uint8)] * 3
+        )
         assert len(frames) == 3 and was_batch is True
 
     def test_single_element_list_is_still_a_batch(self):
         # So a caller that batches never needs a special case for n == 1.
-        frames, was_batch = as_frames([np.zeros((4, 4, 3), np.uint8)])
+        frames, was_batch = as_frames(
+            [np.zeros((4, 4, 3), np.uint8)]
+        )
         assert len(frames) == 1 and was_batch is True
 
     def test_batch_of_paths(self, image_file):
-        frames, was_batch = as_frames([image_file, str(image_file)])
+        frames, was_batch = as_frames(
+            [image_file, str(image_file)]
+        )
         assert len(frames) == 2 and was_batch is True
         assert all(f.shape == (6, 8, 3) for f in frames)
 
     def test_mixed_arrays_and_paths(self, image_file):
-        frames, was_batch = as_frames([np.zeros((6, 8, 3), np.uint8), image_file])
+        frames, was_batch = as_frames(
+            [
+                np.zeros((6, 8, 3), np.uint8),
+                image_file,
+            ]
+        )
         assert len(frames) == 2 and was_batch is True
 
     def test_tuple_is_a_batch(self):
-        _, was_batch = as_frames((np.zeros((4, 4, 3), np.uint8),))
+        _, was_batch = as_frames(
+            (np.zeros((4, 4, 3), np.uint8),)
+        )
         assert was_batch is True
 
     def test_a_stack_of_frames_is_rejected_as_ambiguous(self):
         # (N, H, W, 3) could be a batch or a volume; requiring a list removes the guess.
         with pytest.raises(ValueError, match="pass a list"):
-            as_frames(np.zeros((5, 4, 4, 3), np.uint8))
+            as_frames(
+                np.zeros((5, 4, 4, 3), np.uint8)
+            )
 
     def test_empty_sequence_is_rejected(self):
         with pytest.raises(ValueError, match="empty sequence"):
@@ -99,7 +115,12 @@ class TestAsFrames:
 
     def test_bad_batch_element_names_its_index(self):
         with pytest.raises(TypeError, match="element 1"):
-            as_frames([np.zeros((4, 4, 3), np.uint8), 42])
+            as_frames(
+                [
+                    np.zeros((4, 4, 3), np.uint8),
+                    42,
+                ]
+            )
 
 
 class TestMixin:
@@ -109,18 +130,37 @@ class TestMixin:
                 return ("predicted", source, kwargs)
 
         p = P()
-        assert p("x", conf=0.5) == p.predict("x", conf=0.5)
+
+        assert p(
+            "x",
+            conf=0.5,
+        ) == p.predict(
+            "x",
+            conf=0.5,
+        )
 
     def test_unimplemented_predict_is_a_clear_error(self):
         class Bare(PredictorMixin):
             pass
 
-        with pytest.raises(NotImplementedError, match="must implement predict"):
-            Bare().predict(np.zeros((4, 4, 3), np.uint8))
+        with pytest.raises(
+            NotImplementedError,
+            match="must implement predict",
+        ):
+            Bare().predict(
+                np.zeros((4, 4, 3), np.uint8)
+            )
 
     def test_unwrap_respects_the_batch_flag(self):
-        assert PredictorMixin._unwrap(["a"], False) == "a"
-        assert PredictorMixin._unwrap(["a"], True) == ["a"]
+        assert PredictorMixin._unwrap(
+            ["a"],
+            False,
+        ) == "a"
+
+        assert PredictorMixin._unwrap(
+            ["a"],
+            True,
+        ) == ["a"]
 
 
 class TestEveryPredictorFollowsTheContract:
@@ -130,33 +170,58 @@ class TestEveryPredictorFollowsTheContract:
     def _bases():
         from physiotrack.depth.depth import DepthBase
         from physiotrack.detect.detect import _DetectionAPI
+        from physiotrack.face.analysis import FaceAnalysis
         from physiotrack.face.face_orientation import FaceOrientation
+        from physiotrack.face.gaze_estimation import GazeEstimator
         from physiotrack.pose.pose import PoseBase
         from physiotrack.segment.segment import SegmentationBase
-        return [_DetectionAPI, PoseBase, SegmentationBase, DepthBase, FaceOrientation]
+
+        return [
+            _DetectionAPI,
+            PoseBase,
+            SegmentationBase,
+            DepthBase,
+            FaceOrientation,
+            GazeEstimator,
+            FaceAnalysis,
+        ]
 
     def test_all_inherit_the_mixin(self):
         for cls in self._bases():
-            assert issubclass(cls, PredictorMixin), cls.__name__
+            assert issubclass(
+                cls,
+                PredictorMixin,
+            ), cls.__name__
 
     def test_none_redefines_call(self):
         # A per-class __call__ that only forwards is duplication waiting to drift.
         for cls in self._bases():
-            assert "__call__" not in vars(cls), f"{cls.__name__} redefines __call__"
+            assert "__call__" not in vars(
+                cls
+            ), f"{cls.__name__} redefines __call__"
 
     def test_first_parameter_is_named_source(self):
         import inspect
 
         for cls in self._bases():
-            params = list(inspect.signature(cls.predict).parameters)
-            assert params[1] == "source", \
-                f"{cls.__name__}.predict names its input {params[1]!r}, not 'source'"
+            params = list(
+                inspect.signature(
+                    cls.predict
+                ).parameters
+            )
+
+            assert params[1] == "source", (
+                f"{cls.__name__}.predict names its input "
+                f"{params[1]!r}, not 'source'"
+            )
 
     def test_no_public_predict_batch_remains(self):
         # A list passed to predict() covers it; a second public entry point is not needed.
         for cls in self._bases():
-            assert not hasattr(cls, "predict_batch"), \
-                f"{cls.__name__} still exposes predict_batch"
+            assert not hasattr(
+                cls,
+                "predict_batch",
+            ), f"{cls.__name__} still exposes predict_batch"
 
     def test_tracker_keeps_its_own_verb(self):
         """Tracking is not a per-image predictor and should not pretend to be.
@@ -167,5 +232,12 @@ class TestEveryPredictorFollowsTheContract:
         """
         from physiotrack.trackers.track import Tracker
 
-        assert hasattr(Tracker, "track")
-        assert not issubclass(Tracker, PredictorMixin)
+        assert hasattr(
+            Tracker,
+            "track",
+        )
+
+        assert not issubclass(
+            Tracker,
+            PredictorMixin,
+        )

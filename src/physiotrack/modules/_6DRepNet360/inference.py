@@ -81,6 +81,29 @@ class HeadPoseEstimator:
         # FPS monitoring
         self.inference_times = deque(maxlen=100)
     
+
+    @staticmethod
+    def _square_face_crop(img_rgb: np.ndarray, bbox, scale: float = 1.2):
+        """Crop a centered square region around a detected face."""
+        x1, y1, x2, y2 = [float(v) for v in bbox[:4]]
+
+        cx = (x1 + x2) / 2.0
+        cy = (y1 + y2) / 2.0
+
+        width = x2 - x1
+        height = y2 - y1
+        side = max(width, height) * scale
+
+        sx1 = max(0, int(round(cx - side / 2.0)))
+        sy1 = max(0, int(round(cy - side / 2.0)))
+        sx2 = min(img_rgb.shape[1], int(round(cx + side / 2.0)))
+        sy2 = min(img_rgb.shape[0], int(round(cy + side / 2.0)))
+
+        crop = img_rgb[sy1:sy2, sx1:sx2]
+        center = ((sx1 + sx2) // 2, (sy1 + sy2) // 2)
+
+        return crop, center
+
     def __call__(self, img: np.ndarray, bboxes: Optional[np.ndarray] = None) -> Tuple[np.ndarray, dict]:
         """
         Make the class callable for single-frame inference.
@@ -141,28 +164,22 @@ class HeadPoseEstimator:
         crop_metadata = []
         
         for i, bbox in enumerate(bboxes):
-            x1, y1, x2, y2 = bbox[:4]
-            
-            # Add padding
-            pad = 10
-            x1 = max(0, x1 - pad)
-            y1 = max(0, y1 - pad)
-            x2 = min(img_rgb.shape[1], x2 + pad)
-            y2 = min(img_rgb.shape[0], y2 + pad)
-            
-            # Crop face
-            face_crop = img_rgb[y1:y2, x1:x2]
-            
+            face_crop, center = self._square_face_crop(
+                img_rgb,
+                bbox,
+                scale=1.2,
+            )
+
             if face_crop.size == 0:
                 continue
-            
+
             cropped_faces.append(face_crop)
             crop_metadata.append({
                 'bbox': bbox,
-                'center': ((x1 + x2) // 2, (y1 + y2) // 2),
+                'center': center,
                 'index': i
             })
-        
+
         if len(cropped_faces) == 0:
             inference_time = time.perf_counter() - start
             self.inference_times.append(inference_time)
@@ -266,29 +283,23 @@ class HeadPoseEstimator:
             
             # Crop faces
             for bbox_idx, bbox in enumerate(bboxes):
-                x1, y1, x2, y2 = bbox[:4]
-                
-                # Add padding
-                pad = 10
-                x1 = max(0, x1 - pad)
-                y1 = max(0, y1 - pad)
-                x2 = min(img_rgb.shape[1], x2 + pad)
-                y2 = min(img_rgb.shape[0], y2 + pad)
-                
-                # Crop face
-                face_crop = img_rgb[y1:y2, x1:x2]
-                
+                face_crop, center = self._square_face_crop(
+                    img_rgb,
+                    bbox,
+                    scale=1.2,
+                )
+
                 if face_crop.size == 0:
                     continue
-                
+
                 all_crops.append(face_crop)
                 crop_metadata.append({
                     'frame_idx': frame_idx,
                     'bbox_idx': bbox_idx,
                     'bbox': bbox,
-                    'center': ((x1 + x2) // 2, (y1 + y2) // 2)
+                    'center': center
                 })
-        
+
         # Batch inference on all crops
         if len(all_crops) > 0:
             rotation_matrices = self._inference_batch(all_crops)

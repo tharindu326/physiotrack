@@ -54,6 +54,7 @@ dependencies = [
   # numerics and I/O
   "numpy>=1.24",
   "scipy>=1.12",           # signals/filters.py relies on the firwin(fs=...) signature
+
   # 4.10 is the first release built against the NumPy 2 ABI. An older OpenCV
   # alongside NumPy >= 2 fails at import with
   # "numpy.core.multiarray failed to import", so this floor is load-bearing.
@@ -64,10 +65,12 @@ dependencies = [
   "tqdm>=4.66",
   "pyyaml>=6.0",
   "imageio>=2.31",
+
   # analysis
   "matplotlib>=3.7",
   "scikit-learn>=1.3",
   "fastdtw>=0.3.4",        # signals/evaluate.py
+
   # deep-learning runtime and model backends
   "torch>=2.2",
   "torchvision>=0.17",
@@ -75,6 +78,10 @@ dependencies = [
   "timm>=0.9",
   "einops>=0.7",
   "easydict>=1.10",
+  "mediapipe>=0.10.35",
+  "emotiefflib>=1.1.1",
+  "onnxruntime>=1.18",
+
   # tracking backends
   "lap>=0.4",              # ByteTrack / BoostTrack linear assignment
   "filterpy>=1.4.5",       # OC-SORT Kalman filter
@@ -87,6 +94,13 @@ dependencies = [
 pose3d = [
   "smplx>=0.1.28",
 ]
+
+# Optional pretrained 3D gaze-estimation backend used by GazeEstimator.
+# The existing landmark-based GazeDescriptor does not require this extra.
+gaze = [
+  "ptgaze==0.3.0",
+]
+
 docs = [
   "mkdocs>=1.6,<2",
   "mkdocs-material>=9.5",
@@ -94,6 +108,7 @@ docs = [
   "mkdocs-autorefs>=1.0",
   "pymdown-extensions>=10",
 ]
+
 # neurokit2 is required rather than optional: the HRV and artefact-correction tests
 # cross-check against it as a reference implementation. Without it those tests
 # silently skip, which would leave the library's strongest correctness claim

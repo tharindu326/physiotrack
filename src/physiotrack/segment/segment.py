@@ -377,17 +377,31 @@ class Segmentation:
             h, w = frame.shape[:2]
             seg_map = np.zeros((h, w), dtype=np.int32)
             instances = []
+            # Preserve each crop's native class map before composing the public
+            # visualization. A full-frame class map cannot represent two
+            # different labels at the same pixel when face boxes overlap.
+            face_seg_maps = []
             for box in (boxes if boxes is not None else []):
                 x1, y1, x2, y2 = (int(v) for v in box[:4])
                 x1, y1 = max(0, x1), max(0, y1)
                 x2, y2 = min(w, x2), min(h, y2)
                 if x2 <= x1 or y2 <= y1:
                     continue
-                parsing = self.segmentor.infer(frame[y1:y2, x1:x2])
+                parsing = np.asarray(self.segmentor.infer(frame[y1:y2, x1:x2]))
+                if parsing.shape != (y2 - y1, x2 - x1):
+                    raise ValueError(
+                        "SegFace crop parsing shape does not match its face box: "
+                        f"{parsing.shape} vs {(y2 - y1, x2 - x1)}"
+                    )
+                face_seg_maps.append(parsing.copy())
                 fg = parsing > 0
                 seg_map[y1:y2, x1:x2][fg] = parsing[fg]
                 instances.append(Instance(box=np.array([x1, y1, x2, y2], dtype=float)))
 
             names = {i: n for i, n in enumerate(CELEBA_CLASSES)}
-            return Result(orig_img=frame, instances=instances, task="segment",
-                          seg_map=seg_map, names=names, palette=CELEBA_PALETTE)
+            result = Result(orig_img=frame, instances=instances, task="segment",
+                            seg_map=seg_map, names=names, palette=CELEBA_PALETTE)
+            # Non-serialized, crop-local maps aligned with result.instances.
+            # Result.seg_map remains the original full-frame visualization.
+            result.face_seg_maps = face_seg_maps
+            return result

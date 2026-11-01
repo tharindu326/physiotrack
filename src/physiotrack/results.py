@@ -324,7 +324,9 @@ class Instance:
     Which fields are populated depends on the task: detection sets
     ``box``/``confidence``/``cls``/``cls_name``; pose adds ``keypoints``;
     segmentation may add a per-instance ``mask``; face orientation adds
-    ``orientation``; tracking sets a persistent ``id``. Unused fields are ``None``.
+    ``orientation``; tracking sets a persistent ``id``. The extended face-analysis
+    pipeline stores its per-subject descriptors in ``face_features``. Unused fields
+    are ``None``.
 
     Attributes:
         id (int | None): Persistent track id (set by the tracker), otherwise
@@ -342,6 +344,9 @@ class Instance:
             ``None``.
         orientation (dict | None): Head pose dict ``{"yaw", "pitch", "roll"}``
             in degrees, or ``None``.
+        face_features (dict | None): Structured face-analysis descriptors associated
+            with this subject, such as quality, eye/blink, gaze, mouth, emotion,
+            and semantic-region information, or ``None`` when unavailable.
 
     Example:
         ```python
@@ -359,7 +364,7 @@ class Instance:
     """
 
     __slots__ = ("id", "box", "confidence", "cls", "cls_name",
-                 "keypoints", "mask", "orientation")
+                 "keypoints", "mask", "orientation", "face_features")
 
     def __init__(self, *, id: Optional[int] = None,
                  box: Optional[np.ndarray] = None,
@@ -368,7 +373,8 @@ class Instance:
                  cls_name: Optional[str] = None,
                  keypoints: Optional[Keypoints] = None,
                  mask: Optional[np.ndarray] = None,
-                 orientation: Optional[dict] = None):
+                 orientation: Optional[dict] = None,
+                 face_features: Optional[Dict[str, Any]] = None):
         """Construct an instance (all fields keyword-only and optional).
 
         Args:
@@ -385,6 +391,9 @@ class Instance:
                 Defaults to ``None``.
             orientation (dict, optional): Head pose ``{"yaw", "pitch", "roll"}``
                 in degrees. Defaults to ``None``.
+            face_features (dict, optional): Structured face-analysis descriptors,
+                such as quality, eye/blink, gaze, mouth, emotion, and semantic-region
+                information. Defaults to ``None``.
         """
         self.id = id
         self.box = box
@@ -394,6 +403,7 @@ class Instance:
         self.keypoints = keypoints
         self.mask = mask
         self.orientation = orientation
+        self.face_features = face_features
 
     def to_dict(self, include_arrays: bool = False) -> Dict[str, Any]:
         """Serialize the instance to a JSON-friendly dict.
@@ -409,7 +419,8 @@ class Instance:
         Returns:
             dict: Any of ``id``, ``box`` (``[x1, y1, x2, y2]``), ``confidence``, ``cls``,
                 ``cls_name``, ``keypoints`` (list of ``{"id", "x", "y", "confidence",
-                "z"?}``), ``orientation`` (``{"yaw", "pitch", "roll"}``), and ``mask``
+                "z"?}``), ``orientation`` (``{"yaw", "pitch", "roll"}``),
+                ``face_features`` (structured face-analysis descriptors), and ``mask``
                 when requested. ``has_mask`` is always present when a mask exists, so a
                 consumer can tell an omitted mask from an absent one.
         """
@@ -432,6 +443,8 @@ class Instance:
             ]
         if self.orientation is not None:
             out["orientation"] = self.orientation
+        if self.face_features is not None:
+            out["face_features"] = self.face_features
         if self.mask is not None:
             out["has_mask"] = True
             if include_arrays:
@@ -463,6 +476,7 @@ class Instance:
             keypoints=(Keypoints(keypoints, architecture) if keypoints else None),
             mask=(np.asarray(mask) if mask is not None else None),
             orientation=data.get("orientation"),
+            face_features=data.get("face_features"),
         )
 
     def __repr__(self) -> str:
@@ -477,6 +491,8 @@ class Instance:
             parts.append("mask=yes")
         if self.orientation is not None:
             parts.append(f"orientation={self.orientation}")
+        if self.face_features is not None:
+            parts.append(f"face_features={list(self.face_features.keys())}")
         return f"Instance({', '.join(parts)})"
 
 
