@@ -6,7 +6,7 @@ the track id of the subject it belongs to. Every processed frame counts: a frame
 which a face is absent, or has no face mesh, is a gap for that face. A gap always
 interrupts a blink, a movement estimate and a summary window rather than being bridged,
 so frames skipped by ``Video(fps=...)`` subsampling are never mistaken for gaps. Times
-are the frames' timestamps; a record without one is rejected.
+are the frames' timestamps; a record without one, or out of capture order, is rejected.
 
 The definitions -- blink counting, blink rate, mouth movement and the window summary --
 are those of the project's face-analysis validation (see the face validation guide),
@@ -24,7 +24,11 @@ __all__ = ["face_feature_sequence", "detect_blinks", "blink_rate", "mouth_moveme
 
 
 def _frames(data):
-    """Return ``[(time, frame_index, faces)]`` for every frame, faces as a ``Result``."""
+    """Return ``[(time, frame_index, faces)]`` for every frame, faces as a ``Result``.
+
+    Blinks, movement and rates are computed from consecutive frames, so the records
+    must be in capture order: timestamps and frame indices strictly increasing.
+    """
     from ...results import Result
 
     frames = []
@@ -41,7 +45,14 @@ def _frames(data):
                 f"Frame record {position} has no timestamp or frame index; face signals "
                 f"are measured in seconds and need both (Video.run records them)."
             )
-        frames.append((float(time), int(index), faces))
+        time, index = float(time), int(index)
+        if frames and not (time > frames[-1][0] and index > frames[-1][1]):
+            raise ValueError(
+                f"Frame record {position} (frame {index}, t={time:.3f}s) does not follow "
+                f"frame {frames[-1][1]} (t={frames[-1][0]:.3f}s); face signals need the "
+                f"frames in capture order, with increasing timestamps and frame indices."
+            )
+        frames.append((time, index, faces))
     return frames
 
 
@@ -113,7 +124,8 @@ def face_feature_sequence(data):
             ``skin_fraction``; rows in frame order.
 
     Raises:
-        ValueError: If a frame record has no timestamp or frame index.
+        ValueError: If a frame record has no timestamp or frame index, or the records
+            are not in capture order.
 
     Example:
         ```python
@@ -220,7 +232,8 @@ def detect_blinks(data, detection_id=None, threshold=0.22, min_closed_frames=3):
 
     Raises:
         ValueError: If ``detection_id`` is ``None`` but a frame holds several faces, a
-            frame record has no timestamp, or a parameter is out of range.
+            frame record has no timestamp, the records are not in capture order, or a
+            parameter is out of range.
 
     Example:
         ```python
@@ -308,8 +321,8 @@ def mouth_movement(data, detection_id=None):
             ``NaN`` where the face or its mesh is missing.
 
     Raises:
-        ValueError: If ``detection_id`` is ``None`` but a frame holds several faces, or
-            a frame record has no timestamp.
+        ValueError: If ``detection_id`` is ``None`` but a frame holds several faces, a
+            frame record has no timestamp, or the records are not in capture order.
 
     Example:
         ```python
@@ -358,8 +371,8 @@ def face_window_summary(data, window=5.0, threshold=0.22, min_closed_frames=3):
             not summarised.
 
     Raises:
-        ValueError: If ``window`` or a blink parameter is out of range, or a frame record
-            has no timestamp.
+        ValueError: If ``window`` or a blink parameter is out of range, a frame record
+            has no timestamp, or the records are not in capture order.
 
     Example:
         ```python
