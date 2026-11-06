@@ -116,6 +116,9 @@ stage.predict(source, faces=None)      # or stage(source, faces)
 Each stage analyses a face on a fixed, validated crop: 1.2x the box for orientation,
 1.25x for landmarks (square, padded at the frame border), the box itself for
 expression, quality and regions. A face whose box lies outside the frame is skipped.
+Faces that are close together can share part of a landmark crop. `FaceLandmarks` keeps a
+mesh only when its centre lies in the face's own box and nearest that box, so a face
+never takes its neighbour's mesh. A face that fails this check gets `keypoints=None`.
 
 A stage that needs another's output says so: `GazeEstimator` requires the face mesh,
 so it must come after `FaceLandmarks`, and raises a clear error otherwise.

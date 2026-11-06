@@ -359,6 +359,17 @@ class TestBlinks:
         with pytest.raises(ValueError, match="no timestamp"):
             detect_blinks(record)
 
+    def test_frames_must_be_in_capture_order(self):
+        backwards = _run([O] * 4, times=np.array([0.0, 0.1, 0.05, 0.2]))
+        with pytest.raises(ValueError, match="capture order"):
+            detect_blinks(backwards)
+        record = _run([O] * 4).to_dict_list()
+        record[2]["frame_id"] = record[1]["frame_id"]           # a repeated frame
+        with pytest.raises(ValueError, match="capture order"):
+            mouth_movement(record)
+        with pytest.raises(ValueError, match="capture order"):
+            face_window_summary(record[::-1])
+
 
 class TestMouthMovement:
     def test_matches_the_reference_definition(self):

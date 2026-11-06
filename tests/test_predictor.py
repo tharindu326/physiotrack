@@ -337,6 +337,31 @@ class TestFaceStagesOnRealWeights:
             assert 0.15 < pt.signals.eye_aspect_ratio(face)["mean"] < 0.45
         stage.close()                                   # releasing twice is harmless
 
+    def test_landmarks_never_take_a_neighbouring_face(self, selfie):
+        import physiotrack as pt
+
+        # A box between the two faces: its padded crop holds half of each face, so the
+        # landmarker may find one of them -- whose centre lies outside this box.
+        between = np.array([[700, 640, 960, 1200]], np.float32)
+        stage = pt.FaceLandmarks()
+        faces = stage(selfie, np.vstack([_SELFIE_BOXES, between]))
+        stage.close()
+        assert faces[2].keypoints is None
+        for face in faces[:2]:
+            centre = np.median([[p.x, p.y] for p in face.keypoints], axis=0)
+            x1, y1, x2, y2 = face.box
+            assert x1 < centre[0] < x2 and y1 < centre[1] < y2
+
+    def test_mesh_ownership_rule(self):
+        from physiotrack.face.landmarks import _mesh_belongs
+
+        box, neighbour = [0, 0, 100, 100], [60, 0, 160, 100]
+        assert _mesh_belongs([30, 50], box, [neighbour])         # only in its own box
+        assert _mesh_belongs([75, 50], box, [neighbour])         # in both, own centre nearer
+        assert not _mesh_belongs([95, 50], box, [neighbour])     # neighbour's centre nearer
+        assert not _mesh_belongs([130, 50], box, [neighbour])    # outside its own box
+        assert _mesh_belongs([50, 50], box, [])
+
     def test_expression_matches_emotiefflib(self, selfie):
         import physiotrack as pt
 
@@ -422,6 +447,16 @@ class TestFaceStagesOnRealWeights:
             assert {"nose", "mouth"} <= set(fractions) and sum(fractions.values()) <= 1.0
             x1, y1, x2, y2 = face.box
             assert sum(face.regions["pixel_counts"].values()) <= (x2 - x1) * (y2 - y1) + 1
+
+    def test_overlapping_faces_get_their_own_regions(self, selfie):
+        import physiotrack as pt
+
+        overlapping = np.array([[439, 641, 900, 1191], [780, 636, 1244, 1229]], np.float32)
+        stage = pt.FaceRegions()
+        together = stage(selfie, overlapping)
+        for face, box in zip(together, overlapping):
+            alone = stage(selfie, box[None])[0]
+            assert face.regions["pixel_counts"] == alone.regions["pixel_counts"]
 
     def test_quality_is_model_free(self, selfie):
         import physiotrack as pt
