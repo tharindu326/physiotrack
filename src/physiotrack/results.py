@@ -102,10 +102,30 @@ _COCO17_SKELETON = [
 ]
 
 
-def _name_maps(architecture: Optional[str]):
-    """Lazily fetch keypoint id->name maps (avoids import-time circular imports)."""
-    from .pose.config import COCO, COCO_WHOLEBODY
-    return COCO_WHOLEBODY if architecture == "WHOLEBODY" else COCO
+#: Keypoint layouts a :class:`Keypoints` can carry. ``WHOLEBODY`` and ``COCO`` come from
+#: the pose models; ``FACEMESH`` is the 478-point MediaPipe face mesh produced by
+#: [`FaceLandmarks`][physiotrack.FaceLandmarks].
+ARCHITECTURES = ("WHOLEBODY", "COCO", "FACEMESH")
+
+
+def _name_maps(architecture: str):
+    """Return the keypoint id->name map of a layout (lazy, avoids circular imports)."""
+    from .pose.config import COCO, COCO_WHOLEBODY, FACEMESH
+    maps = {"WHOLEBODY": COCO_WHOLEBODY, "COCO": COCO, "FACEMESH": FACEMESH}
+    if architecture not in maps:
+        raise ValueError(
+            f"Unknown keypoint architecture {architecture!r}; expected one of "
+            f"{', '.join(ARCHITECTURES)}."
+        )
+    return maps[architecture]
+
+
+def _skeleton(architecture: str):
+    """Return the drawing edges of a layout as ``(start_id, end_id)`` pairs."""
+    if architecture == "FACEMESH":
+        from .pose.config import FACEMESH_CONTOURS
+        return FACEMESH_CONTOURS
+    return _COCO17_SKELETON
 
 
 # --------------------------------------------------------------------------- #
@@ -130,7 +150,8 @@ class Keypoint:
         y (float): Y pixel coordinate in the source frame.
         z (float | None): Depth or root-relative Z value when a 3D/depth-aware
             model produced it, otherwise ``None``.
-        confidence (float): Detection confidence in ``[0.0, 1.0]``.
+        confidence (float | None): Detection confidence in ``[0.0, 1.0]``, or
+            ``None`` when the model reports none (the MediaPipe face mesh).
 
     Example:
         ```python
@@ -148,7 +169,7 @@ class Keypoint:
     __slots__ = ("id", "name", "x", "y", "z", "confidence")
 
     def __init__(self, id: int, name: str, x: float, y: float,
-                 confidence: float, z: Optional[float] = None):
+                 confidence: Optional[float], z: Optional[float] = None):
         """Construct a keypoint.
 
         Args:
@@ -156,7 +177,8 @@ class Keypoint:
             name (str): Human-readable joint name.
             x (float): X pixel coordinate in the source frame.
             y (float): Y pixel coordinate in the source frame.
-            confidence (float): Detection confidence in ``[0.0, 1.0]``.
+            confidence (float | None): Detection confidence in ``[0.0, 1.0]``, or
+                ``None`` when the model reports none.
             z (float, optional): Depth or root-relative Z value. Defaults to
                 ``None`` (2D-only keypoint).
         """
@@ -169,8 +191,9 @@ class Keypoint:
 
     def __repr__(self) -> str:
         z = "" if self.z is None else f", z={self.z:.1f}"
+        conf = "" if self.confidence is None else f", conf={self.confidence:.3f}"
         return (f"Keypoint(id={self.id}, name='{self.name}', "
-                f"x={self.x:.1f}, y={self.y:.1f}{z}, conf={self.confidence:.3f})")
+                f"x={self.x:.1f}, y={self.y:.1f}{z}{conf})")
 
 
 class Keypoints:
@@ -183,8 +206,10 @@ class Keypoints:
     ``len()`` follow insertion order, which matches the model's skeleton order.
 
     Attributes:
-        architecture (str): Skeleton the ids/names come from. ``"WHOLEBODY"``
-            uses the COCO-WholeBody-133 name map; anything else uses COCO-17.
+        architecture (str): Layout the ids/names come from: ``"WHOLEBODY"``
+            (COCO-WholeBody-133), ``"COCO"`` (COCO-17) or ``"FACEMESH"`` (MediaPipe
+            478-point face mesh). Ids of different layouts overlap, so the layout is
+            what makes an id meaningful.
 
     Example:
         ```python
@@ -205,11 +230,13 @@ class Keypoints:
 
         Args:
             keypoints_data (list[dict]): One dict per keypoint with keys
-                ``"id"``, ``"x"``, ``"y"``, ``"confidence"``, and optionally
+                ``"id"``, ``"x"``, ``"y"``, and optionally ``"confidence"`` and
                 ``"z"``. Ids are mapped to names via the architecture's name map.
-            architecture (str, optional): Skeleton naming to apply. ``"WHOLEBODY"``
-                uses COCO-WholeBody-133 names; any other value uses COCO-17.
-                Defaults to ``"WHOLEBODY"``.
+            architecture (str, optional): Layout of the ids: ``"WHOLEBODY"``,
+                ``"COCO"`` or ``"FACEMESH"``. Defaults to ``"WHOLEBODY"``.
+
+        Raises:
+            ValueError: If ``architecture`` is not a known layout.
         """
         self.architecture = architecture
         names = _name_maps(architecture)
@@ -221,7 +248,7 @@ class Keypoints:
             name = names.get(str(kp["id"]), f"unknown_{kp['id']}")
             keypoint = Keypoint(
                 id=kp["id"], name=name, x=kp["x"], y=kp["y"],
-                confidence=kp["confidence"], z=kp.get("z"),
+                confidence=kp.get("confidence"), z=kp.get("z"),
             )
             self._ordered.append(keypoint)
             self._by_id[keypoint.id] = keypoint
@@ -309,9 +336,10 @@ class Keypoints:
 
         Returns:
             np.ndarray: Float32 array of shape ``(N,)`` with per-keypoint
-                confidences in ``[0.0, 1.0]``.
+                confidences in ``[0.0, 1.0]``; ``NaN`` where the model reports none.
         """
-        return np.array([k.confidence for k in self._ordered], dtype=np.float32)
+        return np.array([np.nan if k.confidence is None else k.confidence
+                         for k in self._ordered], dtype=np.float32)
 
 
 # --------------------------------------------------------------------------- #
@@ -323,8 +351,14 @@ class Instance:
     ``Instance`` is the per-subject record inside a [`Result`][physiotrack.Result].
     Which fields are populated depends on the task: detection sets
     ``box``/``confidence``/``cls``/``cls_name``; pose adds ``keypoints``;
-    segmentation may add a per-instance ``mask``; face orientation adds
-    ``orientation``; tracking sets a persistent ``id``. Unused fields are ``None``.
+    segmentation may add a per-instance ``mask``; tracking sets a persistent ``id``.
+    The face stages each fill one field of a face instance: ``orientation``
+    ([`FaceOrientation`][physiotrack.FaceOrientation]), ``keypoints`` with the
+    ``"FACEMESH"`` layout ([`FaceLandmarks`][physiotrack.FaceLandmarks]),
+    ``expression`` ([`FaceExpression`][physiotrack.FaceExpression]), ``gaze``
+    ([`GazeEstimator`][physiotrack.GazeEstimator]), ``quality``
+    ([`FaceQuality`][physiotrack.FaceQuality]) and ``regions``
+    ([`FaceRegions`][physiotrack.FaceRegions]). Unused fields are ``None``.
 
     Attributes:
         id (int | None): Persistent track id (set by the tracker), otherwise
@@ -342,6 +376,16 @@ class Instance:
             ``None``.
         orientation (dict | None): Head pose dict ``{"yaw", "pitch", "roll"}``
             in degrees, or ``None``.
+        expression (dict | None): Facial expression ``{"label", "confidence",
+            "scores"}`` -- the most likely class, its probability, and the probability
+            of every class -- or ``None``.
+        gaze (dict | None): 3D gaze ``{"pitch", "yaw", "vector"}``: angles in degrees
+            and the unit direction ``[x, y, z]`` in camera coordinates (x right,
+            y down, z forward), or ``None``.
+        quality (dict | None): Image quality of the face crop ``{"brightness",
+            "sharpness", "area_ratio"}``, or ``None``.
+        regions (dict | None): Face parts in the face box ``{"pixel_counts",
+            "fractions"}``, keyed by CelebAMask-HQ class name, or ``None``.
 
     Example:
         ```python
@@ -359,7 +403,8 @@ class Instance:
     """
 
     __slots__ = ("id", "box", "confidence", "cls", "cls_name",
-                 "keypoints", "mask", "orientation")
+                 "keypoints", "mask", "orientation", "expression", "gaze", "quality",
+                 "regions")
 
     def __init__(self, *, id: Optional[int] = None,
                  box: Optional[np.ndarray] = None,
@@ -368,7 +413,11 @@ class Instance:
                  cls_name: Optional[str] = None,
                  keypoints: Optional[Keypoints] = None,
                  mask: Optional[np.ndarray] = None,
-                 orientation: Optional[dict] = None):
+                 orientation: Optional[dict] = None,
+                 expression: Optional[dict] = None,
+                 gaze: Optional[dict] = None,
+                 quality: Optional[dict] = None,
+                 regions: Optional[dict] = None):
         """Construct an instance (all fields keyword-only and optional).
 
         Args:
@@ -385,6 +434,14 @@ class Instance:
                 Defaults to ``None``.
             orientation (dict, optional): Head pose ``{"yaw", "pitch", "roll"}``
                 in degrees. Defaults to ``None``.
+            expression (dict, optional): Facial expression ``{"label",
+                "confidence", "scores"}``. Defaults to ``None``.
+            gaze (dict, optional): 3D gaze ``{"pitch", "yaw", "vector"}``. Defaults
+                to ``None``.
+            quality (dict, optional): Face-crop quality ``{"brightness",
+                "sharpness", "area_ratio"}``. Defaults to ``None``.
+            regions (dict, optional): Face parts ``{"pixel_counts", "fractions"}``.
+                Defaults to ``None``.
         """
         self.id = id
         self.box = box
@@ -394,6 +451,37 @@ class Instance:
         self.keypoints = keypoints
         self.mask = mask
         self.orientation = orientation
+        self.expression = expression
+        self.gaze = gaze
+        self.quality = quality
+        self.regions = regions
+
+    def replace(self, **fields) -> "Instance":
+        """Return a copy with the given fields replaced.
+
+        The face stages use this to add their field to an instance without mutating the
+        caller's result, keeping ``id``, ``box`` and everything already filled in.
+
+        Args:
+            **fields (Any): New values, keyed by attribute name.
+
+        Returns:
+            Instance: A shallow copy with ``fields`` applied.
+
+        Raises:
+            TypeError: If a key is not an ``Instance`` attribute.
+
+        Example:
+            ```python
+            tagged = instance.replace(id=7)
+            ```
+        """
+        unknown = set(fields) - set(self.__slots__)
+        if unknown:
+            raise TypeError(f"Instance has no field(s) {sorted(unknown)}.")
+        values = {name: getattr(self, name) for name in self.__slots__}
+        values.update(fields)
+        return Instance(**values)
 
     def to_dict(self, include_arrays: bool = False) -> Dict[str, Any]:
         """Serialize the instance to a JSON-friendly dict.
@@ -403,15 +491,19 @@ class Instance:
         populated fields are emitted.
 
         Args:
-            include_arrays (bool, optional): Include :attr:`mask` as a nested list.
-                Defaults to ``False``, since a per-instance mask is megabytes of JSON.
+            include_arrays (bool, optional): Include the dense arrays: :attr:`mask` as
+                a nested list, and ``"FACEMESH"`` keypoints (478 per face). Defaults to
+                ``False``, since both are tens of kilobytes to megabytes of JSON per
+                instance. Body keypoints are always included.
 
         Returns:
             dict: Any of ``id``, ``box`` (``[x1, y1, x2, y2]``), ``confidence``, ``cls``,
-                ``cls_name``, ``keypoints`` (list of ``{"id", "x", "y", "confidence",
-                "z"?}``), ``orientation`` (``{"yaw", "pitch", "roll"}``), and ``mask``
-                when requested. ``has_mask`` is always present when a mask exists, so a
-                consumer can tell an omitted mask from an absent one.
+                ``cls_name``, ``keypoints`` (list of ``{"id", "x", "y", "confidence"?,
+                "z"?}``), ``orientation`` (``{"yaw", "pitch", "roll"}``),
+                ``expression``, ``gaze``, ``quality``, ``regions``, and ``mask`` when
+                requested.
+                ``has_mask`` / ``has_keypoints`` are present whenever a mask / face
+                mesh exists, so a consumer can tell an omitted array from an absent one.
         """
         out: Dict[str, Any] = {}
         if self.id is not None:
@@ -425,13 +517,20 @@ class Instance:
         if self.cls_name is not None:
             out["cls_name"] = self.cls_name
         if self.keypoints is not None:
-            out["keypoints"] = [
-                {"id": k.id, "x": k.x, "y": k.y, "confidence": k.confidence,
-                 **({"z": k.z} if k.z is not None else {})}
-                for k in self.keypoints
-            ]
-        if self.orientation is not None:
-            out["orientation"] = self.orientation
+            dense = self.keypoints.architecture == "FACEMESH"
+            if dense:
+                out["has_keypoints"] = True
+            if include_arrays or not dense:
+                out["keypoints"] = [
+                    {"id": k.id, "x": k.x, "y": k.y,
+                     **({"confidence": k.confidence} if k.confidence is not None else {}),
+                     **({"z": k.z} if k.z is not None else {})}
+                    for k in self.keypoints
+                ]
+        for name in ("orientation", "expression", "gaze", "quality", "regions"):
+            value = getattr(self, name)
+            if value is not None:
+                out[name] = value
         if self.mask is not None:
             out["has_mask"] = True
             if include_arrays:
@@ -463,6 +562,10 @@ class Instance:
             keypoints=(Keypoints(keypoints, architecture) if keypoints else None),
             mask=(np.asarray(mask) if mask is not None else None),
             orientation=data.get("orientation"),
+            expression=data.get("expression"),
+            gaze=data.get("gaze"),
+            quality=data.get("quality"),
+            regions=data.get("regions"),
         )
 
     def __repr__(self) -> str:
@@ -477,6 +580,14 @@ class Instance:
             parts.append("mask=yes")
         if self.orientation is not None:
             parts.append(f"orientation={self.orientation}")
+        if self.expression is not None:
+            parts.append(f"expression={self.expression['label']!r}")
+        if self.gaze is not None:
+            parts.append(f"gaze=(pitch={self.gaze['pitch']:.1f}, yaw={self.gaze['yaw']:.1f})")
+        if self.quality is not None:
+            parts.append("quality=yes")
+        if self.regions is not None:
+            parts.append(f"regions={sorted(self.regions['fractions'])}")
         return f"Instance({', '.join(parts)})"
 
 
@@ -500,7 +611,8 @@ class Result:
             computed from.
         instances (list[Instance]): Detected subjects in the frame.
         task (str): Task that produced this result — one of ``"detect"``,
-            ``"pose"``, ``"segment"``, ``"face"``.
+            ``"pose"``, ``"segment"``, ``"face"``, or ``"track"`` for the per-frame
+            output of a detector-plus-tracker [`Video`][physiotrack.Video] run.
         architecture (str | None): Model/skeleton hint (e.g. ``"WHOLEBODY"``) used
             when interpreting keypoints, or ``None``.
         seg_map (np.ndarray | None): Class-index map of shape ``(H, W)`` for
@@ -750,7 +862,8 @@ class Result:
     # -- rendering ----------------------------------------------------------- #
     def plot(self, *, boxes: bool = True, labels: bool = True,
              keypoints: bool = True, masks: bool = True, conf: bool = False,
-             color: tuple = (0, 255, 0), thickness: int = 2) -> np.ndarray:
+             color: tuple = (0, 255, 0), thickness: int = 2,
+             image: Optional[np.ndarray] = None) -> np.ndarray:
         """Render an annotated copy of the source frame.
 
         Drawing is controlled here rather than on the model, so the same result can
@@ -763,8 +876,9 @@ class Result:
             boxes (bool, optional): Draw bounding boxes. Defaults to ``True``.
             labels (bool, optional): Draw class/track-id labels above boxes (only
                 when ``boxes`` is also drawn). Defaults to ``True``.
-            keypoints (bool, optional): Draw pose keypoints and the COCO-17
-                skeleton. Defaults to ``True``.
+            keypoints (bool, optional): Draw keypoints with their layout's edges --
+                the COCO-17 skeleton for body layouts, the face contours for
+                ``"FACEMESH"``. Defaults to ``True``.
             masks (bool, optional): Blend segmentation masks (only for the
                 ``"segment"`` task). Defaults to ``True``.
             conf (bool, optional): Append the detection confidence to labels.
@@ -773,6 +887,9 @@ class Result:
                 ``(0, 255, 0)`` (green).
             thickness (int, optional): Box line thickness in pixels. Defaults to
                 ``2``.
+            image (np.ndarray, optional): Draw onto a copy of this BGR image instead of
+                the source frame -- e.g. to add faces on top of an already annotated
+                frame. Defaults to ``None`` (the source frame).
 
         Returns:
             np.ndarray: A new annotated BGR image of shape ``(H, W, 3)``.
@@ -788,12 +905,13 @@ class Result:
             ```
 
         Note:
-            Head-pose axes are always drawn for instances that carry an
-            ``orientation``, regardless of the toggles above.
+            Head-pose axes, gaze arrows and expression labels are always drawn for
+            instances that carry an ``orientation``, ``gaze`` or ``expression``,
+            regardless of the toggles above.
         """
         if cv2 is None:
             raise RuntimeError("OpenCV (cv2) is required for Result.plot().")
-        img = self.orig_img.copy()
+        img = (self.orig_img if image is None else image).copy()
 
         if masks and self.task == "segment":
             img = self._draw_masks(img)
@@ -808,6 +926,10 @@ class Result:
                 self._draw_keypoints(img, inst.keypoints)
             if inst.orientation is not None:
                 self._draw_orientation(img, inst)
+            if inst.gaze is not None:
+                self._draw_gaze(img, inst)
+            if inst.expression is not None and inst.box is not None:
+                self._draw_expression(img, inst, color)
 
         return img
 
@@ -815,7 +937,7 @@ class Result:
     @staticmethod
     def _draw_label(img, inst, x1, y1, show_conf, color):
         label = inst.cls_name if inst.cls_name else (
-            f"id {inst.id}" if inst.id is not None else inst.task if False else "")
+            f"id {inst.id}" if inst.id is not None else "")
         if inst.id is not None and inst.cls_name:
             label = f"{inst.cls_name} {inst.id}"
         if show_conf and inst.confidence is not None:
@@ -829,14 +951,21 @@ class Result:
 
     @staticmethod
     def _draw_keypoints(img, keypoints: "Keypoints", conf_thresh: float = 0.3):
-        # skeleton (body-17 only; higher ids drawn as points)
-        for a, b in _COCO17_SKELETON:
+        def visible(kp):
+            # A keypoint without a reported confidence (face mesh) is always drawn.
+            return kp is not None and (kp.confidence is None or kp.confidence > conf_thresh)
+
+        mesh = keypoints.architecture == "FACEMESH"
+        edge_color, width = ((200, 200, 60), 1) if mesh else ((255, 128, 0), 2)
+        for a, b in _skeleton(keypoints.architecture):
             ka, kb = keypoints.by_id(a), keypoints.by_id(b)
-            if ka and kb and ka.confidence > conf_thresh and kb.confidence > conf_thresh:
+            if visible(ka) and visible(kb):
                 cv2.line(img, (int(ka.x), int(ka.y)), (int(kb.x), int(kb.y)),
-                         (255, 128, 0), 2, cv2.LINE_AA)
+                         edge_color, width, cv2.LINE_AA)
+        if mesh:
+            return  # 478 dots would bury the contours
         for kp in keypoints:
-            if kp.confidence > conf_thresh:
+            if visible(kp):
                 cv2.circle(img, (int(kp.x), int(kp.y)), 3, (0, 0, 255), -1, cv2.LINE_AA)
 
     def _draw_masks(self, img):
@@ -900,7 +1029,38 @@ class Result:
             tdx, tdy = (x1 + x2) // 2, (y1 + y2) // 2
         else:
             tdx = tdy = None
-        draw_axis(img, o["yaw"], o["pitch"], o["roll"], tdx=tdx, tdy=tdy)
+        size = (max(x2 - x1, y2 - y1) * 0.6) if inst.box is not None else 100
+        draw_axis(img, o["yaw"], o["pitch"], o["roll"], tdx=tdx, tdy=tdy, size=size)
+
+    @staticmethod
+    def _draw_gaze(img, inst):
+        # Start between the irises when the face mesh is present, else at the box
+        # centre; draw the gaze direction's image-plane projection.
+        kps = inst.keypoints
+        irises = ([kps.by_name("left_iris_center"), kps.by_name("right_iris_center")]
+                  if kps is not None and kps.architecture == "FACEMESH" else [None])
+        if all(irises):
+            start = np.array([np.mean([k.x for k in irises]), np.mean([k.y for k in irises])])
+        elif inst.box is not None:
+            x1, y1, x2, y2 = inst.box
+            start = np.array([(x1 + x2) / 2.0, (y1 + y2) / 2.0])
+        else:
+            return
+        length = (inst.box[2] - inst.box[0]) if inst.box is not None else 100.0
+        vx, vy, _ = inst.gaze["vector"]
+        end = start + length * np.array([vx, vy])
+        cv2.arrowedLine(img, tuple(int(v) for v in start), tuple(int(v) for v in end),
+                        (0, 215, 255), 2, cv2.LINE_AA, tipLength=0.2)
+
+    @staticmethod
+    def _draw_expression(img, inst, color):
+        e = inst.expression
+        label = f"{e['label']} {e['confidence']:.2f}"
+        x1, y2 = int(inst.box[0]), int(inst.box[3])
+        (tw, th), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
+        cv2.rectangle(img, (x1, y2), (x1 + tw + 2, y2 + th + 6), color, -1)
+        cv2.putText(img, label, (x1 + 1, y2 + th + 2),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1, cv2.LINE_AA)
 
 
 # --------------------------------------------------------------------------- #
@@ -1421,8 +1581,8 @@ class FrameResult:
     """One frame of [`Video`][physiotrack.Video] output.
 
     A frame carries more than the subjects in it: the physiological signals
-    (:attr:`vitals`) and the head orientations are properties of the *frame*, not of any
-    one instance. ``FrameResult`` wraps the per-frame [`Result`][physiotrack.Result]
+    (:attr:`vitals`) and the analysed faces are properties of the *frame*, not of any one
+    body instance. ``FrameResult`` wraps the per-frame [`Result`][physiotrack.Result]
     together with those extras, so :class:`Result` stays a general per-task container
     rather than accumulating pipeline-specific fields.
 
@@ -1432,10 +1592,11 @@ class FrameResult:
         vitals (dict | None): rPPG-derived signals for this frame -- any of ``hr`` (bpm),
             ``snr`` (dB), ``hrv`` (index name to value) and ``respiration``
             (breaths/min). ``None`` when no vitals were requested.
-        face_orientation (list | None): Per-face head-pose entries, each with ``box`` and
-            ``orientation`` (``{"yaw", "pitch", "roll"}`` in degrees). Kept separate from
-            ``result.instances`` because faces are detected independently of bodies and
-            the two are not associated.
+        faces (Result | None): The frame's faces as a ``task="face"``
+            [`Result`][physiotrack.Result], carrying whatever the Video's face stages
+            filled in (orientation, face mesh, expression, gaze, quality). A face's
+            ``id`` is the track id of the subject it belongs to, or ``None`` when no
+            tracker ran. ``None`` when the Video has no face stages.
         track_box (list | None): The locked subject's box ``[x1, y1, x2, y2]`` when
             subject-lock tracking is enabled.
 
@@ -1453,11 +1614,11 @@ class FrameResult:
             [`Video.run`][physiotrack.Video.run] returns.
     """
 
-    __slots__ = ("result", "meta", "vitals", "face_orientation", "track_box")
+    __slots__ = ("result", "meta", "vitals", "faces", "track_box")
 
     def __init__(self, *, result: Result, meta: Optional[ResultMeta] = None,
                  vitals: Optional[dict] = None,
-                 face_orientation: Optional[list] = None,
+                 faces: Optional[Result] = None,
                  track_box: Optional[list] = None):
         """Construct a frame result (all fields keyword-only).
 
@@ -1466,13 +1627,14 @@ class FrameResult:
             meta (ResultMeta, optional): Frame provenance. Defaults to the ``result``'s
                 own metadata, so the two cannot disagree.
             vitals (dict, optional): rPPG-derived signals. Defaults to ``None``.
-            face_orientation (list, optional): Per-face head poses. Defaults to ``None``.
+            faces (Result, optional): The analysed faces (``task="face"``). Defaults to
+                ``None``.
             track_box (list, optional): Locked-subject box. Defaults to ``None``.
         """
         self.result = result
         self.meta = meta if meta is not None else result.meta
         self.vitals = vitals
-        self.face_orientation = face_orientation
+        self.faces = faces
         self.track_box = track_box
 
     # -- container protocol: behave like the instances in the frame ------------ #
@@ -1514,15 +1676,17 @@ class FrameResult:
         return (self.vitals or {}).get("snr")
 
     def plot(self, **kwargs) -> np.ndarray:
-        """Render the frame's overlay.
+        """Render the frame's overlay: its subjects, then its faces on top.
 
         Args:
-            **kwargs (Any): Forwarded to [`Result.plot`][physiotrack.Result.plot].
+            **kwargs (Any): Forwarded to [`Result.plot`][physiotrack.Result.plot] for
+                both the subjects and the faces.
 
         Returns:
             np.ndarray: The annotated BGR frame.
         """
-        return self.result.plot(**kwargs)
+        img = self.result.plot(**kwargs)
+        return img if self.faces is None else self.faces.plot(image=img, **kwargs)
 
     def to_dict(self, include_arrays: bool = False) -> Dict[str, Any]:
         """Serialize the frame to the JSON schema the pipeline writes.
@@ -1532,19 +1696,24 @@ class FrameResult:
                 Defaults to ``False``.
 
         Returns:
-            dict: ``frame_id``, ``timestamp``, ``instances``, and whichever of
-                ``track_box``, ``face_orientation`` and ``vitals`` are present.
+            dict: ``frame_id``, ``timestamp``, ``task``, ``instances``, and whichever
+                of ``architecture``, ``track_box``, ``faces`` (a
+                [`Result.to_dict`][physiotrack.Result.to_dict]) and ``vitals`` are
+                present.
         """
         out: Dict[str, Any] = {
             "frame_id": self.meta.frame_index,
             "timestamp": self.meta.timestamp,
+            "task": self.result.task,
         }
+        if self.result.architecture is not None:
+            out["architecture"] = self.result.architecture
         if self.track_box is not None:
             out["track_box"] = self.track_box
         out["instances"] = [i.to_dict(include_arrays=include_arrays)
                             for i in self.result.instances]
-        if self.face_orientation is not None:
-            out["face_orientation"] = self.face_orientation
+        if self.faces is not None:
+            out["faces"] = self.faces.to_dict(include_arrays=include_arrays)
         if self.vitals is not None:
             out["vitals"] = self.vitals
         return out
@@ -1556,8 +1725,8 @@ class FrameResult:
 
         Args:
             data (dict): One serialized frame record.
-            architecture (str, optional): Skeleton naming for the keypoints. Defaults to
-                ``"WHOLEBODY"``.
+            architecture (str, optional): Skeleton naming for the keypoints when the
+                record does not state its own. Defaults to ``"WHOLEBODY"``.
             orig_img (np.ndarray, optional): Source frame to attach. Defaults to ``None``.
 
         Returns:
@@ -1565,20 +1734,25 @@ class FrameResult:
         """
         meta = ResultMeta(frame_index=data.get("frame_id"),
                           timestamp=data.get("timestamp"))
+        architecture = data.get("architecture", architecture)
         result = Result(
             orig_img=orig_img,
             instances=[Instance.from_dict(d, architecture)
                        for d in data.get("instances", [])],
-            task="pose",
+            task=data.get("task", "pose"),
             architecture=architecture,
             meta=meta,
         )
+        faces = data.get("faces")
         return cls(result=result, meta=meta, vitals=data.get("vitals"),
-                   face_orientation=data.get("face_orientation"),
+                   faces=(Result.from_dict(faces, orig_img=orig_img)
+                          if faces is not None else None),
                    track_box=data.get("track_box"))
 
     def __repr__(self) -> str:
         parts = [f"frame={self.meta.frame_index}", f"instances={len(self)}"]
+        if self.faces is not None:
+            parts.append(f"faces={len(self.faces)}")
         if self.vitals:
             parts.append(f"vitals={sorted(self.vitals)}")
         return f"FrameResult({', '.join(parts)})"

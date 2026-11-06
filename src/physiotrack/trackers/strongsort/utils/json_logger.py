@@ -130,7 +130,7 @@ class Frame(BaseJsonLogger):
 
 class BboxToJsonLogger(BaseJsonLogger):
     """
-    ُ This module is designed to automate the task of logging jsons. An example json is used
+    This module is designed to automate the task of logging jsons. An example json is used
     to show the contents of json file shortly
     Example:
           {

@@ -80,7 +80,7 @@ class DepthBase(PredictorMixin):
 
         model_path = Models.resolve(model)
 
-        self.minfo = Models._get_model_info(model)
+        self.minfo = Models.info(model)
         self.depth_framework = self.minfo['backend']
         logger.log(logging.INFO if verbose else logging.DEBUG,
                    'Initiating %s %s for depth estimation', self.depth_framework, model.name)

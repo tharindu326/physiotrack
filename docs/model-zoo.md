@@ -13,10 +13,11 @@ Every checkpoint is addressed by a four-level path:
 Models.<Task>.<Backend>.<Enum>.<member>
 ```
 
-- **Task** — what the model does: `Detection`, `Pose`, `Pose3D`, `Depth`, `Segmentation`.
+- **Task** — what the model does: `Detection`, `Pose`, `Pose3D`, `Depth`,
+  `Segmentation`, `Face`.
 - **Backend** — the architecture/family: `YOLO`, `RTDETR`, `Sapiens`, `ViTPose`,
-  `MotionBERT`, `DDH`, `FaceOrientation`, `Canonicalizer`, `DepthAnythingV2`,
-  `ZipDepth`, `SegFace`.
+  `MotionBERT`, `DDH`, `Canonicalizer`, `DepthAnythingV2`, `ZipDepth`, `SegFace`; for
+  `Face`, the stage (`Orientation`, `Landmarks`, `Expression`, `Gaze`).
 - **Enum** — a group of interchangeable checkpoints, usually by dataset or size
   (e.g. `Detection.YOLO.PERSON`, `Pose.ViTPose.WholeBody`).
 - **member** — one checkpoint. Its `.value` is the **weight filename** on disk;
@@ -33,10 +34,10 @@ Models.<Task>.<Backend>.<Enum>.<member>
     ```
 
 A few groups differ from the strict four-level shape: the `Pose3D` backends
-(`MotionBERT`, `DDH`, `FaceOrientation`) are `Enum`s **directly** under `Pose3D`;
+(`MotionBERT`, `DDH`) are `Enum`s **directly** under `Pose3D`;
 `Pose3D.Canonicalizer` holds a nested `Models` enum (3DPCNet weights) plus a
-`View` string enum; and the `Depth` backends (`DepthAnythingV2`, `ZipDepth`) are
-`Enum`s directly under `Depth`.
+`View` string enum; and the `Depth` backends (`DepthAnythingV2`, `ZipDepth`) and the
+`Face` stage groups are `Enum`s directly under their task.
 
 ### Downloading weights
 
@@ -92,7 +93,8 @@ Where a checkpoint comes from depends on the backend:
 | Source | Which models | Notes |
 |---|---|---|
 | **Ultralytics** (auto, on demand) | All `Pose.YOLO`; every `PERSON` YOLO/RT-DETR variant (`Detection.YOLO.PERSON`, `Detection.RTDETR.PERSON`, `Segmentation.YOLO.PERSON`) | `download_model` returns `None` — ultralytics fetches stock weights itself |
-| **`tharindu326/physiotrack`** (Hugging Face) | Detection FACE / VRFACE / VR / VRSTUDENT, RT-DETR VRSTUDENT, Segmentation VRHEAD, DDH, FaceOrientation, Canonicalizer (3DPCNet), DepthAnythingV2, ZipDepth, SegFace | Project-hosted checkpoints |
+| **`tharindu326/physiotrack`** (Hugging Face) | Detection FACE / VRFACE / VR / VRSTUDENT, RT-DETR VRSTUDENT, Segmentation VRHEAD, DDH, Face Orientation, Canonicalizer (3DPCNet), DepthAnythingV2, ZipDepth, SegFace | Project-hosted checkpoints |
+| **Upstream publishers, pinned + SHA-256** | Face Landmarks → MediaPipe model storage; Face Expression → `sb-ai-lab/EmotiEffLib`; Face Gaze → `hysts/ptgaze-*` | Fetched at a fixed revision and refused if the checksum differs |
 | **Upstream Hugging Face repos** | `Sapiens` pose → `noahcao/sapiens-pose-coco`; `Sapiens` seg → `facebook/sapiens-seg-{size}-torchscript`; `ViTPose` → `JunkyByte/easy_ViTPose`; `MotionBERT` → `walterzhu/MotionBERT` | Fetched from the original authors' repos |
 
 !!! note "Weight-free members"
@@ -186,7 +188,7 @@ result = pose.predict(frame)
 
 ## Pose3D
 
-3D lifting, head/face orientation, and pose canonicalization models. See the
+3D lifting and pose canonicalization models. See the
 [Pose3D guide](guides/pose3d.md).
 
 | Access path | Backend | Weight file | Notes |
@@ -195,8 +197,6 @@ result = pose.predict(frame)
 | `Models.Pose3D.MotionBERT.mb_ft_h36m` | MotionBERT | `FT_MB_release_MB_ft_h36m/best_epoch.bin` | Release, fine-tuned on Human3.6M |
 | `Models.Pose3D.MotionBERT.mb_train_h36m` | MotionBERT | `MB_train_h36m/best_epoch.bin` | Trained from scratch on Human3.6M |
 | `Models.Pose3D.DDH.best` | DDH | `best_epoch_DDHPose.bin` | DDHPose 3D lifter |
-| `Models.Pose3D.FaceOrientation.default` | FaceOrientation | `6DRepNet360_Full-Rotation_300W_LP+Panoptic.pth` | 6DRepNet360 full-rotation, 300W-LP + Panoptic |
-| `Models.Pose3D.FaceOrientation.VR` | FaceOrientation | `CMVS-FO-VR_epoch80.pth` | VR-tuned face orientation, epoch 80 |
 
 ### Canonicalizer (3DPCNet)
 
@@ -271,6 +271,34 @@ the upsampling head (`upsample_unfold`):
 | `Models.Segmentation.YOLO.PERSON.m_person` | YOLO | `yolo11m-seg.pt` | YOLO11-m person seg (stock, ultralytics) |
 | `Models.Segmentation.YOLO.PERSON.l_person` | YOLO | `yolo11l-seg.pt` | YOLO11-l person seg (stock, ultralytics) |
 | `Models.Segmentation.SegFace.Face.swinb_celeba_512` | SegFace | `segface_swinb_celeba_512.pt` | SegFace Swin-B @ 512, CelebAMask-HQ (19 classes) |
+
+---
+
+## Face
+
+The per-face analysis stages. Face *detection* checkpoints are under
+[Detection](#detection). See the [Face analysis guide](guides/face.md).
+
+| Access path | Stage | Weight file | Notes |
+|---|---|---|---|
+| `Models.Face.Orientation.default` | `FaceOrientation` | `6DRepNet360_Full-Rotation_300W_LP+Panoptic.pth` | 6DRepNet360 full-rotation, 300W-LP + Panoptic |
+| `Models.Face.Orientation.VR` | `FaceOrientation` | `CMVS-FO-VR_epoch80.pth` | VR-tuned head orientation, epoch 80 |
+| `Models.Face.Landmarks.face_landmarker` | `FaceLandmarks` | `face_landmarker.task` | MediaPipe Face Landmarker (float16 v1), 478 points; Apache-2.0 |
+| `Models.Face.Expression.enet_b0_8_best_afew` | `FaceExpression` | `enet_b0_8_best_afew.onnx` | EfficientNet-B0, 8 AffectNet classes, fine-tuned on AFEW (default) |
+| `Models.Face.Expression.enet_b0_8_best_vgaf` | `FaceExpression` | `enet_b0_8_best_vgaf.onnx` | EfficientNet-B0, 8 classes, fine-tuned on VGAF |
+| `Models.Face.Expression.enet_b0_8_va_mtl` | `FaceExpression` | `enet_b0_8_va_mtl.onnx` | EfficientNet-B0, 8 classes plus valence and arousal |
+| `Models.Face.Expression.enet_b2_8` | `FaceExpression` | `enet_b2_8.onnx` | EfficientNet-B2 (260 px), 8 classes |
+| `Models.Face.Expression.enet_b2_7` | `FaceExpression` | `enet_b2_7.onnx` | EfficientNet-B2 (260 px), 7 classes (no Contempt) |
+| `Models.Face.Gaze.eth_xgaze_resnet18` | `GazeEstimator` | `eth-xgaze_resnet18.safetensors` | Full face, ResNet-18 trained on ETH-XGaze (default) |
+| `Models.Face.Gaze.mpiifacegaze_resnet_simple` | `GazeEstimator` | `mpiifacegaze_resnet_simple.safetensors` | Full face, trained on MPIIFaceGaze |
+| `Models.Face.Gaze.mpiigaze_resnet_preact` | `GazeEstimator` | `mpiigaze_resnet_preact.safetensors` | Per eye, trained on MPIIGaze |
+
+The expression weights (AffectNet) and the gaze weights (ETH-XGaze, MPIIGaze,
+MPIIFaceGaze) are licensed for non-commercial research only; see
+`THIRD_PARTY_LICENSES.md`.
+
+`FaceLandmarks`, `FaceExpression` and `GazeEstimator` need the face extra
+(`pip install "physiotrack[face]"`).
 
 ---
 

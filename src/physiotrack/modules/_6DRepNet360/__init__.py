@@ -4,10 +4,7 @@ from . import utils
 
 __all__ = [
     'HeadPoseEstimator',
-    'SixDRepNet360', 
+    'SixDRepNet360',
     'load_model',
     'utils'
 ]
-
-__version__ = '1.0.0'
-

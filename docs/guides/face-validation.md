@@ -84,3 +84,26 @@ declared multi-object tracking metric—not visually relabelled after the run.
   fairness from a few curated scenes.
 - Keep face detection, head detection, person detection, tracking, and recognition
   claims separate. PhysioTrack's face-tracking example performs no recognition.
+
+## Results of the project validation
+
+The face-analysis components were validated in a master's thesis on public benchmarks
+with the protocol and manifest described above. The library's defaults are the settings
+those evaluations used. The numbers describe that validation run; re-run the protocol
+on your own data before relying on them.
+
+| Component | Benchmark and protocol | Result |
+| --- | --- | --- |
+| Face detection (`Face`, `m_face`) | WIDER FACE validation, official easy / medium / hard | AP 0.959 / 0.949 / 0.872 |
+| Head orientation (`FaceOrientation`, 1.2x square crop) | AFLW, ground-truth face boxes, \|angles\| < 90° | overall MAE 12.9° (yaw 11.1°, pitch 13.7°, roll 13.8°) |
+| Face mesh (`FaceLandmarks`, 20 %-padded boxes) | 300-W, 51-point inter-ocular NME | NME 4.65 %, 98 % detected |
+| Blinks (`detect_blinks`, EAR 0.22, 3 frames) | MPEBlink test split, event temporal IoU ≥ 0.5 | precision 0.32, recall 0.26, F1 0.29; mean duration error 0.10 s |
+| Mouth openness (`mouth_aspect_ratio`) | FELT reference for RAVDESS speech clips | Pearson r 0.93, MAE 0.033 |
+| Mouth movement (`mouth_movement`) | FELT / RAVDESS speech, paired frames | Pearson r 0.83, MAE 0.012 per frame |
+| Gaze (`GazeEstimator`, ETH-XGaze) | MPIIFaceGaze, all 37,667 samples | mean angular error 8.2° (median 7.7°) |
+| Face regions (`FaceRegions` / SegFace) | CelebAMask-HQ | pixel accuracy 0.956, mIoU 0.815 |
+| Face tracking (`Face` + OC-SORT) | ECCV 2016 face tracking videos | recall 91 %, precision 72 %, MOTA 53 % |
+
+The blink results show the limits of a fixed EAR threshold on unconstrained video:
+treat blink counts from non-frontal or low-resolution faces as indicative only.
+

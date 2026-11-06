@@ -5,6 +5,7 @@ import numpy as np
 import cv2
 from .config import TrackerConfig
 from ..results import TrackResult, Instance
+from ..core.boxes import box_iou
 from ..core.overlay import draw_label
 
 from .._logging import get_logger
@@ -176,38 +177,6 @@ class Tracker:
             supported_trackers = ['OCSort', 'BYTETrack', 'StrongSORT', 'BoostTrack']
             raise ValueError(f'Undefined Tracker. Please use one of: {", ".join(supported_trackers)}')
     
-    # ===== IOU Calculation Methods =====
-    @staticmethod
-    def calculate_iou_vectorized(boxes1, boxes2):
-        """Vectorized IOU calculation for better performance."""
-        boxes1 = np.atleast_2d(boxes1)
-        boxes2 = np.atleast_2d(boxes2)
-        
-        x1 = np.maximum(boxes1[:, 0][:, np.newaxis], boxes2[:, 0])
-        y1 = np.maximum(boxes1[:, 1][:, np.newaxis], boxes2[:, 1])
-        x2 = np.minimum(boxes1[:, 2][:, np.newaxis], boxes2[:, 2])
-        y2 = np.minimum(boxes1[:, 3][:, np.newaxis], boxes2[:, 3])
-        
-        intersection = np.maximum(0, x2 - x1) * np.maximum(0, y2 - y1)
-        
-        area1 = (boxes1[:, 2] - boxes1[:, 0]) * (boxes1[:, 3] - boxes1[:, 1])
-        area2 = (boxes2[:, 2] - boxes2[:, 0]) * (boxes2[:, 3] - boxes2[:, 1])
-        
-        union = area1[:, np.newaxis] + area2 - intersection
-        iou = intersection / (union + 1e-6)
-        
-        return iou
-    
-    def calculate_iou(self, box1, box2):
-        x1 = max(box1[0], box2[0])
-        y1 = max(box1[1], box2[1])
-        x2 = min(box1[2], box2[2])
-        y2 = min(box1[3], box2[3])
-        intersection = max(0, x2 - x1) * max(0, y2 - y1)
-        area1 = (box1[2] - box1[0]) * (box1[3] - box1[1])
-        area2 = (box2[2] - box2[0]) * (box2[3] - box2[1])
-        return intersection / (area1 + area2 - intersection + 1e-6)
-    
     # ===== Subject-lock logic =====
     def update_locked_subject(self, online_targets):
         """Update the locked-subject state from the current frame's tracks."""
@@ -227,7 +196,7 @@ class Tracker:
                 current_bbox = bboxes[locked_idx]
                 
                 if self.locked_subject_box is not None:
-                    iou = self.calculate_iou(current_bbox, self.locked_subject_box)
+                    iou = box_iou(current_bbox, self.locked_subject_box)[0, 0]
                     
                     if iou < self.config.subject_reinit_iou_threshold:
                         self.consecutive_inconsistent_motion[self.locked_subject_id] += 1
@@ -277,10 +246,7 @@ class Tracker:
                     stable_bboxes = bboxes[stable_mask]
                     stable_ids = track_ids[stable_mask]
                     
-                    ious = self.calculate_iou_vectorized(
-                        np.array([self.locked_subject_box]), 
-                        stable_bboxes
-                    ).flatten()
+                    ious = box_iou(self.locked_subject_box, stable_bboxes)[0]
                     
                     # Find best matching candidate based on IOU
                     valid_matches = ious >= self.config.subject_reinit_iou_threshold
@@ -310,7 +276,7 @@ class Tracker:
         max_iou = 0
         
         for detection in detections:
-            iou = self.calculate_iou(detection[:4], subject_box)
+            iou = box_iou(detection[:4], subject_box)[0, 0]
             if iou > max_iou:
                 max_iou = iou
                 best_detection = detection

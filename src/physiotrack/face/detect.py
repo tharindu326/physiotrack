@@ -11,12 +11,11 @@ class Face(ValidatedDetector):
     Wraps the default YOLO face model (``Models.Detection.YOLO.FACE.m_face``).
     Calling [`predict`][physiotrack.Face.predict] (or the instance directly)
     returns a [`Result`][physiotrack.Result] with ``task="face"`` whose instances
-    carry face boxes. Pair it with
-    [`FaceOrientation`][physiotrack.FaceOrientation] to add head pose.
-
-    This is the face-specific entry point and therefore returns ``task="face"``.
-    [`Detection.Face`][physiotrack.Detection.Face] uses the same default weights
-    but belongs to the generic detection namespace and returns ``task="detect"``.
+    carry face boxes -- the input of the face stages
+    ([`FaceOrientation`][physiotrack.FaceOrientation],
+    [`FaceLandmarks`][physiotrack.FaceLandmarks], ...). Face detection lives here rather
+    than under [`Detection`][physiotrack.Detection] so that everything about faces is
+    in one namespace.
 
     Args:
         model (Models.Detection.YOLO.FACE, optional): Face model variant.
@@ -44,14 +43,12 @@ class Face(ValidatedDetector):
         Hugging Face.
 
     See Also:
-        [`Detection.Face`][physiotrack.Detection.Face]: the generic-detector entry
-            point using the same default checkpoint.
         [`VRFace`][physiotrack.VRFace]: VR-headset-tuned face detector.
         [`FaceOrientation`][physiotrack.FaceOrientation]: head pose from face boxes.
     """
     expected_subclass = "Face"
     model = Models.Detection.YOLO.FACE.m_face
-    _task = "face"
+    task = "face"
 
 
 class VRFace(ValidatedDetector):
@@ -90,4 +87,4 @@ class VRFace(ValidatedDetector):
     """
     expected_subclass = "VRFace"
     model = Models.Detection.YOLO.VRFACE.l_vrface
-    _task = "face"
+    task = "face"

@@ -1,20 +1,29 @@
 """
-Full inference pipeline: Detection -> Tracking -> Pose Estimation -> Segmentation -> (Optional) Face Orientation -> (Optional) Depth
+Full inference pipeline: Detection -> Tracking -> Pose Estimation -> Segmentation -> (Optional) Face analysis -> (Optional) Depth
 Processes a video and outputs all results overlaid on the same frame
 """
 
-from physiotrack import Pose, Video, Models, Detection, Tracker, TrackerConfig, Segmentation, Face, VRFace, FaceOrientation, Depth
-from physiotrack.face import draw_axis
+from physiotrack import (Pose, Video, Models, Detection, Tracker, TrackerConfig, Segmentation,
+                         VRFace, FaceOrientation, FaceLandmarks, FaceExpression,
+                         GazeEstimator, FaceQuality, FaceRegions, Depth)
 from pathlib import Path
 import argparse
-import cv2
-import numpy as np
+
+# --face_stages names -> constructors, in the order they must run (gaze needs landmarks).
+FACE_STAGES = {
+    "orientation": lambda: FaceOrientation(model=Models.Face.Orientation.VR, device=0),
+    "landmarks": lambda: FaceLandmarks(),
+    "expression": lambda: FaceExpression(device=0),
+    "gaze": lambda: GazeEstimator(device=0),
+    "quality": lambda: FaceQuality(),
+    "regions": lambda: FaceRegions(device=0),
+}
 
 
 def run_full_inference(video_path, output_dir='output/full_inference', floor_map=None,
                        floor_map_background=None, floor_map_rotation=0,
                        plot_keypoint=None, plot_keypoint_name=None, batch_size=1,
-                       enable_face_detection=False, enable_face_orientation=False,
+                       enable_face_detection=False, face_stages=None,
                        enable_depth=False, ego_video_path=None, show_output=False,
                        plot_angles=False, angle_joints=None, rom=None, rom_render=True,
                        enable_rppg=False, enable_hrv=False, enable_respiration=False,
@@ -35,8 +44,10 @@ def run_full_inference(video_path, output_dir='output/full_inference', floor_map
         plot_keypoint: COCO keypoint ID to plot motion (e.g., 9=left_wrist, 10=right_wrist)
         plot_keypoint_name: Name of keypoint for plot label
         batch_size: Number of frames to process in batch (default: 1)
-        enable_face_detection: Enable face detection only (default: False)
-        enable_face_orientation: Enable face detection and orientation estimation (default: False)
+        enable_face_detection: Detect faces and tie each to its tracked person
+            (default: False).
+        face_stages: Names from ``FACE_STAGES`` to run on every face, e.g.
+            ``["orientation", "landmarks"]``; implies face detection (default: None).
         enable_depth: Enable depth estimation (default: False)
         ego_video_path: Path to ego-centric video to overlay (default: None)
         show_output: Display output in real-time during processing (default: False)
@@ -44,10 +55,10 @@ def run_full_inference(video_path, output_dir='output/full_inference', floor_map
         angle_joints: Optional subset of joints to show, e.g.
             ["leftElbow", "rightElbow", "leftKnee", "rightKnee"]; None shows all 8.
         enable_rppg: Overlay contactless rPPG panels (BVP pulse + heart rate) and add
-            ``vitals`` to the JSON. Auto-enables the face detector (needed for the skin
-            ROI). Default: False.
+            ``vitals`` to the JSON. The skin ROI is a SegFace segmentation built into
+            Video; it reuses the face boxes when face detection is on. Default: False.
         enable_hrv: Overlay a heart-rate-variability panel (RMSSD/SDNN/pNN50/SD1/SD2/
-            LF-HF); uses a longer rPPG window. Auto-enables the face detector. Default: False.
+            LF-HF); uses a longer rPPG window. Default: False.
         enable_respiration: Overlay a respiration-rate panel (breaths/min) derived from
             shoulder/torso motion, reusing the pose keypoints (needs pose, not a face).
             Default: False.
@@ -124,47 +135,34 @@ def run_full_inference(video_path, output_dir='output/full_inference', floor_map
     # Combine multiple segmentators
     segmentors = [segmentor_person, segmentor_vrhead]
 
-    # Initialize face detection and/or orientation if enabled
+    # Faces: detected per frame, tied to the tracked person, then analysed by the chosen
+    # face stages. rPPG / HRV get their skin ROI from SegFace inside Video and reuse
+    # these face boxes when present, so a face detector is optional for them.
+    stage_names = list(face_stages or [])
+    unknown = [name for name in stage_names if name not in FACE_STAGES]
+    if unknown:
+        raise ValueError(f"Unknown face stage(s) {unknown}; choose from {list(FACE_STAGES)}.")
     face_detector = None
-    face_orientation = None
-
-    if enable_face_orientation:
-        # Face orientation requires face detection
-        print("[5/6] Initializing Face Detector + Orientation Estimator...")
+    stages = []
+    if enable_face_detection or stage_names:
+        print(f"[5/6] Initializing Face Detector{' + ' + ', '.join(stage_names) if stage_names else ''}...")
         face_detector = VRFace(device=0, verbose=False)
-        face_orientation = FaceOrientation(model=Models.Pose3D.FaceOrientation.VR,
-                                           device=0, verbose=False)
-    elif enable_face_detection:
-        # rPPG / HRV / pulse-respiration get their skin ROI from SegFace segmentation
-        # inside Video (no face detector needed); motion respiration uses pose. So the
-        # face detector is only needed when face detection is explicitly requested.
-        print("[5/6] Initializing Face Detector...")
-        face_detector = VRFace(device=0, verbose=False)
+        stages = [FACE_STAGES[name]() for name in stage_names]
 
     # Initialize depth estimator if enabled
     depth_estimator = None
     if enable_depth:
-        print("[6/6] Initializing Depth Estimator (DepthAnythingV2)...")
+        print("[6/6] Initializing Depth Estimator (DepthAnythingV2; Depth.ZipDepth is a lighter drop-in)...")
         depth_estimator = Depth.DepthAnythingV2Base(
             device=0,
             input_size=518,
             verbose=False
         )
-        # --- Alternative: ZipDepth (lightweight, ~6M params, faster) --------------
-        # Drop-in replacement for the estimator above — same predict() API and
-        # DepthResult output. To use it, comment out the DepthAnythingV2Base(...)
-        # block above and uncomment one of the following:
-        #
-        # depth_estimator = Depth.ZipDepth(device=0, verbose=False)      # GPU/server head
-        # depth_estimator = Depth.ZipDepthNPU(device=0, verbose=False)   # CPU/mobile-friendly head
-        #
-        # input_size is optional; it defaults to ZipDepth's native 384 (shorter side).
-        # -------------------------------------------------------------------------
 
     print("\n✓ All models initialized successfully!")
     print(f"  - Segmentators: {len(segmentors)} (Person + VRHEAD)")
     print(f"  - Face Detection: {'Enabled' if face_detector else 'Disabled'}")
-    print(f"  - Face Orientation: {'Enabled' if face_orientation else 'Disabled'}")
+    print(f"  - Face stages: {', '.join(stage_names) if stage_names else 'None'}")
     print(f"  - Depth Estimation: {'Enabled' if depth_estimator else 'Disabled'}")
     print(f"  - Ego Video Overlay: {'Enabled' if ego_video_path else 'Disabled'}")
     print(f"  - Joint-Angle Panel: {'Enabled' if plot_angles else 'Disabled'}")
@@ -185,8 +183,8 @@ def run_full_inference(video_path, output_dir='output/full_inference', floor_map
         detector=detector,  # Person detector to work with Pose.Custom
         tracker=tracker,
         segmenter=segmentors,  # Pass list of segmenters (Person + VRHEAD)
-        face=face_detector,  # Face detector for face orientation
-        face_orientation=face_orientation,  # Face orientation estimator
+        face=face_detector,  # Faces, tied to the tracked person
+        face_stages=stages,  # Per-face analysis, in order
         depth=depth_estimator,  # Depth estimator (DepthAnythingV2)
         ego_video=ego_video_path,  # Ego-centric video overlay
         fps=None,
@@ -241,16 +239,16 @@ if __name__ == "__main__":
                 # Motion plotting only (without floor map)
                 python full_inference.py video.mp4 --plot_keypoint 9 --plot_keypoint_name "left_wrist"
 
-                # With face detection only
+                # With face detection only (faces carry the tracked person's id)
                 python full_inference.py video.mp4 --face
 
-                # With face orientation estimation (includes face detection)
-                python full_inference.py video.mp4 --face-orientation
+                # Face analysis: head orientation, face mesh, expression and gaze
+                python full_inference.py video.mp4 --face_stages orientation,landmarks,expression,gaze
 
                 # With depth estimation
                 python full_inference.py video.mp4 --depth
 
-                # Contactless vitals: rPPG heart rate (auto-enables the face detector)
+                # Contactless vitals: rPPG heart rate
                 python full_inference.py video.mp4 --rppg
 
                 # Heart rate + HRV + respiration together
@@ -280,7 +278,7 @@ if __name__ == "__main__":
                 # Combine multiple options
                 python full_inference.py --floor_map "314,824,778,402,1140,456,936,1035" "kinect_s1_v3.mkv" \\
                     --batch_size 2 --plot_keypoint 9 --plot_keypoint_name "left_wrist" \\
-                    --show --face-orientation --depth --ego_video ego.mp4
+                    --show --face_stages orientation --depth --ego_video ego.mp4
 
                 Common COCO Keypoint IDs:
                   0=nose, 5=left_shoulder, 6=right_shoulder, 7=left_elbow, 8=right_elbow
@@ -304,9 +302,10 @@ if __name__ == "__main__":
     parser.add_argument('--batch_size', type=int, default=1,
                         help='Number of frames to process in batch (default: 1)')
     parser.add_argument('--face', action='store_true',
-                        help='Enable face detection only (without orientation)')
-    parser.add_argument('--face-orientation', action='store_true',
-                        help='Enable face detection and orientation estimation (includes face detection)')
+                        help='Detect faces and tie each to its tracked person')
+    parser.add_argument('--face_stages', type=str, default=None,
+                        help='Comma-separated face stages to run on every face, in order '
+                             '(implies --face): ' + ', '.join(FACE_STAGES))
     parser.add_argument('--depth', action='store_true',
                         help='Enable depth estimation using DepthAnythingV2')
     parser.add_argument('--ego_video', type=str, default=None,
@@ -325,7 +324,7 @@ if __name__ == "__main__":
     parser.add_argument('--no_rom_render', action='store_true',
                         help='With --rom: compute ROM but hide the right-side ROM skeleton panel')
     parser.add_argument('--rppg', action='store_true',
-                        help='Overlay contactless rPPG heart-rate panels (auto-enables the face detector)')
+                        help='Overlay contactless rPPG heart-rate panels')
     parser.add_argument('--hrv', action='store_true',
                         help='Overlay a heart-rate-variability panel (RMSSD/SDNN/SD1/SD2/LF-HF; needs a face)')
     parser.add_argument('--respiration', action='store_true',
@@ -371,7 +370,8 @@ if __name__ == "__main__":
     run_full_inference(args.video_path, args.output_dir, floor_map,
                       args.floor_map_background, args.floor_map_rotation,
                       args.plot_keypoint, args.plot_keypoint_name, args.batch_size,
-                      args.face, getattr(args, 'face_orientation', False),
+                      args.face,
+                      [n.strip() for n in args.face_stages.split(',')] if args.face_stages else None,
                       args.depth, args.ego_video, args.show,
                       plot_angles=args.angles, angle_joints=angle_joints,
                       rom=rom, rom_render=not args.no_rom_render,
