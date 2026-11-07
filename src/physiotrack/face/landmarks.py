@@ -1,197 +1,157 @@
-import math
-from statistics import median
+"""478-point face mesh of detected faces with the MediaPipe Face Landmarker."""
+import weakref
 
 import cv2
-import mediapipe as mp
+import numpy as np
 
-from mediapipe.tasks import python
-from mediapipe.tasks.python import vision
+from ..core.boxes import crop_square
+from ..models import Models
+from ..results import Keypoints
+from .base import FaceStage, require_extra
+
+__all__ = ["FaceLandmarks"]
 
 
-class FaceLandmarks:
-    """Facial landmark extraction using MediaPipe."""
+class FaceLandmarks(FaceStage):
+    """Dense face mesh of each face: 468 surface points plus 10 iris points.
 
-    def __init__(self, model_path, num_faces=1):
+    A face stage built on the MediaPipe Face Landmarker (Kartynnik et al., "Real-time
+    Facial Surface Geometry from Monocular Video on Mobile GPUs", CVPR-W 2019). Each face
+    is cropped square around its box, the landmarker runs on the crop, and the points
+    are mapped back to frame pixels. The result's faces carry ``keypoints`` with the
+    ``"FACEMESH"`` layout, which the face signals
+    ([`eye_aspect_ratio`][physiotrack.signals.eye_aspect_ratio],
+    [`mouth_aspect_ratio`][physiotrack.signals.mouth_aspect_ratio],
+    [`iris_position`][physiotrack.signals.iris_position]) and
+    [`GazeEstimator`][physiotrack.GazeEstimator] consume.
+
+    The landmarker reports no per-point confidence, so the keypoints carry
+    ``confidence=None``. A face in which it finds no face keeps ``keypoints=None``.
+
+    The square crop can also contain a neighbouring face, which the landmarker may
+    pick instead. A mesh is therefore kept only if its centre lies inside the face's
+    own box and no other face's box both contains it and is centred closer to it;
+    otherwise the face keeps ``keypoints=None`` rather than a neighbour's mesh.
+
+    Each face is cropped to a square 1.25x its longer box side: the landmarker's
+    internal face detector needs some context around the face, and this matches the
+    20 %-padded face boxes of the 300-W validation (see the face validation guide).
+
+    Attributes:
+        model (Models.Face.Landmarks): The checkpoint in use.
+
+    Example:
+        ```python
+        import physiotrack as pt
+
+        faces = pt.FaceLandmarks()(frame, pt.Face()(frame))
+        mesh = faces[0].keypoints                 # Keypoints, architecture "FACEMESH"
+        iris = mesh.by_name("left_iris_center")
+        ear = pt.signals.eye_aspect_ratio(faces[0])
+        ```
+
+    Note:
+        Requires the ``face`` extra: ``pip install 'physiotrack[face]'``.
+
+    See Also:
+        [`GazeEstimator`][physiotrack.GazeEstimator]: 3D gaze from this mesh.
+    """
+
+    provides = "landmarks"
+    crop_scale = 1.25
+
+    def __init__(self, model=None):
+        """Load the MediaPipe Face Landmarker.
+
+        Args:
+            model (Models.Face.Landmarks, optional): Checkpoint. Defaults to ``None``,
+                meaning ``Models.Face.Landmarks.face_landmarker``.
+
+        Raises:
+            ValueError: If ``model`` is not a ``Models.Face.Landmarks`` member.
+            ImportError: If ``mediapipe`` is not installed.
+
+        Note:
+            MediaPipe runs on the CPU. The landmarker is released automatically when
+            the stage is garbage-collected or the interpreter exits; call
+            [`close`][physiotrack.FaceLandmarks.close] to release it earlier.
+        """
+        super().__init__()
+        require_extra("mediapipe", "FaceLandmarks")
+        import mediapipe as mp
+        from mediapipe.tasks.python import BaseOptions, vision
+
+        model = Models.Face.Landmarks.face_landmarker if model is None else model
+        Models.validate_face_model(model, "Landmarks")
+        self.model = model
+        self._mp = mp
         options = vision.FaceLandmarkerOptions(
-            base_options=python.BaseOptions(
-                model_asset_path=str(model_path)
-            ),
+            base_options=BaseOptions(model_asset_path=Models.resolve(model)),
             running_mode=vision.RunningMode.IMAGE,
-            num_faces=num_faces,
+            num_faces=1,
         )
+        self._landmarker = vision.FaceLandmarker.create_from_options(options)
+        # MediaPipe prints a spurious error if its landmarker is left to interpreter
+        # teardown; weakref.finalize releases it on collection or at exit instead.
+        self._finalizer = weakref.finalize(self, self._landmarker.close)
 
-        self.landmarker = vision.FaceLandmarker.create_from_options(options)
+    def _update(self, instance, value):
+        return instance.replace(keypoints=value)
 
-    def predict(self, frame):
-        """Extract facial landmarks from one image."""
-        rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    def _output_architecture(self, faces):
+        return "FACEMESH"
 
-        mp_image = mp.Image(
-            image_format=mp.ImageFormat.SRGB,
-            data=rgb_frame,
-        )
+    def _infer_batch(self, frames, faces):
+        values = []
+        for frame, frame_faces in zip(frames, faces):
+            rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            boxes = [face.box for face in frame_faces]
+            values.append([self._mesh(rgb, box, boxes[:i] + boxes[i + 1:])
+                           for i, box in enumerate(boxes)])
+        return values
 
-        result = self.landmarker.detect(mp_image)
-
-        return result.face_landmarks
-
-    @staticmethod
-    def _square_box(frame, box):
-        """Create a square face box while keeping it inside the frame."""
-        height, width = frame.shape[:2]
-
-        x1, y1, x2, y2 = map(float, box)
-
-        box_width = x2 - x1
-        box_height = y2 - y1
-
-        if box_width <= 0 or box_height <= 0:
+    def _mesh(self, rgb, box, other_boxes):
+        crop, (left, top), side = crop_square(rgb, box, self.crop_scale)
+        image = self._mp.Image(image_format=self._mp.ImageFormat.SRGB,
+                               data=np.ascontiguousarray(crop))
+        found = self._landmarker.detect(image).face_landmarks
+        if not found:
             return None
-
-        side = max(box_width, box_height)
-
-        cx = (x1 + x2) / 2.0
-        cy = (y1 + y2) / 2.0
-
-        side = min(side, width, height)
-
-        sx1 = int(round(cx - side / 2.0))
-        sy1 = int(round(cy - side / 2.0))
-        sx2 = sx1 + int(round(side))
-        sy2 = sy1 + int(round(side))
-
-        if sx1 < 0:
-            sx2 -= sx1
-            sx1 = 0
-
-        if sy1 < 0:
-            sy2 -= sy1
-            sy1 = 0
-
-        if sx2 > width:
-            shift = sx2 - width
-            sx1 -= shift
-            sx2 = width
-
-        if sy2 > height:
-            shift = sy2 - height
-            sy1 -= shift
-            sy2 = height
-
-        sx1 = max(0, sx1)
-        sy1 = max(0, sy1)
-
-        if sx2 <= sx1 or sy2 <= sy1:
+        points = np.array([[left + p.x * side, top + p.y * side] for p in found[0]])
+        if not _mesh_belongs(np.median(points, axis=0), box, other_boxes):
             return None
+        return Keypoints([{"id": i, "x": x, "y": y} for i, (x, y) in enumerate(points)],
+                         "FACEMESH")
 
-        return sx1, sy1, sx2, sy2
+    def close(self) -> None:
+        """Release the MediaPipe landmarker now rather than at collection or exit.
 
-    @staticmethod
-    def _match_geometry(points, box):
-        """Measure spatial agreement of a landmark set with an input face box.
-
-        The input points and box are in full-frame pixel coordinates. A valid
-        match must have its median center and at least half its points inside
-        the original (not square-expanded) detector box.
+        The stage cannot be used afterwards; calling ``close`` again does nothing.
         """
-        x1, y1, x2, y2 = map(float, box)
-        box_width = x2 - x1
-        box_height = y2 - y1
-        if box_width <= 0 or box_height <= 0 or not points:
-            return None
+        self._finalizer()
 
-        center_x = median(point[0] for point in points)
-        center_y = median(point[1] for point in points)
-        if not (x1 <= center_x <= x2 and y1 <= center_y <= y2):
-            return None
 
-        inside = sum(
-            x1 <= point_x <= x2 and y1 <= point_y <= y2
-            for point_x, point_y in points
-        )
-        fraction_inside = inside / len(points)
-        if fraction_inside < 0.5:
-            return None
+def _mesh_belongs(center, box, other_boxes):
+    """Whether a mesh centred at ``center`` is the face in ``box`` rather than a neighbour.
 
-        # Distances are normalized by the respective detector-box dimensions.
-        dx = (center_x - (x1 + x2) / 2.0) / box_width
-        dy = (center_y - (y1 + y2) / 2.0) / box_height
-        return math.hypot(dx, dy), fraction_inside
+    Args:
+        center (array-like): The mesh centre ``(x, y)`` in frame pixels.
+        box (array-like): The face's box ``[x1, y1, x2, y2]``.
+        other_boxes (Sequence[array-like]): The boxes of the other faces in the frame.
 
-    def predict_face(self, frame, box, other_boxes=None):
-        """Extract landmarks spatially associated with the requested face.
+    Returns:
+        bool: ``True`` if ``center`` lies inside ``box`` and no other box that also
+            contains it has its centre closer to ``center``.
+    """
+    center = np.asarray(center, dtype=float)
 
-        Returns None when the crop contains only a nonmatching or ambiguous
-        candidate. Optional other_boxes permits comparison with other detected
-        faces without changing the standalone single-face interface.
-        """
-        square_box = self._square_box(frame, box)
-        if square_box is None:
-            return None
+    def contains(b):
+        return b[0] <= center[0] <= b[2] and b[1] <= center[1] <= b[3]
 
-        x1, y1, x2, y2 = square_box
-        crop = frame[y1:y2, x1:x2]
-        face_landmarks = self.predict(crop)
-        if not face_landmarks:
-            return None
+    def distance(b):
+        return np.hypot((b[0] + b[2]) / 2 - center[0], (b[1] + b[3]) / 2 - center[1])
 
-        frame_height, frame_width = frame.shape[:2]
-        crop_width = x2 - x1
-        crop_height = y2 - y1
-        matches = []
-
-        for landmarks in face_landmarks:
-            if not landmarks:
-                continue
-
-            try:
-                positions = [
-                    (x1 + float(point.x) * crop_width,
-                     y1 + float(point.y) * crop_height)
-                    for point in landmarks
-                ]
-            except (TypeError, ValueError, AttributeError):
-                continue
-
-            if not all(
-                math.isfinite(px) and math.isfinite(py)
-                for px, py in positions
-            ):
-                continue
-
-            match = self._match_geometry(positions, box)
-            if match is None:
-                continue
-
-            target_distance, target_fraction = match
-            associated_with_neighbor = False
-            for other_box in (other_boxes if other_boxes is not None else ()):
-                other_match = self._match_geometry(positions, other_box)
-                if other_match is not None:
-                    other_distance, _ = other_match
-                    if other_distance <= target_distance + 1e-9:
-                        associated_with_neighbor = True
-                        break
-
-            if not associated_with_neighbor:
-                matches.append((target_distance, -target_fraction, landmarks, positions))
-
-        if not matches:
-            return None
-
-        matches.sort(key=lambda item: (item[0], item[1]))
-        if len(matches) > 1:
-            best, next_best = matches[0], matches[1]
-            if (abs(best[0] - next_best[0]) <= 1e-9
-                    and abs(best[1] - next_best[1]) <= 1e-9):
-                return None
-
-        _, _, landmarks, positions = matches[0]
-        for point, (px, py) in zip(landmarks, positions):
-            point.x = px / frame_width
-            point.y = py / frame_height
-        return landmarks
-
-    def close(self):
-        """Release the MediaPipe landmarker."""
-        self.landmarker.close()
+    if not contains(box):
+        return False
+    own = distance(box)
+    return not any(contains(b) and distance(b) < own for b in other_boxes)

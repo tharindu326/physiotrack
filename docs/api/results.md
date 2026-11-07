@@ -17,6 +17,21 @@ dictionaries: [`Video.run()`][physiotrack.Video.run] returns a
 which still exposes its subjects as `Instance` objects. Every result type carries a
 [`ResultMeta`](#resultmeta) and round-trips through `to_dict()` / `from_dict()`.
 
+## Serialized vocabulary
+
+[`Result.to_dict()`][physiotrack.Result.to_dict] and
+[`TrackResult.to_dict()`][physiotrack.TrackResult.to_dict] both store subjects under
+`"instances"`. A serialized instance uses the same names as the Python object:
+`box`, `confidence`, `cls`, `cls_name`, and—when present—`id`, `keypoints`, `mask`,
+and the face fields `orientation`, `expression`, `gaze` and `quality`. Older examples
+that use top-level `"detections"` / `"tracks"` or rename `orientation` to `"pose"` do
+not match the current API.
+
+Dense arrays are written only with `include_arrays=True`: masks, segmentation maps and
+478-point `"FACEMESH"` keypoints. Without it, `has_mask` / `has_keypoints` record that
+the array exists. A `Video` frame record adds `frame_id`, `timestamp`, `task`, and — when
+faces were analysed — `faces`, itself a serialized face `Result`.
+
 ## Result
 
 ::: physiotrack.Result

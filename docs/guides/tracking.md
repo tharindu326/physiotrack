@@ -137,7 +137,7 @@ for inst in track_result:   # iterate instances
     print(inst.id, inst.box, inst.cls, inst.confidence)
 
 annotated = track_result.plot()          # tracker's own rich overlay (or draw yourself)
-data = track_result.to_dict()            # {"task": "track", "tracks": [...]} — JSON-friendly
+data = track_result.to_dict()            # {"task": "track", "instances": [...]} — JSON-friendly
 ```
 
 `plot()` with no argument returns the tracker's own `rendered` overlay (boxes,

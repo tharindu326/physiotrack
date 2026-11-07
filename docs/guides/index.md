@@ -21,7 +21,8 @@ cached.
 
     Person, face, and VR object boxes with confidence and class labels.
 
-    [:octicons-arrow-right-24: Detection guide](detection.md)
+    [:octicons-arrow-right-24: Detection guide](detection.md) ·
+    [VR example](https://github.com/tharindu326/physiotrack/tree/main/examples/vr_detection)
 
 - :material-run-fast:{ .lg .middle } **Pose Estimation (2D)**
 
@@ -61,7 +62,9 @@ cached.
 
     Face detection, VR-face crops, and 6-DoF yaw/pitch/roll head pose.
 
-    [:octicons-arrow-right-24: Face guide](face.md)
+    [:octicons-arrow-right-24: Face guide](face.md) ·
+    [Runnable examples](face-examples.md) ·
+    [Validation](face-validation.md)
 
 - :material-vector-polyline:{ .lg .middle } **Tracking**
 

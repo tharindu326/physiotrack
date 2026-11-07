@@ -45,12 +45,14 @@ pt.Pose.Custom(model=pt.Models.Pose.ViTPose.WholeBody.l_wholebody)
 
 | Predictor | Presets |
 |-----------|---------|
-| [`Detection`][physiotrack.Detection] | `.Person` · `.Face` · `.VR` · `.VRStudent` · `.Custom` |
+| [`Detection`][physiotrack.Detection] | `.Person` · `.VR` · `.VRStudent` · `.Custom` (face detectors: [`Face`][physiotrack.Face], [`VRFace`][physiotrack.VRFace]) |
 | [`Pose`][physiotrack.Pose] | `.Person` · `.VRStudent` · `.Custom` |
 | [`Segmentation`][physiotrack.Segmentation] | `.Person` · `.VRHead` · `.BodyPart` · `.Face` · `.Custom` |
 | [`Depth`][physiotrack.Depth] | `.DepthAnythingV2Small` · `Base` · `Large` · `.ZipDepth` · `.ZipDepthNPU` · `.Custom` |
 
-`device` and `verbose` are accepted by every predictor. `conf`, `iou` and `classes`
+`device` and `verbose` are accepted by the detection, pose, segmentation and depth
+predictors. The [face stages](../guides/face.md) take `device` where they run a network
+on it; `FaceLandmarks` (MediaPipe) and `FaceQuality` run on the CPU and take none. `conf`, `iou` and `classes`
 apply to the **box-based** backends (detection, pose, instance segmentation) — a dense
 predictor has no detections to threshold or filter, so `Depth` and `Segmentation.Face`
 do not take them. Where such a predictor builds a detector internally, the detector's
@@ -188,7 +190,7 @@ data = video.run(output_video="out.mp4", output_json="out.json")
 ```
 
 Beyond `detector`, `pose` and `tracker`, it accepts `segmenter=`, `depth=`,
-`face=`, `face_orientation=`, `floor_map=`, `ego_video=`, `plot_keypoint=`,
+`face=`, `face_stages=`, `floor_map=`, `ego_video=`, `plot_keypoint=`,
 `plot_angles=`, `rom=` and more. See the [Video guide](../guides/video.md) and
 the [`Video` API](../api/video.md).
 

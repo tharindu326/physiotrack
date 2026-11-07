@@ -27,7 +27,7 @@
 
 **Physiotrack** is an open-source Python toolkit for contactless human understanding. It integrates
 state-of-the-art computer-vision models (YOLO11, RT-DETR, ViTPose, Sapiens, Depth-Anything-V2,
-ZipDepth, MotionBERT, 6DRepNet360, SegFace) into a **single, unified API** that extracts actionable, theory-linked
+ZipDepth, MotionBERT, 6DRepNet360, SegFace, MediaPipe Face Mesh, ETH-XGaze) into a **single, unified API** that extracts actionable, theory-linked
 signals from ordinary **RGB video**, for healthcare, education, XR, and operator-support
 systems. Developed at the **Center for Machine Vision and Signal Processing (CMVS), University of Oulu**.
 
@@ -77,7 +77,6 @@ human *states* instead of processing raw video.
 - [Subsystem Guide](#subsystem-guide)
 - [Model Registry](#model-registry)
 - [Result Objects](#result-objects)
-- [Face Analysis Module](#face-analysis-module)
 - [Scope & Limitations](#scope--limitations)
 - [Project Layout](#project-layout)
 - [Citations](#citations)
@@ -114,7 +113,7 @@ flowchart TB
     %% ====== TIER 1: enabling tools (general-purpose CV) ======
     subgraph TOOLS["🧰 General-purpose perception · enabling tools"]
         direction LR
-        DET["🔍 <b>Detection</b> → boxes<br/><i>Person · Face · VR · VRStudent · Custom</i><br/>YOLO11 · RT-DETR"]
+        DET["🔍 <b>Detection</b> → boxes<br/><i>Person · VR · VRStudent · Custom</i><br/>YOLO11 · RT-DETR"]
         TRK["🎯 <b>Tracking</b> → persistent IDs<br/>OC-SORT · ByteTrack<br/>StrongSORT · BoostTrack"]
         SEG["🎭 <b>Segmentation</b> → masks / class map<br/>YOLO11-seg · Sapiens-Goliath<br/>VR-head"]
         DEP["🌊 <b>Depth</b> · monocular<br/>Depth-Anything-V2 (S/B/L) · ZipDepth<br/><i>relative depth</i>"]
@@ -128,6 +127,7 @@ flowchart TB
         P3D["🧊 <b>3D Pose</b> · offline lift<br/>MotionBERT · DDHPose<br/><i>→ H36M-17</i>"]
         CAN["📐 <b>Canonicalization</b> · viewpoint-invariant<br/>3DPCNet (S2/S3/TC48) · GEOMETRIC<br/><i>front · back · left_side · right_side</i>"]
         FSEG["🧩 <b>Face parsing</b><br/>SegFace · Swin-Base<br/><i>19 CelebAMask-HQ classes</i>"]
+        FMESH["🕸️ <b>Face mesh</b> · 478 points<br/>MediaPipe Face Landmarker<br/><i>eyes · iris · lips</i>"]
     end
 
     %% ====== TIER 3: human-state signals (the payload) ======
@@ -136,7 +136,8 @@ flowchart TB
         PPG["❤️ <b>rPPG → HR · HRV · RR</b> · physiological<br/>POS · CHROM · LGI · OMIT<br/><i>RR intervals · Lipponen-Tarvainen · Task-Force HRV</i>"]
         ANG["📐 <b>Joint angles &amp; ROM</b> · goniometry<br/>8 interior angles + clinical ROM<br/><i>flexion · extension · abd · add</i><br/><i>angle panel + ROM skeleton</i>"]
         MOT["🏃 <b>Motion features</b><br/>velocity · accel · trajectories<br/><i>centroids · filters · metrics</i>"]
-        FORI["👁️ <b>Head orientation</b> · gaze<br/>6DRepNet360 · CMVS-FO-VR<br/><i>yaw · pitch · roll</i>"]
+        FORI["👁️ <b>Face analysis</b> · head · gaze · expression<br/>6DRepNet360 · ETH-XGaze · EmotiEffLib<br/><i>yaw/pitch/roll · 3D gaze · 8 expressions</i>"]
+        FSIG["😉 <b>Face signals</b> · behavioral<br/>eye &amp; mouth aspect ratio · iris<br/><i>blinks · blink rate · mouth motion</i>"]
         RAD["🗺️ <b>Floor map / radar</b> · location<br/>4-corner homography<br/><i>bird's-eye trajectories</i>"]
     end
 
@@ -150,7 +151,7 @@ flowchart TB
     end
 
     %% ------------- Model registry -------------
-    REG[["🗂️ <b>Models registry</b> · Models.&lt;Task&gt;.&lt;Backend&gt;.&lt;Variant&gt;<br/>YOLO11/12 · RT-DETR · ViTPose · Sapiens · SegFace<br/>Depth-Anything-V2 · ZipDepth · MotionBERT · DDHPose · 3DPCNet · 6DRepNet360<br/><i>51 pretrained variants (52 selectable) · auto-download from Hugging Face</i>"]]
+    REG[["🗂️ <b>Models registry</b> · Models.&lt;Task&gt;.&lt;Backend&gt;.&lt;Variant&gt;<br/>YOLO11/12 · RT-DETR · ViTPose · Sapiens · SegFace<br/>Depth-Anything-V2 · ZipDepth · MotionBERT · DDHPose · 3DPCNet · 6DRepNet360<br/><i>59 pretrained variants (60 selectable) · auto-download on first use</i>"]]
 
     %% ---------------- Flow ----------------
     I1 --> CAP
@@ -165,6 +166,9 @@ flowchart TB
     DET -.boxes.-> SEG
     POSE --> P3D --> CAN
     FDET --> FORI
+    FDET --> FMESH
+    FMESH --> FORI
+    FMESH --> FSIG
     FDET -.boxes.-> FSEG
     TRK --> RAD
     POSE --> ANG
@@ -185,6 +189,7 @@ flowchart TB
     ANG --> RES
     MOT --> RES
     FORI --> RES
+    FSIG --> RES
     RAD --> RES
     RES --> VID
     RES --> JSON
@@ -204,8 +209,8 @@ flowchart TB
 
     class I1,I2,I3,I4 input;
     class DET,TRK,SEG,DEP,FDET tools;
-    class POSE,P3D,CAN,FSEG human;
-    class PPG,ANG,MOT,FORI,RAD signal;
+    class POSE,P3D,CAN,FSEG,FMESH human;
+    class PPG,ANG,MOT,FORI,FSIG,RAD signal;
     class RES,VID,JSON,RTP out;
     class CAP orch;
     class REG reg;
@@ -213,9 +218,9 @@ flowchart TB
 
 **Reading the diagram:** read it as *pixels → tools → human structure → signals*.
 **🧰 Enabling tools** (detection, tracking, segmentation, depth, face detection) localize and parse the
-image; **🧍 human structure** (2D/3D pose, canonicalization, face parsing) turns those into
-body-specific estimates; **📡 human-state signals** (rPPG HR/RR, **joint angles & clinical ROM**,
-motion, head orientation/gaze, location) are the interpretable payload. Each box lists its backend
+image; **🧍 human structure** (2D/3D pose, canonicalization, face parsing, face mesh) turns those
+into body-specific estimates; **📡 human-state signals** (rPPG HR/RR, **joint angles & clinical ROM**,
+motion, head orientation, gaze, expression, blinks, location) are the interpretable payload. Each box lists its backend
 options/variants (italics = key options or output format), selected through the
 [`Models` registry](#model-registry). Solid arrows are per-frame data flow; dotted arrows show
 detection boxes feeding pose/segmentation, skin regions feeding rPPG, canonical pose feeding the
@@ -238,7 +243,8 @@ stream is used.
 | **Segmentation** | Pixel-level instance masks | YOLO-Seg, Sapiens, VR-Head |
 | **Face parsing** | Face-part segmentation (19 classes) | SegFace (Swin-Base) |
 | **Depth** | Monocular dense depth estimation | Depth-Anything-V2 (s/b/l), ZipDepth (base/npu) |
-| **Face** | Face detection + 3D head orientation | YOLO-Face, 6DRepNet360, CMVS-FO-VR |
+| **Face** | Face detection, then per-face stages: head orientation, 478-point face mesh, expression (+ valence/arousal), 3D gaze, image quality, visible face parts | YOLO-Face, 6DRepNet360, CMVS-FO-VR, MediaPipe Face Landmarker, EmotiEffLib, ETH-XGaze / MPIIFaceGaze / MPIIGaze, SegFace |
+| **Face signals** | Eye / mouth aspect ratio and iris position per frame; blinks, blink rate, mouth movement and windowed statistics per tracked face | Soukupová & Čech EAR, validated on MPEBlink and FELT / RAVDESS |
 | **Signals** | rPPG heart rate, HRV, respiration + motion features | POS, CHROM, LGI, OMIT; RR intervals; Lipponen-Tarvainen artefact correction; Task-Force HRV |
 | **Joint angles & ROM** | 8 anatomical joint angles + clinical range-of-motion (flexion/extension/abduction/adduction) as rows in the left-side angle panel, plus a clean full-room **skeleton canvas** | goniometry from pose |
 | **Views** | Bird's-eye floor map, ego-video, depth & angle/ROM overlays | n/a |
@@ -251,26 +257,24 @@ recommended for real-time use).
 ## Installation
 
 **Requires Python 3.10 or newer.** Install the PyTorch build that matches your platform
-first, then the package:
+first, then the package. The command below is CPU-only; for CUDA, ROCm, or Apple
+Silicon use the official [PyTorch selector](https://pytorch.org/get-started/locally/).
 
 ```bash
 git clone https://github.com/tharindu326/physiotrack.git
 cd physiotrack
 
-# CPU-only
-pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
-# ...or CUDA 12.8
-pip install torch torchvision --index-url https://download.pytorch.org/whl/cu128
+python -m pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
 
-pip install -e .
+python -m pip install -e .
 ```
 
 Everything else resolves from `pyproject.toml`. Optional extras:
 
 ```bash
-pip install -e ".[test]"     # test suite, including the NeuroKit2 reference implementation
-pip install -e ".[docs]"     # MkDocs toolchain
-pip install -e ".[pose3d]"   # smplx, for 3D mesh rendering in Pose3D
+python -m pip install -e ".[test]"     # test suite + NeuroKit2 reference checks
+python -m pip install -e ".[docs]"     # MkDocs toolchain
+python -m pip install -e ".[pose3d]"   # smplx, for Pose3D mesh rendering
 ```
 
 | | Supported |
@@ -305,9 +309,14 @@ export PHYSIOTRACK_HOME=/shared/physiotrack   # share one cache across envs or c
 > `python -c "import physiotrack; physiotrack.migrate_weight_cache()"` once to move existing
 > checkpoints into the cache instead of re-downloading them. Add `dry_run=True` to preview.
 
-> **Windows / H.264:** OpenCV wheels often ship without an H.264 encoder. PhysioTrack detects
-> this and falls back to MPEG-4 with a warning, so exports never fail silently — but for H.264
-> output run `python install_openh264.py` once to place the OpenH264 runtime library.
+> **Conda development:** `conda env create -f environment-dev.yml`, activate
+> `physiotrack-dev`, install the appropriate PyTorch build, then run
+> `python -m pip install -e ".[test,docs]"`. PyTorch stays a separate step because
+> CPU/CUDA/ROCm selection is machine-specific.
+
+> **Video codecs:** The `Video` pipeline tries H.264 first and falls back to MPEG-4 with a
+> warning. If neither encoder is available, install an OpenCV build with the codecs your
+> platform requires. See the [complete installation guide](https://tharindu326.github.io/physiotrack/getting-started/installation/).
 
 ### Testing
 
@@ -330,7 +339,7 @@ silently and leave the strongest correctness claim unverified.
 import cv2
 import physiotrack as pt
 
-frame = cv2.imread("examples/IMG_0121.mp4")  # or any BGR frame you have
+frame = cv2.imread("examples/face_detection/data/selfie/two_person_selfie.jpg")
 
 # Detect people
 det    = pt.Detection.Person(conf=0.25, device=0)
@@ -344,6 +353,23 @@ wrist  = people[0].keypoints.by_name("left_wrist")
 print(wrist.x, wrist.y, wrist.confidence)
 ```
 
+Runnable face examples with bundled synthetic media:
+
+```bash
+python examples/face_detection/detect_faces.py
+python examples/face_detection/compare_cpu_gpu.py  # requires CUDA
+python examples/face_tracking/track_faces.py
+python examples/face_analysis/analyze_image.py    # needs pip install "physiotrack[face]"
+python examples/face_analysis/analyze_video.py
+python examples/vr_detection/detect_vr_people.py
+```
+
+They save annotated images/video plus CSV and JSON records. The
+[face examples guide](https://tharindu326.github.io/physiotrack/guides/face-examples/)
+explains the face outputs, while the
+[detection guide](https://tharindu326.github.io/physiotrack/guides/detection/)
+distinguishes VR-head, VR-person, and generic-person boxes.
+
 ---
 
 ## The Unified API
@@ -353,12 +379,15 @@ points from the top-level `physiotrack` package (or a named subsystem); you neve
 into internal module paths:
 
 ```text
-physiotrack ─┬─ Detection.Person() / .Face() / .VR() / .VRStudent() / .Custom()
+physiotrack ─┬─ Detection.Person() / .VR() / .VRStudent() / .Custom()
              ├─ Pose.Person() / .VRStudent() / .Custom()
              ├─ Pose3D(...) · canonicalize_pose(...) · PoseCanonicalizer
              ├─ Segmentation.Person() / .VRHead() / .BodyPart() / .Face() / .Custom()
              ├─ Depth.DepthAnythingV2Small() / Base() / Large() / .ZipDepth() / .ZipDepthNPU() / .Custom()
-             ├─ Face · VRFace · FaceOrientation
+             ├─ Face · VRFace                           # face detectors
+             ├─ FaceOrientation · FaceLandmarks · FaceExpression · GazeEstimator ·
+             │  FaceQuality · FaceRegions
+             │                                          # face stages: stage(frame, faces)
              ├─ Tracker(config=TrackerConfig(...))
              ├─ Video(...)                              # end-to-end pipeline orchestrator
              ├─ Models.<Task>.<Backend>.<Variant>       # model registry (auto-download)
@@ -369,6 +398,9 @@ physiotrack.signals ─┬─ compute (plotter-free, use directly):
                      │    joint_angles() · compute_rom_angles() · motion features · respiration_from_motion()
                      │    rPPG: POS/CHROM/LGI/OMIT · HeartRateEstimator · bvp_to_hr · bvp_snr
                      │    pulse analysis: bvp_to_rri · correct_rr_artifacts · compute_hrv · respiration_from_pulse/rri
+                     │    face: eye_aspect_ratio · mouth_aspect_ratio · iris_position ·
+                     │          detect_blinks · blink_rate · mouth_movement ·
+                     │          face_feature_sequence · face_window_summary
                      │    filters · agreement metrics (Pearson, RMSE, DTW, hrv_errors, …)
                      └─ overlays (optional, wrap the compute above):
                           JointAnglePlotter · RPPGPlotter · HeartRatePlotter · HRVPlotter · RespirationPlotter · KeypointMotionPlotter · RealTimePlotter
@@ -405,7 +437,7 @@ Three rules make the whole library predictable:
 ```python
 from physiotrack import Detection, Models
 
-det = Detection.Person()                       # also .Face() .VR() .VRStudent()
+det = Detection.Person()                       # also .VR() .VRStudent()
 result = det.predict(image)
 print(result.boxes)                            # (N, 4)
 for inst in result:
@@ -468,6 +500,7 @@ canonical = canonicalize_pose(                                 # learned 3DPCNet
 <summary><b>Segmentation, Depth, Face</b></summary>
 
 ```python
+import physiotrack as pt
 from physiotrack import Segmentation, Depth, VRFace, FaceOrientation, Models
 
 seg = Segmentation.Person()
@@ -484,11 +517,16 @@ depth = Depth.DepthAnythingV2Base()            # or Depth.ZipDepth() — lightwe
 d = depth.predict(image)
 raw, colored = d.depth, d.plot(colormap="inferno")
 
-face = VRFace()
-boxes = face.predict(image).boxes
-orient = FaceOrientation(model=Models.Pose3D.FaceOrientation.VR)
-for inst in orient.predict(image, boxes):
-    print(inst.orientation)                    # {"yaw": .., "pitch": .., "roll": ..}
+faces = VRFace()(image)                        # face boxes, Result(task="face")
+faces = FaceOrientation(model=Models.Face.Orientation.VR)(image, faces)
+for face in faces:
+    print(face.orientation)                    # {"yaw": .., "pitch": .., "roll": ..}
+
+# More face stages (pip install "physiotrack[face]"); each adds one field per face.
+faces = pt.FaceLandmarks()(image, faces)       # .keypoints: 478-point face mesh
+faces = pt.FaceExpression()(image, faces)      # .expression: label, confidence, scores
+faces = pt.GazeEstimator()(image, faces)       # .gaze: 3D direction, yaw, pitch
+pt.signals.eye_aspect_ratio(faces[0])          # {'left': .., 'right': .., 'mean': ..}
 ```
 </details>
 
@@ -596,7 +634,8 @@ data = video.run(output_video="out.mp4", output_json="out.json")
 ```
 
 The `Video` orchestrator composes any subset of the pipeline. Besides `detector=`, `pose=` and
-`tracker=` it accepts `segmenter=`, `depth=`, `face=`, `face_orientation=`, `floor_map=` (radar view),
+`tracker=` it accepts `segmenter=`, `depth=`, `face=` and `face_stages=` (per-face analysis, with each
+face tied to its tracked person), `floor_map=` (radar view),
 `ego_video=`, `plot_keypoint=` (keypoint-motion plot), and the kinematics overlays
 `plot_angles=True` (interior joint-angle panel, left), `rom=` (clinical ROM on a right-side skeleton
 panel — `True` for the default hip set or a list of movements), and `rom_render=False` (compute ROM
@@ -638,7 +677,9 @@ Models.Depth.DepthAnythingV2.vitb           # Depth-Anything-V2 base
 Models.Depth.ZipDepth.base                  # ZipDepth (lightweight monocular depth)
 Models.Pose3D.MotionBERT.mb_ft_h36m         # MotionBERT 3D lifter
 Models.Pose3D.Canonicalizer.Models._3DPCNetS2   # 3DPCNet pose canonicalizer
-Models.Pose3D.FaceOrientation.VR            # CMVS-FO-VR head-orientation
+Models.Face.Orientation.VR                  # CMVS-FO-VR head-orientation
+Models.Face.Landmarks.face_landmarker       # MediaPipe 478-point face mesh
+Models.Face.Gaze.eth_xgaze_resnet18         # ETH-XGaze 3D gaze
 ```
 
 ### Pose framework comparison
@@ -678,240 +719,16 @@ The pose canonicalizer maps an arbitrary-viewpoint 3D pose to a **viewpoint-inva
 | depth | `DepthResult` | `.depth`, `.normalized()`, `.plot(colormap=...)` |
 | track | `TrackResult` | `.instances`, `.ids`, `.boxes`, `.plot(frame)` |
 | 3D lift (`Pose3D`) | `Pose3DResult` | `.poses` `(N,17,3)`, `.by_name(joint)`, `.fps`, `.view`, indexable/iterable by frame |
-| `Video.run()` | `VideoResults` of `FrameResult` | per frame: `.meta`, `.vitals`, `.hr`, `.snr`, iterates its `Instance`s; `.to_json()` |
+| `Video.run()` | `VideoResults` of `FrameResult` | per frame: `.meta`, `.vitals`, `.hr`, `.snr`, `.faces`, iterates its `Instance`s; `.to_json()` |
 
 Each `Instance` exposes `.id`, `.box`, `.confidence`, `.cls` / `.cls_name`, `.keypoints`
-(a `Keypoints` collection with `.by_name()` / `.by_id()`), `.mask`, and `.orientation` as
-applicable. `Keypoints` also offers the array views `.xy`, `.xyz`, and `.conf`.
+(a `Keypoints` collection with `.by_name()` / `.by_id()`), `.mask`, and — on faces —
+`.orientation`, `.expression`, `.gaze` and `.quality`, as applicable. `Keypoints` also offers the array views `.xy`, `.xyz`, and `.conf`.
 
 Every result carries a `.meta` ([`ResultMeta`](#result-objects)) recording where it came
 from — frame index, timestamp, source frame rate, model, device — and `to_dict()` /
 `from_dict()` round-trip, so a saved JSON can be reloaded into the object model rather than
 hand-parsed.
-
----
-
-## Face Analysis Module
-
-The **Face Analysis Module** extends Physiotrack with a **modular, per-face analysis pipeline** exposed as `physiotrack.FaceAnalysis`. It integrates existing PhysioTrack face detection, tracking, head orientation, and semantic parsing with facial landmarks, eye and blink measurements, geometric and learned gaze, mouth dynamics, facial expression recognition, face-quality descriptors, sliding-window summaries, and structured result export. The implementation is in [`src/physiotrack/face/`](src/physiotrack/face/); the runnable video example is [`examples/face_analysis.py`](examples/face_analysis.py).
-
-Its implementation covers **component integration, image geometry, face-to-result association, temporal state and output handling, and validation**. Detection and neural inference reuse pretrained backends rather than retraining YOLO-Face, 6DRepNet360, MediaPipe, SegFace, EmotiEffLib, or the optional ptgaze models. The face-analysis API operates separately from the existing general-purpose `Video` orchestrator; application code decodes video frames and calls `FaceAnalysis.predict` as demonstrated below.
-
-### Execution architecture
-
-The following diagram describes the implemented dependencies and per-frame data flow (conditional branches execute only when enabled). Input NumPy frames and OpenCV-decoded paths use **BGR** ordering; components perform RGB conversion at their respective inference boundaries. Boxes supplied to analysis components are the **selected face result**: tracker-associated boxes when tracking is enabled, otherwise detector boxes.
-
-```mermaid
-flowchart TB
-    INPUT["BGR image / decoded video frame"] --> DET["Face detection: YOLO-Face"]
-    DET --> SWITCH{"Tracking enabled?"}
-    SWITCH -->|Yes| TRACK["FaceTracker: associated boxes and session-local IDs"]
-    SWITCH -->|No| SELECT["Selected face boxes, IDs and detection metadata"]
-    TRACK --> SELECT
-
-    SELECT --> GAPS["Missing-ID handling: interrupt blink/mouth continuity; reset temporal windows"]
-    GAPS --> FACES{"Any selected faces?"}
-    FACES -->|No| RESULT["Result: task = face"]
-    FACES -->|Yes| ROUTE["Analyze each selected face using its original box"]
-
-    ROUTE --> POSE["Head pose: 6DRepNet360, if enabled"]
-    ROUTE --> LEARNED["Learned gaze: ptgaze, if enabled"]
-    ROUTE --> REGIONS["Semantic regions: SegFace, if enabled"]
-    ROUTE --> QUALITY["Face quality: BGR face crop, if enabled"]
-    ROUTE --> EMOTION["Expression: BGR face crop to RGB, if enabled"]
-    ROUTE --> LANDMARKS["Face landmarks: MediaPipe, if enabled"]
-
-    LANDMARKS --> EYES["Eye openness: landmark geometry"]
-    EYES --> BLINK["Blink: FPS and non-null person ID"]
-    LANDMARKS --> IRIS["Geometric gaze: relative iris position"]
-    LANDMARKS --> MOUTH["Mouth openness: landmark geometry"]
-    MOUTH --> MOTION["Mouth movement / velocity: FPS and non-null person ID"]
-
-    ROUTE --> ASSEMBLE["Assemble per-face Instance and face_features"]
-    POSE --> ASSEMBLE
-    LEARNED --> ASSEMBLE
-    REGIONS --> ASSEMBLE
-    QUALITY --> ASSEMBLE
-    EMOTION --> ASSEMBLE
-    LANDMARKS --> ASSEMBLE
-    EYES --> ASSEMBLE
-    BLINK --> ASSEMBLE
-    IRIS --> ASSEMBLE
-    MOUTH --> ASSEMBLE
-    MOTION --> ASSEMBLE
-
-    ASSEMBLE --> TEMPORAL["Optional per-ID FaceTemporalAggregator"]
-    TEMPORAL --> RESULT
-    ASSEMBLE --> RESULT
-    RESULT --> EXPORT["Separate, explicit FaceResultExporter: JSON / CSV"]
-```
-
-The orchestration is implemented in [`face/analysis.py`](src/physiotrack/face/analysis.py). Within a frame it performs detection, optional tracking and missing-identity handling; then head orientation, optional learned gaze and semantic regions; then, for each selected face, associated landmarks, quality, eye/blink, geometric gaze, mouth/motion, expression and region summaries; finally instance assembly and optional temporal updating. **Landmarks are shared** by the eye, geometric-gaze and mouth computations rather than separately re-inferred for each descriptor. Head-pose association retains source-box indices and checks original boxes; landmark assignment considers the requested and competing boxes; regions and learned gaze use their own box-association rules. This is a data-flow description, not a claim that every component runs on every configuration.
-
-### Components and output contracts
-
-| Component | Implementation and method | Frame-level result or behavior |
-|---|---|---|
-| Face detection | [`Face`](src/physiotrack/face/detect.py), YOLO face preset | Face bounding boxes, detection confidence and class metadata. |
-| Face tracking | [`FaceTracker`](src/physiotrack/face/tracking.py), default OC-SORT | Frame-to-frame association and session-local face IDs; alternatives: ByteTrack, StrongSORT and BoostTrack. |
-| Facial landmarks | [`FaceLandmarks`](src/physiotrack/face/landmarks.py), MediaPipe Face Landmarker | Associated 478-point landmark group when available; integrated `landmarks` summary records availability and count. |
-| Head pose | [`FaceOrientation`](src/physiotrack/face/face_orientation.py), 6DRepNet360 | `Instance.orientation` containing yaw, pitch and roll in degrees, or `None` if unmatched. |
-| Eye openness | [`EyeOpenness`](src/physiotrack/face/eyes.py) | Left/right and mean dimensionless eye-aspect ratios from pixel-consistent landmark distances. |
-| Blink events | [`BlinkDetector`](src/physiotrack/face/blink.py) | Per-ID eye state, completed blink-event pulses, cumulative count, event duration and cumulative blinks/min. |
-| Geometric gaze | [`GazeDescriptor`](src/physiotrack/face/gaze.py) | Normalized iris positions relative to the corresponding eye geometry, **not** absolute screen gaze. |
-| Learned gaze | [`GazeEstimator`](src/physiotrack/face/gaze_estimation.py), optional ptgaze | Associated 3D unit gaze vector, pitch/yaw angles, and association IoU; independent of the geometric descriptor. |
-| Mouth openness | [`MouthOpenness`](src/physiotrack/face/mouth.py) | Landmark-derived width-normalized mouth dimensions and dimensionless openness. |
-| Mouth dynamics | [`MouthMovement`](src/physiotrack/face/mouth_motion.py) | Per-ID absolute change in openness and change per second, with missing-value continuity reset. |
-| Expression recognition | [`FaceEmotion`](src/physiotrack/face/emotion.py), EmotiEffLib ONNX | Predicted class, reported confidence and scores; default model `enet_b0_8_best_afew` provides eight classes. |
-| Facial regions | [`FaceRegions`](src/physiotrack/face/regions.py), SegFace | Per-face semantic classes, mask-pixel counts, skin fraction and association IoU; based on 19 classes including background. |
-| Face quality | [`FaceQuality`](src/physiotrack/face/quality.py) | Independent detector confidence, normalized brightness, Laplacian-variance sharpness and relative face area. |
-| Temporal summaries | [`FaceTemporalAggregator`](src/physiotrack/face/temporal.py) | Per-ID bounded-window numeric summaries, blink-event count and most frequent valid expression. |
-| JSON/CSV export | [`FaceResultExporter`](src/physiotrack/face/export.py) | Explicit per-frame and temporal-window records; nested JSON or flattened CSV. |
-
-**Interpretation and implementation boundaries.** Face-quality indicators are **not** merged into a calibrated quality score or an automatic acceptance gate. EmotiEffLib expression scores are backend outputs, not established psychological probabilities. The returned geometric gaze coordinates, learned gaze angles and head-pose angles have different meanings. The current temporal aggregator covers head pose, mean eye openness, geometric iris coordinates, mouth openness and movement, brightness/sharpness/face area, blink event pulses and dominant expression; it **does not** aggregate learned gaze, region masks or summaries, mouth velocity or cumulative blink rate. Per-face region masks are generated from independent crop-local maps, while the full-frame segmentation composite is retained for compatibility.
-
-#### Configuration and identity semantics
-
-The main switchboard is [`FaceAnalysisConfig`](src/physiotrack/face/config.py). Tracking, head pose, landmarks, quality, eyes, blink, geometric gaze, mouth, mouth motion, expression, regions and temporal processing default to `True`; **learned gaze estimation defaults to `False`**. The default tracker is `ocsort`, the default blink threshold is `0.22` with **3** minimum closed frames in `FaceAnalysis`, and the temporal window is `5.0` seconds. Default learned gaze mode is `eth-xgaze`, with minimum face-association IoU `0.10`.
-
-- `eyes` and geometric `gaze` require `landmarks`; `blink` requires `eyes`; `mouth_motion` requires `mouth`; and `temporal` configuration requires `tracking`. `gaze_estimation` has its own optional backend and does not require `FaceLandmarks`.
-- Constructing the blink detector, mouth movement and temporal aggregator also requires a positive `fps`. **Blink and mouth-motion histories require a non-`None` person ID**; no ID is inferred from the face's position in the result list. In the absence of an ID, instantaneous supported measurements can remain available while those two history outputs are unavailable.
-- A blink is counted upon reopening after a sufficient closed-eye run; interrupted closures do not become completed events. The cumulative blink rate uses the inclusive elapsed interval of analyzed frames for each ID. A missing person interrupts pending blink/mouth continuity and resets that person's aggregation window.
-- Track IDs are **association labels**, not verified biometric identities. `reset_temporal_state()` does not reset the tracker; independent recordings should use independent analyzer/tracker sessions.
-- Disabled/missing measurements retain component-specific availability and null/default semantics. `gaze_estimation` is **omitted**, rather than inserted as an unavailable field, when learned gaze is disabled.
-
-### Installation and use
-
-Follow the [main installation instructions](#installation) for the base package. Learned gaze requires the separately declared optional dependency:
-
-```bash
-pip install -e ".[gaze]"     # optional learned gaze: ptgaze==0.3.0
-```
-
-The default face detector, landmarker, expression recognizer and other selected neural components resolve their weights according to their respective model registries/backends. The optional ptgaze backend may download its pretrained checkpoint. Network access and model availability are needed for first-time initialization unless the relevant assets are already cached.
-
-**Independent still image:** disable the video-state components. The example uses an ordinary image file, not a synthetic frame sequence.
-
-```python
-import physiotrack as pt
-from physiotrack.face import FaceAnalysisConfig
-
-config = FaceAnalysisConfig(
-    tracking=False,
-    blink=False,
-    mouth_motion=False,
-    temporal=False,
-)
-pipeline = pt.FaceAnalysis(config=config, device="cpu")
-try:
-    result = pipeline.predict("image.jpg")  # OpenCV reads BGR
-    for face in result:
-        print(face.box, face.orientation, face.face_features)
-finally:
-    pipeline.close()
-```
-
-**Ordered video frames and native export:** supply the actual decoded-video FPS; the application, not `FaceAnalysis`, owns video decoding and output writing. A single input returns one `Result`, whereas a list of inputs returns a list of results processed sequentially by the same stateful instance.
-
-```python
-import cv2
-import physiotrack as pt
-from physiotrack.face import FaceAnalysisConfig, FaceResultExporter
-
-cap = cv2.VideoCapture("input.mp4")
-if not cap.isOpened():
-    raise FileNotFoundError("Could not open input.mp4")
-fps = float(cap.get(cv2.CAP_PROP_FPS))
-if fps <= 0:
-    cap.release()
-    raise ValueError("A positive source-video FPS is required")
-
-config = FaceAnalysisConfig(gaze_estimation=False)
-pipeline = None
-frame_rows, window_rows = [], []
-try:
-    pipeline = pt.FaceAnalysis(config=config, fps=fps, device="cpu")
-    frame_index = 0
-    while True:
-        ok, frame = cap.read()
-        if not ok:
-            break
-        result = pipeline.predict(frame)
-        timestamp = frame_index / fps
-        frame_rows.extend(FaceResultExporter.frame_records(result, frame_index, timestamp))
-        window_rows.extend(FaceResultExporter.window_records(result, frame_index, timestamp))
-        frame_index += 1
-finally:
-    cap.release()
-    if pipeline is not None:
-        pipeline.close()
-
-FaceResultExporter.save_json(frame_rows, "output/face_frames.json")
-FaceResultExporter.save_csv(window_rows, "output/face_windows.csv")
-```
-
-For an existing minimal example, see [`examples/face_analysis.py`](examples/face_analysis.py). To enable the optional learned gaze model, install the `gaze` extra and set `FaceAnalysisConfig(gaze_estimation=True, gaze_estimation_mode="eth-xgaze")`. Do not treat a list of **unrelated still images** as a meaningful tracked video sequence: state is reused between calls unless intentionally reset or disabled. The export API does not automatically save files after each prediction.
-
-### Validation design and scientific evidence
-
-Validation is organized by component under [`validation/`](validation/) with documented input protocols, runnable evaluation scripts and recorded numeric outputs. The validation methodology separates **external benchmark accuracy**, **isolated real-component execution**, **deterministic correctness/regression checks**, **end-to-end integration**, **runtime measurement**, and **controlled robustness assessment**. These are different forms of evidence: successful execution and output availability do **not** establish predictive accuracy, and runtime throughput is not an accuracy measure.
-
-**Reported benchmark and controlled-reference results** are taken from the linked component `results/` CSV/Markdown files; each figure reflects its named evaluation protocol and population, not a new overall face-analysis accuracy score.
-
-| Validated stage | Evaluation population and measure | Recorded result | Numerical source |
-|---|---|---|---|
-| Face detection | WIDER FACE official validation, Easy / Medium / Hard AP | **0.959001 / 0.949087 / 0.872082** | [`wider_face_thesis_table.csv`](validation/face_detection/results/wider_face_thesis_table.csv) |
-| Face tracking | ECCV 2016 eight-video detector-plus-tracker evaluation | **MOTA 44.04%; IDF1 6.53%; 2,302 ID switches** overall | [`eccv16_tracking_thesis_table.csv`](validation/face_tracking/results/eccv16_tracking_thesis_table.csv) |
-| Facial landmarks | 300-W, 600 Indoor/Outdoor images, 68-point benchmark mapping | **588/600** successful; **4.65% mean NME** | [`300w_landmark_thesis_table.csv`](validation/face_landmarks/results/300w_landmark_thesis_table.csv) |
-| Head pose | AFLW coarse-pose reference, absolute yaw / pitch / roll error | **11.1036° / 13.7046° / 13.7529° MAE**; **12.8537°** overall | [`aflw_head_pose_thesis_table.csv`](validation/head_pose/results/aflw_head_pose_thesis_table.csv) |
-| Eye openness and blink | MPEBlink 2.0 official test: 212 videos, 687 person sequences | **Eye-openness ROC AUC 0.6608**; blink-event **F1 28.62%**, recall **25.63%** | [`mpeblink_test_thesis_table.csv`](validation/eye_openness_and_blink/results/mpeblink_test_thesis_table.csv) |
-| Learned gaze | MPIIFaceGaze with eth-xgaze; 37,629 successful of 37,667 annotations | Mean **8.2419°** 3D angular error | [`mpiifacegaze_ethxgaze_thesis_table.csv`](validation/gaze_estimation/results/mpiifacegaze_ethxgaze_thesis_table.csv) |
-| Mouth openness | FELT/RAVDESS speech subset; 158,286 annotated frame comparisons | **MAE 0.032706** openness-ratio units; **Pearson r 0.932273** | [`felt_ravdess_mouth_openness_thesis_table.csv`](validation/mouth_openness/results/felt_ravdess_mouth_openness_thesis_table.csv) |
-| Mouth movement and velocity | FELT/RAVDESS; 156,846 valid consecutive-frame transitions | Movement **MAE 0.0115167**; velocity **MAE 0.345156** openness/s | [`felt_ravdess_mouth_movement_velocity_thesis_table.csv`](validation/mouth_movement_velocity/results/felt_ravdess_mouth_movement_velocity_thesis_table.csv) |
-| Facial expressions | CAER-S annotated target-face test subset, 13,942 crops | **Accuracy 26.75%; macro F1 26.00%** | [`caers_emotion_metrics.csv`](validation/emotion_recognition/results/caers_emotion_metrics.csv) |
-| Semantic facial regions | CelebAMask-HQ official CelebA-based test partition, 2,824 images | **All-class mIoU 81.5328%; pixel accuracy 95.5849%** | [`celebamaskhq_summary_table.csv`](validation/face_regions/results/celebamaskhq_summary_table.csv) |
-| Face quality | Controlled brightness, Gaussian-blur and bounding-box scale changes over 300-W | Descriptor response and expected monotonicity checked; **no supervised quality-accuracy claim** | [`face_quality_metrics.csv`](validation/face_quality/results/face_quality_metrics.csv) |
-| Temporal aggregation | Eight deterministic validation cases | **150/150 checks passed**, no recorded numeric discrepancy | [`temporal_aggregation_metrics.csv`](validation/temporal_aggregation/results/temporal_aggregation_metrics.csv) |
-
-In particular, the low **tracking IDF1**, **blink-event F1**, and **CAER-S expression accuracy** are retained as measured: they must not be replaced by component-execution availability rates, nor generalized to other datasets or deployment conditions. The AFLW pose reference is a coarse benchmark and is not a calibrated clinical pose reference. The face-quality tests evaluate implementation-consistent response to controlled transformations, not a learned quality classifier. For metrics, ground-truth protocols, split definitions, per-sample data and benchmark-specific citations, use the corresponding component README files below.
-
-| Validation package | Protocol and executable entry points |
-|---|---|
-| [`face_detection`](validation/face_detection/README_WIDER_FACE.txt) | WIDER FACE evaluation, prediction files, isolated execution and plotting. |
-| [`face_tracking`](validation/face_tracking/README_ECCV2016_FACE_TRACKING.txt) | Detector-plus-tracker MOT metrics, sequence-level analysis and association tests. |
-| [`face_landmarks`](validation/face_landmarks/README_300W_FACIAL_LANDMARKS.txt) | 300-W evaluation, landmark assignment regression and per-image outputs. |
-| [`head_pose`](validation/head_pose/README_AFLW_HEAD_POSE.txt) | AFLW pose evaluation and source-box association regression. |
-| [`eye_openness_and_blink`](validation/eye_openness_and_blink/README_MPEBLINK_EYE_OPENNESS_AND_BLINK.txt) | MPEBlink validation-split threshold calibration, test-set event scoring and state checks. |
-| [`gaze_estimation`](validation/gaze_estimation/README_GAZE_ESTIMATION.txt) | MPIIFaceGaze eth-xgaze vector-angular evaluation and per-participant records. |
-| [`mouth_openness`](validation/mouth_openness/README_MOUTH_OPENNESS.txt) | FELT/RAVDESS openness-ratio agreement and actor-level outputs. |
-| [`mouth_movement_velocity`](validation/mouth_movement_velocity/README_MOUTH_MOVEMENT_VELOCITY.txt) | FELT/RAVDESS temporal derivative agreement by actor and trial. |
-| [`emotion_recognition`](validation/emotion_recognition/README_EMOTION_RECOGNITION.txt) | CAER-S target-face classification metrics and class-level error analysis. |
-| [`face_regions`](validation/face_regions/README_CELEBAMASKHQ_FACE_REGIONS.txt) | CelebAMask-HQ pixel IoU/Dice and crop-overlap regression. |
-| [`face_quality`](validation/face_quality/README_FACE_QUALITY.txt) | Deterministic indicator and perturbation-response checks. |
-| [`temporal_aggregation`](validation/temporal_aggregation/README_TEMPORAL_AGGREGATION.txt) | Independent numerical recomputation, per-ID windows and state/reset correctness. |
-| [`integration`](validation/integration/README_INTEGRATION.txt) | Single-/multi-person videos, images, configuration, native export and runtime. |
-| [`robustness`](validation/robustness/README_ROBUSTNESS.txt) | Seven controlled still-image conditions against one baseline, reported descriptively. |
-
-#### Integration, performance and controlled robustness
-
-The [`integration`](validation/integration/README_INTEGRATION.txt) checks include toggled feature configurations, learned/geometric gaze coexistence and association, real full-frame multi-person execution, per-person temporal consistency, still-image handling, independent JSON/CSV export and full-video processing. Its recorded artifacts include:
-
-- **Static-image integration:** **21/21 images passed**, **25 face records**, with time-dependent video features explicitly treated as not applicable ([`image_e2e_summary.json`](validation/integration/results/image_e2e/image_e2e_summary.json)).
-- **Multi-person end-to-end:** **344 processed frames** and **688 face instances** in the recorded two-person video ([`multi_person_full_video_summary.json`](validation/integration/results/multi_person_e2e/multi_person_full_video_summary.json)).
-- **Native export:** **429 frame records** and **429 window records** for the recorded 429-frame single-person video ([`face_pipeline_native_export_summary.json`](validation/integration/results/native_export/face_pipeline_native_export_summary.json)).
-- **Whole-project end-to-end:** **568/568 processed frames**, with numerical mouth-motion availability in all 568 face samples and 567 nonzero motion samples ([`whole_project_e2e_summary.json`](validation/integration/results/whole_project_e2e/whole_project_e2e_summary.json)).
-
-The **full-pipeline runtime** run enabled detection, tracking, landmarks, head pose, quality, eyes/blink, geometric and learned gaze, mouth/motion, expressions, semantic regions and temporal processing. Across **three recordings / 1,341 frames / 1,685 face instances**, it recorded **1,639.21 ms mean processing time per frame**, **1,342.39 ms median** and **0.610 processing frames/s**. This is the recorded **CPU-only Windows execution environment**, not a universal speed guarantee; per-frame processing time excludes decoding and export writes, while initialization is measured separately. See [`face_pipeline_runtime_summary.json`](validation/integration/results/runtime_performance/face_pipeline_runtime_summary.json) and the [per-video results](validation/integration/results/runtime_performance/face_pipeline_runtime_results.csv).
-
-The [`robustness`](validation/robustness/README_ROBUSTNESS.txt) evaluation compares a baseline image with **six deterministic modifications** (dim/overexposed lighting, Gaussian/motion blur, small-face scaling and partial occlusion). Face detection succeeded in **7/7 cases** in that controlled experiment. The recorded changes in detector confidence, sharpness, head/gaze angles, mouth openness and expression are **descriptive case-specific observations**, not a general robustness or accuracy percentage; temporal video components were not tested on those still images. See [`robustness_summary.json`](validation/robustness/results/robustness_summary.json).
-
-### Reproducibility, tests and media provenance
-
-The validation packages store their protocol and expected dataset layout in their respective `README_*.txt` files; they provide component-level evaluators, aggregation/plotting scripts, independent execution tests, and tabular artifacts. Benchmark datasets and reference media are **external inputs** and are not installed by `pip install -e .`. Run each package's documented commands only after preparing its required data and model weights. The per-component outputs permit verification at the recorded sample/sequence level rather than relying solely on the summary table.
-
-For source-level regression coverage the project also includes [`test_face_analysis.py`](tests/test_face_analysis.py), [`test_face_features.py`](tests/test_face_features.py), [`test_face_tracking_landmarks.py`](tests/test_face_tracking_landmarks.py), [`test_face_heavy_modules.py`](tests/test_face_heavy_modules.py), [`test_face_temporal_export.py`](tests/test_face_temporal_export.py), and [`test_gaze_estimation.py`](tests/test_gaze_estimation.py). With the test dependencies installed, these are executed through the existing `pytest` workflow. Dedicated validation regression scripts also cover landmark/pose association, region-map overlap and blink availability. A successful test or pipeline execution is evidence of software correctness on the exercised cases, **not** a substitute for external accuracy benchmarks.
-
-**Media and redistribution:** Some benchmark-derived and externally sourced images/videos are intentionally excluded from Git. This does **not** exclude the independently generated numerical results, CSV/JSON files, scripts, statistical tables or quantitative plots. Synthetic demonstrations complement but are kept separate from benchmark evidence; their detailed input inventory, source attributions, licensing decisions and publication status are recorded in [`VALIDATION_MEDIA_LICENSES.md`](VALIDATION_MEDIA_LICENSES.md). This README intentionally does not duplicate that media inventory.
 
 ---
 
@@ -971,12 +788,12 @@ src/physiotrack/
 ├── pose/           # Pose 2D, Pose3D, canonicalizer, evaluation
 ├── segment/        # Segmentation
 ├── depth/          # Depth estimation
-├── face/           # Face detection + orientation
+├── face/           # Face detection + face stages (orientation, mesh, expression, gaze, quality)
 ├── trackers/       # OC-SORT, ByteTrack, StrongSORT, BoostTrack
-├── signals/        # rPPG (POS/CHROM/LGI/OMIT) + RR intervals/HRV/respiration, motion (joint angles, ROM), filters, plotting
+├── signals/        # rPPG (POS/CHROM/LGI/OMIT) + RR intervals/HRV/respiration, motion (joint angles, ROM), face (EAR, blinks), filters, plotting
 ├── core/           # inference loop, radar/floor view, ego view, depth view
 ├── modules/        # Neural backends (ViTPose, Sapiens, YOLO, DepthAnythingV2, ZipDepth,
-│                   #   MotionBERT, DDHPose, 3DCPNet, 6DRepNet360, SegFace)
+│                   #   MotionBERT, DDHPose, 3DCPNet, 6DRepNet360, SegFace, EmotiEffLib, Gaze)
 ├── results.py      # Unified Result / DepthResult / TrackResult / Instance / Keypoints
 └── models.py       # Models registry + Hugging Face auto-download
 ```
@@ -1043,7 +860,8 @@ Then open an issue or pull request on
 [GitHub](https://github.com/tharindu326/physiotrack).
 
 <div align="center">
-[![Physiotrack contributors](https://contrib.rocks/image?repo=Multimodal-Sensing-Lab/physiotrack)](https://github.com/Multimodal-Sensing-Lab/physiotrack/graphs/contributors)
+
+[![Physiotrack contributors](https://contrib.rocks/image?repo=tharindu326/physiotrack)](https://github.com/tharindu326/physiotrack/graphs/contributors)
 
 </div>
 
@@ -1079,10 +897,6 @@ Licensed under the **GNU General Public License v3.0**. See the [LICENSE](LICENS
 **Developed by**
 - M.Sc. Tharindu Ekanayake
 - D.Sc. (Tech) Constantino Álvarez Casado *(PI)*
-
-**Face-analysis thesis contribution**
-
-- **M.Sc Mahdi Muhannad** — modular face-analysis pipeline development, component validation, integration, reproducibility evaluation, runtime characterization, and controlled robustness assessment.
 
 **Affiliation**
 Multimodal Sensing Lab (MMSLab) · Center for Machine Vision and Signal Processing (CMVS) ·

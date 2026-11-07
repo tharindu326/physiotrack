@@ -20,5 +20,8 @@ video_processor = Video(
 video_output_path = Path(output_directory) / f"{video_name}_poses.mp4"
 json_output_path = Path(output_directory) / f"{video_name}_result.json"
 
-detection_data = video_processor.run(video_output_path, json_output_path)
-print(f"Successfully processed video with {len(detection_data)} total detections")
+frame_results = video_processor.run(video_output_path, json_output_path)
+print(
+    f"Successfully processed {len(frame_results)} frames with "
+    f"{sum(len(frame) for frame in frame_results)} total pose instances"
+)

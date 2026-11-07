@@ -14,6 +14,9 @@ jobs:
     uses: ./.github/workflows/tests.yml
 
   release:
+    # Forks may run tests, but only the official repository may create
+    # semantic-release tags and GitHub releases.
+    if: github.repository == 'tharindu326/physiotrack'
     needs: tests
     runs-on: ubuntu-latest
     permissions:
@@ -52,7 +55,9 @@ jobs:
   publish:
     # Only publish when semantic-release actually cut a new version.
     needs: release
-    if: needs.release.outputs.new_release_published == 'true'
+    if: >-
+      github.repository == 'tharindu326/physiotrack' &&
+      needs.release.outputs.new_release_published == 'true'
     runs-on: ubuntu-latest
     environment:
       name: pypi

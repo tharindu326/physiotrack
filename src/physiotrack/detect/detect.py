@@ -11,9 +11,14 @@ class _DetectionAPI(PredictorMixin):
 
     Mixed in ahead of the YOLO ``Detector`` backend so ``predict``/``__call__`` here
     take precedence over the backend's raw ``detect``/``__call__``.
+
+    Attributes:
+        task (str): The ``Result.task`` this detector produces: ``"detect"``, or
+            ``"face"`` for the face detectors. [`Video`][physiotrack.Video] reads it to
+            recognise a face detector passed as ``detector``.
     """
 
-    _task = "detect"
+    task = "detect"
 
     def predict(self, source, *, conf=None, iou=None, classes=None):
         """Run object detection on one image or a batch of images.
@@ -88,14 +93,14 @@ class _DetectionAPI(PredictorMixin):
                     cls=cls,
                     cls_name=cls_name,
                 ))
-        return Result(orig_img=frame, instances=instances, task=self._task, names=names)
+        return Result(orig_img=frame, instances=instances, task=self.task, names=names)
 
 
 class ValidatedDetector(_DetectionAPI, Detector):
     """Base for the built-in detection presets with a validated default model.
 
-    Subclasses (``Detection.Person``, ``Detection.Face``, ``Detection.VR``,
-    ``Detection.VRStudent``) set ``model`` to a specific ``Models.Detection.*``
+    Subclasses (``Detection.Person``, ``Detection.VR``, ``Detection.VRStudent``, and
+    the face detectors [`Face`][physiotrack.Face] / [`VRFace`][physiotrack.VRFace]) set ``model`` to a specific ``Models.Detection.*``
     enum and ``expected_subclass`` to the enum group the model must belong to,
     so construction fails fast if an incompatible model is passed. The chosen
     weights are auto-downloaded on first use if not already cached.
@@ -180,7 +185,6 @@ class Detection:
 
     Presets:
         - [`Person`][physiotrack.Detection.Person]: person detection (COCO class 0).
-        - [`Face`][physiotrack.Detection.Face]: face detection.
         - [`VR`][physiotrack.Detection.VR]: VR-headset object detection.
         - [`VRStudent`][physiotrack.Detection.VRStudent]: VR-student detection.
         - [`Custom`][physiotrack.Detection.Custom]: any validated detection model.
@@ -189,7 +193,7 @@ class Detection:
         ```python
         import physiotrack as pt
 
-        det = pt.Detection.Person(conf=0.25, device=0)   # also .Face() .VR() .VRStudent()
+        det = pt.Detection.Person(conf=0.25, device=0)   # also .VR() .VRStudent()
         result = det.predict(frame)                      # -> pt.Result
         annotated = result.plot()
         ```
@@ -281,16 +285,6 @@ class Detection:
         expected_subclass = "VRStudent"
         model = Models.Detection.YOLO.VRSTUDENT.m_vrstudent
 
-    class Face(ValidatedDetector):
-        """Face detector.
-
-        Wraps ``Models.Detection.YOLO.FACE.m_face``. See
-        [`ValidatedDetector`][physiotrack.Detection] for
-        constructor arguments.
-        """
-        expected_subclass = "Face"
-        model = Models.Detection.YOLO.FACE.m_face
-
     class Person(ValidatedDetector):
         """Person detector (COCO class ``0`` only).
 
@@ -304,11 +298,14 @@ class Detection:
         model = Models.Detection.YOLO.PERSON.m_person
 
     class VR(ValidatedDetector):
-        """VR-headset object detector.
+        """VR-head detector.
 
-        Wraps ``Models.Detection.YOLO.VR.m_vr``. See
-        [`ValidatedDetector`][physiotrack.Detection] for
-        constructor arguments.
+        Wraps ``Models.Detection.YOLO.VR.m_vr``. The checkpoint also predicts
+        segmentation masks, but this detection entry point intentionally returns
+        only the VR-head boxes. This is currently the only published VR-head
+        checkpoint; there is no large variant. Use ``Segmentation.VRHead`` when masks
+        are needed. See [`ValidatedDetector`][physiotrack.Detection] for constructor
+        arguments.
         """
         expected_subclass = "VR"
         model = Models.Detection.YOLO.VR.m_vr

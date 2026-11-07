@@ -77,6 +77,19 @@ from .motion.features import (
     select_feature_data,
     respiration_from_motion,
 )
+from .face.features import (
+    FACE_LANDMARK_TABLES,
+    eye_aspect_ratio,
+    mouth_aspect_ratio,
+    iris_position,
+)
+from .face.temporal import (
+    face_feature_sequence,
+    detect_blinks,
+    blink_rate,
+    mouth_movement,
+    face_window_summary,
+)
 
 __all__ = [
     # filters
@@ -161,6 +174,16 @@ __all__ = [
     "compute_rom_angles",
     "get_keypoint_features",
     "select_feature_data",
+    # face: per-frame landmark geometry and per-face sequences
+    "FACE_LANDMARK_TABLES",
+    "eye_aspect_ratio",
+    "mouth_aspect_ratio",
+    "iris_position",
+    "face_feature_sequence",
+    "detect_blinks",
+    "blink_rate",
+    "mouth_movement",
+    "face_window_summary",
     # result <-> dict adapters
     "as_keypoint_dicts",
     "as_frame_records",

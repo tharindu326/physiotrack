@@ -1,108 +1,184 @@
 # Installation
 
-Physiotrack is a pure-Python package installed from source. It builds on PyTorch
-and OpenCV, and pulls in the neural backends (Ultralytics, ViTPose, Sapiens,
-Depth-Anything-V2, MotionBERT, SegFace, 6DRepNet360) through its dependencies.
+PhysioTrack is installed from source with `pip`. A virtual environment is strongly
+recommended because PyTorch, OpenCV, and the model backends form a substantial
+scientific stack.
 
 !!! info "Requirements at a glance"
-    | Requirement | Recommendation |
-    |-------------|----------------|
-    | **Python**  | 3.8+ (tested on 3.11) |
-    | **PyTorch** | 2.x — install the build matching your platform/CUDA *first* |
-    | **OS**      | Linux, Windows, macOS |
-    | **Hardware**| CPU works; a CUDA GPU is recommended for real-time/video |
-    | **Weights** | Auto-downloaded from Hugging Face / Ultralytics on first use, cached outside the package |
+    | Requirement | Supported / recommended |
+    | --- | --- |
+    | **Python** | 3.10 or newer; CI currently tests 3.10, 3.11, and 3.12 |
+    | **PyTorch** | 2.2 or newer; install the CPU/CUDA/ROCm build for your machine first |
+    | **OS** | Linux, Windows, macOS |
+    | **Hardware** | CPU works; a CUDA GPU is recommended for video or real-time use |
+    | **Network** | required the first time each model checkpoint is downloaded |
 
-## Install PyTorch first
+## Recommended: `venv` + `pip`
 
-Physiotrack does not pin a PyTorch build for you — install the wheel that matches
-your platform and CUDA version before installing the package. The repo's
-`requirements.txt` pins a **CUDA 12.8** build (`torch==2.9.1`,
-`torchvision==0.24.1`); adjust the index URL for a different CUDA version or for
-CPU-only.
+Clone the repository and create an isolated environment:
 
-=== "CUDA GPU"
-    ```bash
-    pip install torch==2.9.1 torchvision==0.24.1 \
-        --index-url https://download.pytorch.org/whl/cu128
-    ```
+=== "Linux / macOS"
 
-=== "CPU only"
-    ```bash
-    pip install torch torchvision \
-        --index-url https://download.pytorch.org/whl/cpu
-    ```
-
-!!! tip "Which device string?"
-    Pass `device="cpu"` to run on CPU, or `device=0` / `device="cuda"` for the
-    first CUDA GPU. `device="mps"` targets Apple Silicon. Every predictor and the
-    `Video` orchestrator accept a `device` argument. See
-    [Core Concepts](concepts.md#devices).
-
-## Install Physiotrack
-
-=== "From source (editable)"
     ```bash
     git clone https://github.com/tharindu326/physiotrack.git
     cd physiotrack
-    pip install -e .
+    python3.11 -m venv .venv
+    source .venv/bin/activate
+    python -m pip install --upgrade pip
     ```
 
-=== "Directly from GitHub"
-    ```bash
-    pip install "git+https://github.com/tharindu326/physiotrack.git"
+=== "Windows PowerShell"
+
+    ```powershell
+    git clone https://github.com/tharindu326/physiotrack.git
+    cd physiotrack
+    py -3.11 -m venv .venv
+    .venv\Scripts\Activate.ps1
+    python -m pip install --upgrade pip
     ```
 
-An editable install (`-e`) is convenient if you plan to read or modify the source
-and follow along with the scripts in [`examples/`](https://github.com/tharindu326/physiotrack/tree/main/examples).
+### 1. Install the correct PyTorch build
 
-## Core dependencies
-
-`pip install -e .` resolves the runtime stack. The main pieces are:
-
-| Package | Role |
-|---------|------|
-| `torch`, `torchvision`, `xformers` | Deep-learning backends (ViTPose, Sapiens, MotionBERT, SegFace, Depth-Anything-V2) |
-| `ultralytics` | YOLO11 / RT-DETR detection, pose and segmentation |
-| `opencv-python` | Frame I/O, drawing, video capture |
-| `numpy`, `pandas`, `einops`, `timm`, `easydict` | Array math, model plumbing |
-| `gdown`, `imageio`, `pillow` | Weight download & image handling |
-| `lap`, `cython_bbox`, `fastdtw` | Tracking association & signal metrics |
-| `openpyxl` | Spreadsheet export for evaluation scripts |
-
-!!! note "Model weights are not bundled"
-    Nothing large ships in the package. The first time you construct a predictor,
-    its weights **auto-download** through the [`Models`][physiotrack.Models]
-    registry — Ultralytics weights via `ultralytics`, everything else from Hugging
-    Face — and are cached locally for subsequent runs. This means the very first
-    call to a new model needs a network connection.
-
-## Optional: video codec (OpenH264)
-
-The [`Video`][physiotrack.Video] orchestrator writes annotated MP4s using the
-H.264 (`avc1`) codec. On some platforms (notably Windows) OpenCV ships without the
-OpenH264 runtime, so encoding fails. The repo includes a helper that downloads and
-installs the codec next to your OpenCV install:
+For a CPU-only environment:
 
 ```bash
-python install_openh264.py
+python -m pip install torch torchvision \
+    --index-url https://download.pytorch.org/whl/cpu
 ```
 
-??? note "What the helper does"
-    It fetches `openh264-1.8.0-win64.dll` from Cisco's release page, decompresses
-    it, and drops it into your `cv2` package directory so OpenCV can find the
-    `avc1` encoder. Only needed if you see H.264 codec warnings when writing video;
-    image-only workflows do not require it.
+For NVIDIA CUDA, AMD ROCm, or Apple Silicon, use the command generated by the
+official [PyTorch installation selector](https://pytorch.org/get-started/locally/).
+The appropriate build depends on the operating system, driver, and accelerator, so
+PhysioTrack deliberately does not hard-code one CUDA version.
 
-## Verify the install
+Verify the result before installing the rest of the project:
 
-```python
-import physiotrack as pt
-
-print(pt.__all__)                      # public API surface
-det = pt.Detection.Person(device="cpu")
-print(det)                             # first run downloads YOLO person weights
+```bash
+python -c "import torch; print(torch.__version__); print('CUDA:', torch.cuda.is_available())"
 ```
 
-If the import succeeds and the detector constructs (downloading its weights on the
-first run), you are ready for the [Quickstart](quickstart.md).
+### 2. Install PhysioTrack
+
+```bash
+python -m pip install -e .
+```
+
+The editable flag (`-e`) makes source changes immediately visible to the environment
+and is convenient for running the repository examples. Runtime dependencies come
+from `pyproject.toml`; there is no separate `requirements.txt` to maintain.
+
+Install optional contributor tooling as needed:
+
+```bash
+python -m pip install -e ".[test]"       # pytest + biomedical reference checks
+python -m pip install -e ".[docs]"       # MkDocs documentation toolchain
+python -m pip install -e ".[test,face,docs]"  # normal development setup
+python -m pip install -e ".[pose3d]"     # optional SMPL mesh rendering
+python -m pip install -e ".[face]"       # face mesh, expression and gaze stages
+```
+
+The `face` extra adds MediaPipe, ONNX Runtime and safetensors for
+[`FaceLandmarks`][physiotrack.FaceLandmarks],
+[`FaceExpression`][physiotrack.FaceExpression] and
+[`GazeEstimator`][physiotrack.GazeEstimator]. For expression recognition on a GPU,
+replace `onnxruntime` with `onnxruntime-gpu`. MediaPipe declares
+`opencv-contrib-python` while ultralytics declares `opencv-python`; both provide
+`cv2`, and if `import cv2` fails after installing the extra, reinstall one of them
+(`pip install --force-reinstall opencv-python`).
+
+## Conda development environment
+
+The repository includes `environment-dev.yml` as a small, reviewable developer
+bootstrap:
+
+```bash
+conda env create -f environment-dev.yml
+conda activate physiotrack-dev
+```
+
+It creates Python 3.11 with `pip`, build tooling, and the FFmpeg command-line tools.
+It intentionally does **not** choose PyTorch: a shared environment file cannot safely
+guess whether a contributor needs CPU, CUDA, ROCm, or Apple Silicon. After activation,
+install PyTorch with the CPU command or the official selector above, then install the
+editable project:
+
+```bash
+python -m pip install -e ".[test,face,docs]"
+```
+
+When `environment-dev.yml` changes, update the existing environment with:
+
+```bash
+conda env update -n physiotrack-dev -f environment-dev.yml --prune
+```
+
+This file captures the stable shell/tooling layer while `pyproject.toml` remains the
+single source of truth for Python runtime and optional dependencies.
+
+## Install directly from GitHub
+
+If you only need the library and not the examples or source tree:
+
+```bash
+python -m pip install "git+https://github.com/tharindu326/physiotrack.git"
+```
+
+Install the appropriate PyTorch build first, just as for an editable installation.
+
+## Verify the installation
+
+```bash
+python -c "import physiotrack as pt; print('PhysioTrack', pt.__version__)"
+python examples/face_detection/detect_faces.py --model n_face --device cpu
+```
+
+The import check is offline. The example constructs a face detector, so its first run
+downloads model weights and then reuses the local cache.
+
+## Model-weight cache
+
+Checkpoints are cached outside the installed package:
+
+| Condition | Cache directory |
+| --- | --- |
+| `PHYSIOTRACK_HOME` is set | `$PHYSIOTRACK_HOME/weights` |
+| `XDG_CACHE_HOME` is set | `$XDG_CACHE_HOME/physiotrack/weights` |
+| Linux default | `~/.cache/physiotrack/weights` |
+| macOS default | `~/Library/Caches/physiotrack/weights` |
+| Windows default | `%LOCALAPPDATA%\physiotrack\weights` |
+
+For a shared cache or a location with more disk space:
+
+```bash
+export PHYSIOTRACK_HOME=/shared/physiotrack
+```
+
+Older installations that stored weights inside the package can preview and perform a
+one-time migration:
+
+```bash
+python -c "import physiotrack as pt; pt.migrate_weight_cache(dry_run=True)"
+python -c "import physiotrack as pt; pt.migrate_weight_cache()"
+```
+
+## Video codec notes
+
+The [`Video`][physiotrack.Video] pipeline tries H.264 (`avc1`) first and falls back
+to MPEG-4 (`mp4v`) with a warning when H.264 is unavailable. If neither encoder is
+compiled into the active OpenCV build, video creation fails with an actionable error.
+Installing the FFmpeg command-line program does not automatically change the codecs
+compiled into `opencv-python`; use an OpenCV build appropriate for the platform when
+you require a specific encoder.
+
+Annotated outputs never copy source audio.
+
+## Common problems
+
+| Symptom | Check |
+| --- | --- |
+| `python: command not found` | activate the environment and use the platform's Python launcher (`python3` or `py`) |
+| `torch.cuda.is_available()` is `False` | reinstall PyTorch using the official selector for the installed driver/platform |
+| model download fails on first use | check network/proxy access and that the weight-cache directory is writable |
+| OpenCV cannot open an image/video | verify the path and codec support; try the bundled face example to separate input problems from installation problems |
+| `ModuleNotFoundError: physiotrack` | run `python -m pip install -e .` from the repository root in the active environment |
+| `OSError: libEGL.so.1` (or `libGLESv2.so.2`) from `FaceLandmarks` on Linux | MediaPipe needs the EGL/GLES runtime even on the CPU; on Debian/Ubuntu install `libegl1 libgles2` (e.g. in a headless server or Docker image) |

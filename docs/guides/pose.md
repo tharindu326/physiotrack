@@ -47,11 +47,11 @@ collection, and rendering is delegated to [`Result.plot`][physiotrack.Result.plo
         verbose=True,
     )
 
-    detections = video.run(
+    frames = video.run(
         Path("output/BV_S17_cut1_poses.mp4"),      # annotated video
         Path("output/BV_S17_cut1_result.json"),    # per-frame keypoints JSON
     )
-    print(f"{len(detections)} total detections")
+    print(f"{len(frames)} frames; {sum(len(frame) for frame in frames)} pose instances")
     ```
 
     !!! tip "The JSON feeds 3D lifting"
@@ -154,7 +154,7 @@ for person in result:                     # each person is an Instance
 
 result.keypoints          # list[Keypoints], one per person with pose
 result.boxes              # (M, 4) person boxes
-result.to_dict()          # JSON-friendly dict (task + detections)
+result.to_dict()          # JSON-friendly dict (task + instances)
 ```
 
 A missing landmark returns `None` from `by_name` / `by_id`, and unmapped ids are

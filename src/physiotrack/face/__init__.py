@@ -1,44 +1,30 @@
-"""Face detection and behavioral face-analysis module."""
+"""Face detection and per-face analysis.
 
-from .analysis import FaceAnalysis
-from .blink import BlinkDetector
-from .config import FaceAnalysisConfig
+Detectors find faces ([`Face`][physiotrack.Face], [`VRFace`][physiotrack.VRFace]); the
+face stages each add one property to every face and chain in any order their
+requirements allow:
+
+- [`FaceOrientation`][physiotrack.FaceOrientation] -- head yaw / pitch / roll.
+- [`FaceLandmarks`][physiotrack.FaceLandmarks] -- 478-point face mesh.
+- [`FaceExpression`][physiotrack.FaceExpression] -- facial expression category.
+- [`GazeEstimator`][physiotrack.GazeEstimator] -- 3D gaze (needs the face mesh).
+- [`FaceQuality`][physiotrack.FaceQuality] -- brightness, sharpness, size.
+- [`FaceRegions`][physiotrack.FaceRegions] -- visible face parts (skin, eyes, ...).
+"""
+from .base import FaceStage, check_stage_order
 from .detect import Face, VRFace
-from .emotion import FaceEmotion
-from .eyes import EyeOpenness
-from .export import FaceResultExporter
+from .expression import FaceExpression
 from .face_orientation import FaceOrientation
-from .gaze import GazeDescriptor
-from .gaze_estimation import GazeEstimator
+from .gaze import GazeEstimator
 from .landmarks import FaceLandmarks
-from .mouth import MouthOpenness
-from .mouth_motion import MouthMovement
 from .quality import FaceQuality
 from .regions import FaceRegions
-from .temporal import FaceTemporalAggregator
-from .tracking import FaceTracker
-from ..modules._6DRepNet360.utils import draw_axis, plot_pose_cube
-
+from ..modules._6DRepNet360.utils import plot_pose_cube, draw_axis
 
 __all__ = [
-    "Face",
-    "VRFace",
-    "FaceAnalysis",
-    "FaceAnalysisConfig",
-    "FaceOrientation",
-    "FaceTracker",
-    "FaceLandmarks",
-    "FaceQuality",
-    "EyeOpenness",
-    "BlinkDetector",
-    "GazeDescriptor",
-    "GazeEstimator",
-    "MouthOpenness",
-    "MouthMovement",
-    "FaceEmotion",
+    "Face", "VRFace",
+    "FaceStage", "check_stage_order",
+    "FaceOrientation", "FaceLandmarks", "FaceExpression", "GazeEstimator", "FaceQuality",
     "FaceRegions",
-    "FaceTemporalAggregator",
-    "FaceResultExporter",
-    "plot_pose_cube",
-    "draw_axis",
+    "plot_pose_cube", "draw_axis",
 ]

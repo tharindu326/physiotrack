@@ -1,16 +1,30 @@
-# Face & Head Orientation
+# Face Analysis
 
-Face detection presets and 6-DoF head-orientation (yaw/pitch/roll) estimation.
-See the [Face guide](../guides/face.md).
+Face detectors and the per-face analysis stages. See the
+[Face analysis guide](../guides/face.md).
 
-## Face
+## Detectors
 
 ::: physiotrack.Face
 
-## VRFace
-
 ::: physiotrack.VRFace
 
-## FaceOrientation
+## Face stages
 
 ::: physiotrack.FaceOrientation
+
+::: physiotrack.FaceLandmarks
+
+::: physiotrack.FaceExpression
+
+::: physiotrack.GazeEstimator
+
+::: physiotrack.FaceQuality
+
+::: physiotrack.FaceRegions
+
+## Stage contract
+
+::: physiotrack.face.FaceStage
+
+::: physiotrack.face.check_stage_order

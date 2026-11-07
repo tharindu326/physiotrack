@@ -34,10 +34,34 @@ incompatible model. See the [Model Zoo](../model-zoo.md) for every variant.
 | Preset | Backend | Classes | Description |
 | --- | --- | --- | --- |
 | [`Detection.Person`][physiotrack.Detection.Person] | YOLO | `[0]` (person) | People only; class filter is pinned to person. |
-| [`Detection.Face`][physiotrack.Detection.Face] | YOLO | face | Face bounding boxes. |
-| [`Detection.VR`][physiotrack.Detection.VR] | YOLO | VR objects | VR-headset object detection. |
-| [`Detection.VRStudent`][physiotrack.Detection.VRStudent] | YOLO | VR student | VR-student detection. |
+| [`Detection.VR`][physiotrack.Detection.VR] | YOLO | `VR-head` | VR-headset boxes; use `Segmentation.VRHead` when masks are needed. |
+| [`Detection.VRStudent`][physiotrack.Detection.VRStudent] | YOLO | `VR-person` | Full-person boxes for people wearing a VR headset. |
 | [`Detection.Custom`][physiotrack.Detection.Custom] | YOLO | any | Run any validated `Models.Detection.*` variant. |
+
+!!! info "Faces"
+    Face detectors live with the rest of face analysis: [`Face`][physiotrack.Face]
+    and the VR-tuned [`VRFace`][physiotrack.VRFace] share this constructor and return
+    a `Result` with `task="face"`. See the [Face analysis guide](face.md).
+
+### VR objects and people
+
+These presets answer different questions. `Detection.VR` locates the headset region,
+`Detection.VRStudent` locates the full body of a VR-equipped person, and
+`Detection.Person` locates people regardless of whether they wear a headset. Run the
+[VR detection example](https://github.com/tharindu326/physiotrack/tree/main/examples/vr_detection)
+to compare all three on the same synthetic lab scene.
+
+Only a medium VR-head checkpoint (`yolo11m_VR_head.pt`) is currently published.
+Large checkpoints are available for VR-person and generic-person detection. The
+example's `--model-size largest` therefore uses medium for VR-head and large for the
+other two, and reports every model in its panels and JSON output.
+
+![VR-person and generic-person comparison](../images/comparison_person_vrperson.jpg)
+
+*Focused output from the bundled synthetic scene. The large VR-person checkpoint
+(top) retains two full people using headsets; the large generic-person checkpoint
+(bottom) retains twelve people regardless of headset use. These counts describe
+different detection tasks and are not accuracy scores.*
 
 ```python
 from physiotrack import Detection, Models
@@ -86,7 +110,7 @@ for inst in result:                      # iterate detections
     x1, y1, x2, y2 = inst.box            # (4,) pixel box
     print(inst.cls, inst.cls_name, inst.confidence)
 
-data = result.to_dict()  # JSON-friendly dict: {"task": "detect", "detections": [...]}
+data = result.to_dict()  # JSON-friendly: {"task": "detect", "instances": [...]}
 ```
 
 Render an annotated copy with [`Result.plot`][physiotrack.Result.plot] — the source
@@ -111,9 +135,11 @@ See [Result objects](../api/results.md) for every field and rendering toggle.
     ```
 
 !!! tip "Feed a tracker or pose model"
-    A detector's boxes are the standard input to downstream stages. Serialize with
-    `result.to_dict()` for the [Tracker](tracking.md), or let [Pose](pose.md)
-    auto-detect people for you.
+    A detector's boxes are the standard input to downstream stages. The
+    [Tracker](tracking.md) needs an `(N, 6)` NumPy array of
+    `[x1, y1, x2, y2, confidence, class]`, not the dictionary returned by
+    `result.to_dict()`. Build it from the result instances as shown in the tracking
+    guide, or let [Pose](pose.md) auto-detect people for you.
 
 !!! warning "Class ids depend on the model"
     `classes` filters by the backbone's own class map. `Detection.Person` already
@@ -121,6 +147,7 @@ See [Result objects](../api/results.md) for every field and rendering toggle.
 
 ## See also
 
+- [VR-head and VR-person example](https://github.com/tharindu326/physiotrack/tree/main/examples/vr_detection) — compare VR regions, VR-equipped people, and all people.
 - [`Detection` API reference](../api/detection.md) — full class and preset docs.
 - [Result objects](../api/results.md) — `boxes`, `Instance`, `to_dict`, `plot`.
 - [Model Zoo](../model-zoo.md) — available detection backbones.

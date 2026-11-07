@@ -1,0 +1,13 @@
+# Portable developer shell. PyTorch is installed in a second step because its
+# CPU/CUDA/ROCm wheel must match the contributor's operating system and hardware.
+name: physiotrack-dev
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - pip>=24
+  - setuptools>=77
+  - wheel
+  # Useful for inspecting and converting the video-example outputs. PhysioTrack
+  # itself reads/writes frames through OpenCV and does not require this executable.
+  - ffmpeg>=6

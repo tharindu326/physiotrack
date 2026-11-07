@@ -39,3 +39,7 @@ predictable.
 !!! tip "Already know the shape?"
     Every predictor is `configure → predict → read → plot`. Jump straight to the
     task [Guides](../guides/index.md) or the [API Reference](../api/index.md).
+
+!!! example "Want a repository example with real files?"
+    The [face detection and tracking examples](../guides/face-examples.md) include
+    small synthetic inputs and save annotated media, CSV, and JSON output.

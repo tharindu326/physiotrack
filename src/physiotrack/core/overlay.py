@@ -218,6 +218,62 @@ def draw_label(frame: np.ndarray, xy, text: str, *, size: float,
     alpha_composite(frame, ov.render(), int(xy[0]), int(xy[1]))
 
 
+def draw_info_panel(frame: np.ndarray, lines: Sequence[str], *,
+                    corner: str = "top_left") -> np.ndarray:
+    """Return a copy of ``frame`` with a semi-transparent text panel in one corner.
+
+    The panel scales with the frame resolution, so the same call is legible on a
+    phone clip and a 4K recording. Used by the runnable examples to stamp run
+    context (subject counts, model name, device) onto saved media; reuse it
+    anywhere a frame needs a few lines of status text.
+
+    Args:
+        frame (np.ndarray): BGR image ``(H, W, 3)``. Not modified.
+        lines (Sequence[str]): The text lines, drawn top to bottom.
+        corner (str, optional): ``"top_left"``, ``"top_right"``, ``"bottom_left"``
+            or ``"bottom_right"``. Defaults to ``"top_left"``.
+
+    Returns:
+        np.ndarray: A new annotated BGR image with the same shape as ``frame``.
+
+    Example:
+        ```python
+        from physiotrack.core.overlay import draw_info_panel
+
+        annotated = draw_info_panel(annotated, [
+            f"Faces detected: {len(result)}",
+            f"Detector: {model_name}",
+        ])
+        ```
+    """
+    lines = [str(line) for line in lines]
+    if not lines:
+        return frame.copy()
+    height, width = frame.shape[:2]
+    size = float(np.clip(min(width, height) / 42.0, 14.0, 30.0))
+    pad = int(round(size * 0.6))
+    gap = int(round(size * 0.45))
+
+    probe = OverlayCanvas(1, 1)
+    measured = [probe.measure(line, size, bold=True) for line in lines]
+    text_w = max(w for w, _ in measured)
+    line_h = max(h for _, h in measured)
+    panel_w = min(width, int(text_w + 2 * pad))
+    panel_h = min(height, int(len(lines) * line_h + (len(lines) - 1) * gap + 2 * pad))
+
+    ov = OverlayCanvas(panel_w, panel_h, bg=(20, 20, 20), bg_alpha=0.78, radius=6)
+    y = pad
+    for line in lines:
+        ov.text((pad, y), line, size=size, color=(235, 235, 235), bold=True)
+        y += line_h + gap
+
+    x0 = 0 if "left" in corner else width - panel_w
+    y0 = 0 if "top" in corner else height - panel_h
+    output = frame.copy()
+    alpha_composite(output, ov.render(), x0, y0)
+    return output
+
+
 def alpha_composite(frame: np.ndarray, canvas_bgra: np.ndarray, x: int, y: int) -> None:
     """Alpha-blend a BGRA ``canvas`` onto ``frame`` in place at top-left (x, y).
 

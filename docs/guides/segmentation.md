@@ -75,7 +75,7 @@ See the [Model Zoo](../model-zoo.md) for every variant.
 !!! note "SegFace runs on crops"
     Unlike the whole-frame segmenters, [`Segmentation.Face`][physiotrack.Segmentation.Face]
     operates on face crops. If you omit `boxes`, it lazily builds a
-    [`Detection.Face`][physiotrack.Detection.Face] to find faces first (tune it with
+    [`Face`][physiotrack.Face] detector to find faces first (tune it with
     `face_conf` / `face_iou`). The result carries a full-frame `seg_map`, a
     `names` label map, and a 19-class `palette`.
 

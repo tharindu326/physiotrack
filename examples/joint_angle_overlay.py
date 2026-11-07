@@ -40,7 +40,7 @@ def run_standalone(video_path: str):
         if not ok:
             break
         result = pose.predict(frame)             # -> Result
-        pose_results = result.to_dict()["detections"]   # [{'keypoints': [...]}, ...]
+        pose_results = result.to_dict()["instances"]    # [{'keypoints': [...]}, ...]
         plotter.update(pose_results, frame_time=cap.get(cv2.CAP_PROP_POS_MSEC) / 1000.0)
         # joint-angle grid + ROM grid (2-column L|R panels) stacked on the left
         frame = plotter.attach_to_frame(frame, position="top_left")
